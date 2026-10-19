@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-sample-plugin",
+	"name": "obsidian-sports-plugin",
 	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"description": "Sports plugin for Obsidian, developed by Trainvent.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
@@ -23,5 +23,17 @@
 		"obsidian": "latest",
 		"typescript": "^5.8.3",
 		"typescript-eslint": "^8.59.1"
+	},
+	"allowScripts": {
+		"esbuild@0.25.5": true
+	},
+	"author": "Trainvent",
+	"homepage": "https://github.com/trainvent/obsidian-sports-plugin",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/trainvent/obsidian-sports-plugin.git"
+	},
+	"bugs": {
+		"url": "https://github.com/trainvent/obsidian-sports-plugin/issues"
 	}
 }
