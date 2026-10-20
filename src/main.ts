@@ -9,9 +9,10 @@ import { createLocalTemplate } from './workbook/local-file';
 import { templateWorkbook } from './workbook/template-file';
 import { syncWorkbook } from './workbook/sync';
 import { noteLink } from './notes/plan';
+import { migrateNoteNames } from './notes/migrate';
 import { syncNotes } from './notes/sync';
 import { updateNote } from './notes/store';
-import { weekMarkdown, trainingLogMarkdown } from './notes/render';
+import { weekMarkdown, datedLogMarkdown } from './notes/render';
 
 export default class SportsPlugin extends Plugin {
  data!: SportsData;
@@ -43,7 +44,7 @@ export default class SportsPlugin extends Plugin {
    const path = this.data.workbookPath || DEFAULT_DATA.workbookPath;
    await createLocalTemplate(path, templateWorkbook());
    this.data.workbookPath = path; this.data.strategySheet = 'Strategy'; this.data.trackingSheet = 'Training log'; await this.save();
-   new Notice('Template created at the configured local path. Import it with the sync button.');
+   new Notice('Template created at the configured local path, starting next week. Import it with the sync button.');
   } catch (error) {
    const message = error instanceof Error && 'code' in error && error.code === 'EEXIST' ? 'A workbook already exists there. Choose a new path to create a template; existing workbooks are never overwritten.' : error instanceof Error ? error.message : 'Could not create the example workbook.';
    new Notice(message);
@@ -81,7 +82,9 @@ export default class SportsPlugin extends Plugin {
   if (this.noteBusy) return;
   this.noteBusy = true;
   try {
-   const file = await updateNote(this, 'complete-log.md', 'training-log', `${noteLink(this.data.notesFolder, 'Plan', 'Training plan')}\n\n${trainingLogMarkdown(this.data.plan)}`, '# Training log\n\n## Commentary\n');
+   const issues = await migrateNoteNames(this);
+   if (issues.length) throw new Error(issues[0]);
+   const file = await updateNote(this, 'Log.md', 'training-log', `${noteLink(this.data.notesFolder, 'Plans', 'Plans')}\n\n${datedLogMarkdown(this.data.plan, false)}`, '# Log\n\n## Commentary\n');
    await this.app.workspace.getLeaf(false).openFile(file);
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not update the training log.'); }
   finally { this.noteBusy = false; }
@@ -91,7 +94,7 @@ export default class SportsPlugin extends Plugin {
   this.noteBusy = true;
   try {
    const dates = weekDates(anchor);
-   const file = await updateNote(this, `Weeks/${dates[0]}.md`, `week:${dates[0]}`, `${noteLink(this.data.notesFolder, 'Plan', 'Training plan')} · ${noteLink(this.data.notesFolder, 'complete-log', 'Complete log')}\n\n${weekMarkdown(this.data.plan, this.data.events, dates)}`, `# Week of ${dates[0]}\n\n## Reflections\n\n### What improved\n\n### Recovery and comfort\n\n### What to adjust\n\n### Next week's focus\n`);
+   const file = await updateNote(this, `Weeks/${dates[0]}.md`, `week:${dates[0]}`, `${noteLink(this.data.notesFolder, 'Plans', 'Plans')} · ${noteLink(this.data.notesFolder, 'Log', 'Log')}\n\n${weekMarkdown(this.data.plan, this.data.events, dates, this.data.showRegularActivities)}`, `# Week of ${dates[0]}\n\n## Reflections\n\n### What improved\n\n### Recovery and comfort\n\n### What to adjust\n\n### Next week's focus\n`);
    await this.app.workspace.getLeaf(false).openFile(file);
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not update the weekly note.'); }
   finally { this.noteBusy = false; }

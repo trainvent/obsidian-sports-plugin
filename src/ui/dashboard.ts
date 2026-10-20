@@ -29,8 +29,8 @@ export class SportsDashboard extends ItemView {
   for (const date of dates) {
    const section = root.createDiv({ cls: 'sports-day' }); section.createEl('h3', { text: date });
    const sessions = this.plugin.data.plan?.sessions.filter(session => session.date === date) ?? [];
-   const events = eventsOn(this.plugin.data.events, date);
-   const scheduled = scheduleOn(this.plugin.data.plan, date);
+   const events = this.plugin.data.showRegularActivities ? eventsOn(this.plugin.data.events, date) : [];
+   const scheduled = this.plugin.data.showRegularActivities ? scheduleOn(this.plugin.data.plan, date) : [];
    if (!sessions.length && !events.length && !scheduled.length) section.createEl('p', { text: 'No sessions planned.' });
    for (const session of sessions) {
     section.createEl('strong', { text: session.title });

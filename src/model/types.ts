@@ -17,10 +17,10 @@ export interface TrainingPlan {
 export interface RecurringEvent { id: string; title: string; sport: string; weekday: number; time: string; minutes: number; startDate: string; endDate: string }
 export interface SportsData {
  workbookPath: string; strategySheet: string; trackingSheet: string; notesFolder: string; syncMinutes: number;
- syncOnStartup: boolean; plan: TrainingPlan | null; events: RecurringEvent[];
+ showRegularActivities: boolean; syncOnStartup: boolean; plan: TrainingPlan | null; events: RecurringEvent[];
  generatedBlocks: Record<string, string>; lastError: string;
 }
 export const DEFAULT_DATA: SportsData = {
- workbookPath: '~/Sports/Training.xlsx', strategySheet: 'Strategy', trackingSheet: 'Training log', notesFolder: 'Sports', syncMinutes: 0, syncOnStartup: false,
+ workbookPath: '~/Sports/Training.xlsx', strategySheet: 'Strategy', trackingSheet: 'Training log', notesFolder: 'Sports', syncMinutes: 0, syncOnStartup: false, showRegularActivities: false,
  plan: null, events: [], generatedBlocks: {}, lastError: '',
 };

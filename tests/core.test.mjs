@@ -7,7 +7,7 @@ import { unzipSync, zipSync, strToU8, strFromU8 } from 'fflate';
 import { pathToFileURL } from 'node:url';
 const temp = mkdtempSync(`${tmpdir()}/sports-tests-`);
 process.on('exit', () => rmSync(temp, { recursive: true, force: true }));
-const output = await build({ entryPoints: ['src/notes/blocks.ts', 'src/model/calendar.ts', 'src/workbook/parse.ts', 'src/workbook/template.ts', 'src/notes/render.ts', 'src/notes/plan.ts'], bundle: true, format: 'esm', platform: 'browser', write: false, outdir: '/tmp/sports-tests' });
+const output = await build({ entryPoints: ['src/notes/blocks.ts', 'src/model/calendar.ts', 'src/workbook/parse.ts', 'src/workbook/template.ts', 'src/notes/render.ts', 'src/notes/plan.ts', 'src/workbook/template-dates.ts'], bundle: true, format: 'esm', platform: 'browser', write: false, outdir: '/tmp/sports-tests' });
 async function moduleNamed(name) {
  const text = output.outputFiles.find(file => file.path.endsWith(`/${name}.js`)).text;
  const path = `${temp}/${name}.mjs`; writeFileSync(path, text);
@@ -16,10 +16,11 @@ async function moduleNamed(name) {
  return import(pathToFileURL(path).href);
 }
 const { mergeBlock, generatedBlock } = await moduleNamed('blocks');
-const { weekDates, eventsOn } = await moduleNamed('calendar');
+const { weekDates, eventsOn, scheduleOn } = await moduleNamed('calendar');
 const { parseWorkbook } = await moduleNamed('parse');
-const { plannedWeeks, planMarkdown } = await moduleNamed('plan');
-const { weekMarkdown, trainingLogMarkdown } = await moduleNamed('render');
+const { startTemplateNextMonday } = await moduleNamed('template-dates');
+const { plannedWeeks, planMarkdown, weeklyStrategy } = await moduleNamed('plan');
+const { weekMarkdown, trainingLogMarkdown, strategyMarkdown, datedLogMarkdown } = await moduleNamed('render');
 const { exampleWorkbook: workbook } = await moduleNamed('template');
 test('refresh preserves reflections and detects edits or missing markers', () => {
  const previous = generatedBlock('week:2026-10-19', 'Old overview');
@@ -150,7 +151,7 @@ test('strategy weekly schedule creates planned activities without daily result r
  assert.equal(plan.sessions.length, 1);
  assert.equal(plan.weeklySchedule[0].recordedBy, 'Garmin');
  assert.equal(plan.weeklySchedule[0].minutes, 60);
- const markdown = weekMarkdown(plan, [], ['2026-10-19']);
+ const markdown = weekMarkdown(plan, [], ['2026-10-19'], true);
  assert.ok(markdown.includes('Swim course'));
  assert.ok(markdown.includes('Planned'));
  assert.ok(markdown.includes('Garmin'));
@@ -197,23 +198,34 @@ test('explicit weekly plans create future weeks and show strategy without claimi
  assert.deepEqual(preserved.weekPlans, plan.weekPlans);
  await assert.rejects(parseWorkbook(withWeekPlans([row, row])), /unique/);
  await assert.rejects(parseWorkbook(withWeekPlans([[...row.slice(0,1), '2026-12-29', ...row.slice(2)]])), /Monday/);
+ await assert.rejects(parseWorkbook(withWeekPlans([row, ['2', '2026-12-28', ...row.slice(2)]])), /unique/);
  await assert.rejects(parseWorkbook(withWeekPlans([[...row.slice(0,6), '-1']])), /nonnegative/);
 });
 
 test('12-week workbook imports all planned sessions, typed dates, and blank results', async () => {
  const bytes = readFileSync('templates/Sports-12-week.xlsx');
  const plan = await parseWorkbook(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+ assert.deepEqual(plan.weeklySchedule.map(item => [item.weekday, item.time, item.title, item.minutes]), [[2, '20:00', 'Swimming', null], [0, '10:30', 'Running', null]]);
+ assert.equal(scheduleOn(plan, '2026-10-20')[0].title, 'Swimming');
+ assert.equal(scheduleOn(plan, '2027-04-04')[0].title, 'Running');
+ const weekly = weekMarkdown(plan, [], weekDates(new Date(2026, 9, 20, 12)), true);
+ assert.ok(weekly.includes('20:00 Swimming'));
+ assert.ok(weekly.includes('10:30 Running'));
  assert.equal(plan.weekPlans.length, 12);
- assert.equal(plan.sessions.length, 132);
- assert.equal(plan.weekPlans[0].start, '2026-09-28');
- assert.equal(plan.weekPlans.at(-1).start, '2026-12-14');
- assert.equal(plan.sessions[0].date, '2026-09-28');
- assert.equal(plan.sessions.at(-1).date, '2026-12-20');
+ assert.equal(plan.sessions.length, 48);
+ assert.equal(plan.weekPlans[0].start, '2026-10-26');
+ assert.equal(plan.weekPlans.at(-1).start, '2027-01-11');
+ assert.equal(plan.sessions[0].date, '2026-10-26');
+ assert.equal(plan.sessions.at(-1).date, '2027-01-16');
  assert.equal(plan.weekPlans[3].phase, 'Deload');
  assert.equal(plan.weekPlans[7].phase, 'Deload');
  assert.equal(plan.weekPlans[11].phase, 'Test');
- assert.equal(plan.sessions[1].title, 'Guided swim (Mon PM)');
- assert.equal(plan.sessions[1].sport, 'swimming');
+ assert.equal(plan.sessions[1].title, 'Handstand technique');
+ assert.equal(plan.sessions[1].sport, 'training');
+ assert.equal(plan.sessions[1].plannedMinutes, 10);
+ assert.ok(plan.sessions.every(session => ['A', 'B', 'Technique', 'Core'].includes(session.block)));
+ assert.ok(plan.sessions.every(session => !/swim|run|bike|mobility/i.test(`${session.title} ${session.prescription}`)));
+ assert.equal(plan.weekPlans[0].minutes, 160);
  assert.equal(plan.sessions[0].plannedMinutes, 65);
  assert.ok(plan.sessions.every(session => session.actualMinutes === null && session.status === 'planned'));
  assert.ok(plan.sessions.every(session => Object.values(session.results).every(value => value === '')));
@@ -223,6 +235,55 @@ test('12-week workbook imports all planned sessions, typed dates, and blank resu
   const required = plan.sessions.filter(session => dates.includes(session.date) && !session.title.includes('optional'));
   assert.equal(required.reduce((sum, session) => sum + session.plannedMinutes, 0), week.minutes);
  }
- assert.ok(plan.sessions.find(session => session.title.startsWith('Quality run')).prescription.includes('4:40-4:50'));
  assert.equal(plan.goals.find(goal => goal.id === 'running').baseline, '12 km at 5:00/km (reported)');
+});
+
+test('regular activities are hidden by default without hiding explicit log entries or strategy', async () => {
+ const plan = await parseWorkbook(workbook());
+ const date = plan.sessions[0].date;
+ plan.weeklySchedule = [{ id: 'swim', weekday: new Date(`${date}T12:00:00`).getDay(), time: '20:00', minutes: 60, title: 'Regular swim', recordedBy: 'Tracker', notes: '' }];
+ const events = [{ id: 'run', title: 'Regular run', sport: 'running', weekday: new Date(`${date}T12:00:00`).getDay(), time: '10:30', minutes: 60, startDate: date, endDate: '' }];
+ const hidden = weekMarkdown(plan, events, [date]);
+ assert.ok(!hidden.includes('Regular swim'));
+ assert.ok(!hidden.includes('Regular run'));
+ assert.ok(hidden.includes(plan.sessions[0].title));
+ const shown = weekMarkdown(plan, events, [date], true);
+ assert.ok(shown.includes('20:00 Regular swim'));
+ assert.ok(shown.includes('10:30 Regular run'));
+ assert.ok(strategyMarkdown(plan).includes('Regular swim'));
+ assert.ok(!trainingLogMarkdown(plan).includes('Regular swim'));
+});
+
+test('Log and Plans split at today in the strategy timezone without losing sessions', async () => {
+ const plan = await parseWorkbook(workbook());
+ const session = plan.sessions[0];
+ plan.sessions = ['2026-10-19','2026-10-20','2026-10-21','2026-10-22'].map(date => ({ ...session, date, id: date, title: `Manual ${date}` }));
+ const now = new Date('2026-10-20T22:30:00Z'); // Already October 21 in Berlin.
+ const log = datedLogMarkdown(plan, false, now);
+ const plans = datedLogMarkdown(plan, true, now);
+ assert.ok(log.includes('Manual 2026-10-21'));
+ assert.ok(log.indexOf('Manual 2026-10-21') < log.indexOf('Manual 2026-10-19'));
+ assert.ok(!log.includes('Manual 2026-10-22'));
+ assert.ok(plans.includes('Manual 2026-10-22'));
+ assert.ok(!plans.includes('Manual 2026-10-21'));
+ assert.equal(plan.sessions.length, 4);
+});
+
+test('new workbooks start next Monday, with cached dates rebased across year and DST boundaries', async () => {
+ const source = new Uint8Array(readFileSync('templates/Sports-12-week.xlsx'));
+ const original = source.slice();
+ for (const [now, tomorrow] of [[new Date(2026,9,20,23,59), '2026-10-26'], [new Date(2026,11,31,23,59), '2027-01-04'], [new Date(2026,2,28,23,59), '2026-03-30'], [new Date(2026,9,25,23,59), '2026-10-26'], [new Date(2026,9,26,12), '2026-11-02']]) {
+  const bytes = startTemplateNextMonday(source, now);
+  const plan = await parseWorkbook(bytes);
+  assert.equal(plan.weekPlans[0].start, tomorrow);
+  assert.equal(plan.sessions[0].date, tomorrow);
+  assert.ok(plan.sessions.every(session => session.date >= tomorrow));
+  assert.ok(plan.sessions.every(session => !/\((Mon|Tue|Thu|Sat)/.test(session.title)));
+  const dates = plannedWeeks(plan, now);
+  assert.ok(dates.includes(weekDates(new Date(`${tomorrow}T12:00:00`))[0]));
+  assert.ok(dates.includes(plan.weekPlans.at(-1).start));
+  const firstMonday = weekDates(new Date(`${tomorrow}T12:00:00`))[0];
+  assert.ok(weeklyStrategy(plan, firstMonday).includes('Foundation'));
+ }
+ assert.deepEqual(source, original);
 });

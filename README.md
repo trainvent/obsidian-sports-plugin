@@ -46,16 +46,21 @@ Use the [12-week workbook](templates/Sports-12-week.xlsx), or create a copy from
 Sports settings at a new workbook path. The smaller [daily example](templates/Sports-template.xlsx)
 remains available. Existing workbooks are never overwritten.
 
-The 12-week workbook adapts the existing Fitness weekly notes (2026-09-28 through
-2026-12-20): foundation, deload, build, deload, specific practice, and test week.
-It contains 12 weekly strategies and 132 dated session slots. All actual results
+The 12-week workbook adapts the existing Fitness weekly structure: foundation, deload, build, deload, specific practice, and test week.
+It contains 12 weekly strategies and 48 manual skill and core session slots. The Strategy sheet also
+includes editable regular activities: Tuesday swimming at 20:00 and Sunday running
+at 10:30. Their durations are left blank for you to set. All actual results
 are blank. Set `start_date` in **Strategy** (cell E3) to shift all weekly and session dates
-together. It initially uses the source start, 2026-09-28. Targets are editable
-planning inputs, including dates that have already passed. Changing the start
+together. **Create workbook** fixes the start to the next Monday in the user's local
+calendar and uses their local timezone. This is a saved date, so reopening the
+workbook does not move the plan. The downloadable workbook is a dated example;
+plugin-created copies always rebase to the next Monday. Targets remain editable. Changing the start
 after recording completed history is blocked by sync's history protections. Amber cells identify weekly planning and result inputs.
-Optional Friday swims are labeled in the title and notes; their minutes are
-excluded from the weekly budget. The complete log still displays their planned
-minutes. Source references: `Persönlich/Fitness/Plan.md`, `Goals and Benchmarks.md`,
+The Training log contains four manual sessions per week: skills A with core,
+handstand technique, skills B with core, and light skill practice. Combined
+run/handstand and skill/bike sessions retain only their manual skill/core portion.
+Weekly time budgets cover those manual sessions only. Regular swimming and running
+belong in Weekly schedule, outside the manual log. Source references: `Persönlich/Fitness/Strategy.md`, `Goals and Benchmarks.md`,
 and `Weeks/Week 01.md` through `Week 12.md` in the user's existing Strainvent vault.
 
 In settings, choose the exact **Strategy sheet** and **Tracking sheet** tab names.
@@ -69,8 +74,8 @@ unresolved. A new tracking-only plan uses the device timezone until strategy sup
 
 Sync creates ordinary Markdown files in the configured **Notes folder**:
 
-- `Plan.md`: starting levels, goals, and links to every generated week.
-- `complete-log.md`: all dated sessions, plans, checks, results, and notes.
+- `Plans.md`: starting levels, goals, weekly links, and upcoming manual sessions.
+- `Log.md`: today and earlier manual sessions, newest first, with results and notes.
 - `Strategy.md`: goals, exercise blocks, and regular weekly activities.
 - `Weeks/YYYY-MM-DD.md`: weekly focus and targets, that week's schedule and results,
   and an editable review section.
@@ -80,7 +85,13 @@ plus the current week. Previously generated weeks are refreshed too. You can bro
 these files in Obsidian's file explorer without opening the plugin dashboard.
 Reloading the plugin generates notes from cached imported data; the **Generate
 notes from imported data** command does the same without rereading the workbook.
-Existing `Training log.md` notes remain refreshed for compatibility.
+Legacy plugin notes `Plan.md` and `complete-log.md` (or `Training log.md`) migrate
+to `Plans.md` and `Log.md`. Renames preserve personal sections and trusted generated
+baselines. If both old and new files exist, the plugin reports the conflict instead
+of overwriting either. Existing original Fitness notes managed by the Python
+refresh scripts use different markers and are not adopted or replaced by the plugin.
+Dates split at today in the strategy timezone. The names match the original
+Fitness folder's `Log.md`, `Plans.md`, and `Strategy.md`.
 
 Edit the workbook to change plans and record results. Commentary outside generated
 sections is preserved. Conflicting notes are reported without preventing other
@@ -109,7 +120,7 @@ Optionally add a **Week plans** table to Strategy:
 
 | Week | Start | Phase | Focus | Targets | Advance when | Minutes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 2026-09-28 | Foundation | Establish starting level | Record controlled variations | Review results before progressing | 605 |
+| 1 | 2026-10-26 | Foundation | Establish starting level | Record controlled variations | Review results before progressing | 160 |
 
 `Week` is a unique positive program-week number. `Start` is a unique Monday date.
 `Phase` and `Focus` are required; other fields may be blank. You can plan 12 weeks
@@ -245,3 +256,10 @@ output are excluded from version control.
 
 Based on the [Obsidian sample plugin](https://github.com/obsidianmd/obsidian-sample-plugin).
 The original copyright notice and 0-BSD license are retained in [LICENSE](LICENSE).
+
+Regular weekly activities stay in the Strategy sheet and strategy note for reference.
+**Show regular activities** defaults to off in Sports settings. Enable it to include
+workbook weekly activities and recurring activities in the dashboard and weekly
+notes. Changing it refreshes generated notes from cached data. The log and plans notes
+contain only explicit Training log rows; dated sessions entered there remain
+visible regardless of this setting.

@@ -16,7 +16,10 @@ export async function updateNote(plugin: SportsPlugin, relativePath: string, id:
  const key = `${path}:${id}`;
  let file: TFile;
  if (existing instanceof TFile) {
-  await plugin.app.vault.process(existing, content => mergeBlock(content, id, body, plugin.data.generatedBlocks[key]));
+  await plugin.app.vault.process(existing, content => {
+   if (/<!-- complete-(?:log|plans):start -->/.test(content)) throw new Error(`${path} is managed by the existing Fitness refresh scripts. Choose a separate notes folder to avoid mixing generators.`);
+   return mergeBlock(content, id, body, plugin.data.generatedBlocks[key]);
+  });
   file = existing;
  } else if (existing) throw new Error(`A folder occupies ${path}.`);
  else {
