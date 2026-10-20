@@ -42,8 +42,21 @@ template. Cloud sources will later provide an alternative for mobile devices.
 
 ## Workbook format (prototype schema 1)
 
-Download the reusable [Sports template](templates/Sports-template.xlsx), or create it
-from Sports settings. It includes example strategy and tracking sheets.
+Use the [12-week workbook](templates/Sports-12-week.xlsx), or create a copy from
+Sports settings at a new workbook path. The smaller [daily example](templates/Sports-template.xlsx)
+remains available. Existing workbooks are never overwritten.
+
+The 12-week workbook adapts the existing Fitness weekly notes (2026-09-28 through
+2026-12-20): foundation, deload, build, deload, specific practice, and test week.
+It contains 12 weekly strategies and 132 dated session slots. All actual results
+are blank. Set `start_date` in **Strategy** (cell E3) to shift all weekly and session dates
+together. It initially uses the source start, 2026-09-28. Targets are editable
+planning inputs, including dates that have already passed. Changing the start
+after recording completed history is blocked by sync's history protections. Amber cells identify weekly planning and result inputs.
+Optional Friday swims are labeled in the title and notes; their minutes are
+excluded from the weekly budget. The complete log still displays their planned
+minutes. Source references: `Persönlich/Fitness/Plan.md`, `Goals and Benchmarks.md`,
+and `Weeks/Week 01.md` through `Week 12.md` in the user's existing Strainvent vault.
 
 In settings, choose the exact **Strategy sheet** and **Tracking sheet** tab names.
 Leave either blank to disable that import; both may be blank for calendar/notes-only
@@ -54,11 +67,25 @@ is missing or invalid fails the import rather than silently clearing data. With 
 tracking selected, a strategy is not required and paired part references may remain
 unresolved. A new tracking-only plan uses the device timezone until strategy supplies one.
 
-Select **Open training log** in the Sports dashboard (or command palette) to view
-the complete schedule from the tracking sheet, including plans, completion checks,
-results, and notes. Sync refreshes `Training log.md` in the configured notes folder.
-Commentary outside its generated section is preserved. The dashboard also shows
-these entries in their corresponding weeks.
+Sync creates ordinary Markdown files in the configured **Notes folder**:
+
+- `Plan.md`: starting levels, goals, and links to every generated week.
+- `complete-log.md`: all dated sessions, plans, checks, results, and notes.
+- `Strategy.md`: goals, exercise blocks, and regular weekly activities.
+- `Weeks/YYYY-MM-DD.md`: weekly focus and targets, that week's schedule and results,
+  and an editable review section.
+
+Weekly notes are created automatically for dates in the log and in **Week plans**,
+plus the current week. Previously generated weeks are refreshed too. You can browse
+these files in Obsidian's file explorer without opening the plugin dashboard.
+Reloading the plugin generates notes from cached imported data; the **Generate
+notes from imported data** command does the same without rereading the workbook.
+Existing `Training log.md` notes remain refreshed for compatibility.
+
+Edit the workbook to change plans and record results. Commentary outside generated
+sections is preserved. Conflicting notes are reported without preventing other
+weekly notes from updating. The existing Fitness vault is a reference; the plugin
+writes only to the configured folder in the currently open vault.
 
 Each table begins
 with its name alone in column A, followed immediately by a header row and data rows.
@@ -71,12 +98,25 @@ On **Strategy**, include:
 | Table label | Headers |
 | --- | --- |
 | `Plan` | `schema_version`, `plan_id`, `plan_name`, `timezone` |
-| `Goals` | `goal_id`, `title`, `benchmark` |
+| `Goals` | `goal_id`, `title`, `benchmark`; optional `baseline`, `test` |
 | `Parts` | `part_id`, `version`, `title`, `prescription` |
 | `PartGoals` | `part_id`, `version`, `goal_id` |
 
 `Plan` contains exactly one row. Set `schema_version` to `1` and use an IANA timezone,
 such as `Europe/Berlin`. Each `PartGoals` row links one part version to one goal.
+
+Optionally add a **Week plans** table to Strategy:
+
+| Week | Start | Phase | Focus | Targets | Advance when | Minutes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 2026-09-28 | Foundation | Establish starting level | Record controlled variations | Review results before progressing | 605 |
+
+`Week` is a unique positive program-week number. `Start` is a unique Monday date.
+`Phase` and `Focus` are required; other fields may be blank. You can plan 12 weeks
+or another length. Enter explicit weekly targets rather than relying on automatic
+increases. Review results each week and edit the remaining plan when repeating or
+adjusting a week. Weekly targets and dated session plans are separately editable;
+changing a target does not silently rewrite daily sessions or shift dates.
 
 On **Training log**, the offered template follows a simple daily layout. Put these
 headers in row 1; there is no technical `Sessions` marker:
@@ -85,12 +125,16 @@ headers in row 1; there is no technical `Sessions` marker:
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-10-19 | A | Muscle-up + pistol practice, then core | FALSE | | | | |
 
-Use one row per day, with block `A`, `B`, `Technique`, or `Empty` in the example.
+Use one row per session (several rows can share a date), with block `A`, `B`, `Technique`, or `Empty` in the example.
 `Block` links to a Strategy part's `part_id`; you may define your own block names.
 `Plan` stays readable free text and is shown in Obsidian without AI interpretation.
 Use `Empty` or an empty block for a day without a manual prescription.
 
 - Required columns: `Date`, `Block`, `Plan`.
+- Optional `Title` names activities such as swimming or running without a skill block.
+- Optional `Planned minutes` and `Actual minutes` accept nonnegative numbers or blank.
+- Use a unique `Session ID` for every row when several sessions share a date and block.
+  Keep IDs unchanged when adjusting plans so imported sessions retain their identity.
 - Customize skill columns using the suffix ` result`, such as `Squat result`.
 - Completion flags use ` done`, such as `Core done`, with TRUE, FALSE, or blank.
 - `Notes` is optional. Additional optional fields are `Sport`, `Status`, `Session ID`,

@@ -18,7 +18,7 @@ export function dailyLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bo
  while (headers.length && !headers[headers.length - 1]) headers.pop();
  if (!headers.includes('Date') || !headers.includes('Block') || !headers.includes('Plan')) return null;
  if (headers.some(header => !header) || new Set(headers).size !== headers.length) throw new Error('Daily log: column headers must be nonempty and unique.');
- const structural = ['Date', 'Block', 'Plan', 'Notes', 'Session ID', 'Part version', 'Status', 'Sport'];
+ const structural = ['Date', 'Block', 'Plan', 'Notes', 'Session ID', 'Part version', 'Status', 'Sport', 'Planned minutes', 'Actual minutes', 'Title'];
  for (const header of headers) if (!structural.includes(header) && !header.endsWith(' result') && !header.endsWith(' done')) throw new Error(`Daily log: name custom result columns "${header} result" or completion columns "${header} done".`);
  return rows.slice(first + 1).flatMap((row, index) => {
   if (!row.some(value => cellText(value))) return [];
@@ -45,9 +45,16 @@ export function dailyLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bo
   const hasResults = Object.values(results).some(value => value !== '') || Object.values(checks).some(value => value === true);
   const status = entry.Status || (hasResults ? 'in-progress' : 'planned');
   if (!['planned', 'in-progress', 'completed', 'skipped', 'cancelled'].includes(status)) throw new Error(`${context}: invalid Status.`);
+  const duration = (header: string): number | null => {
+   const value = entry[header];
+   if (!value) return null;
+   const number = Number(value);
+   if (!Number.isFinite(number) || number < 0) throw new Error(`${context}: ${header} must be a nonnegative number or blank.`);
+   return number;
+  };
   const result = [...Object.entries(checks).map(([name, value]) => `${name}: ${value === null ? 'unrecorded' : value ? 'yes' : 'no'}`), ...Object.entries(results).filter(([, value]) => value !== '').map(([name, value]) => `${name}: ${value}`)].join('; ');
-  return [{ id: entry['Session ID'] || `daily:${date}:${encodeURIComponent(block)}`, date, sport: entry.Sport || 'training', title: empty ? 'No manual training planned' : part?.title || block || 'Training',
+  return [{ id: entry['Session ID'] || `daily:${date}:${encodeURIComponent(block)}`, date, sport: entry.Sport || 'training', title: entry.Title || (empty ? 'No manual training planned' : part?.title || block || 'Training'),
    partId: part?.id ?? '', partVersion: part?.version ?? '', block, prescription: entry.Plan ?? '', checks, results,
-   plannedMinutes: null, actualMinutes: null, result, status, notes: entry.Notes ?? '' }];
+   plannedMinutes: duration('Planned minutes'), actualMinutes: duration('Actual minutes'), result, status, notes: entry.Notes ?? '' }];
  });
 }

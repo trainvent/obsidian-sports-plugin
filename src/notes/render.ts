@@ -1,5 +1,6 @@
 import type { TrainingPlan, RecurringEvent } from '../model/types';
 import { eventsOn, scheduleOn } from '../model/calendar';
+import { weeklyStrategy } from './plan';
 import { cell } from './blocks';
 
 export function strategyMarkdown(plan: TrainingPlan): string {
@@ -16,7 +17,7 @@ export function weekMarkdown(plan: TrainingPlan | null, events: RecurringEvent[]
   });
   return [...sessions, ...scheduleOn(plan, date).map(item => `| ${date} | ${cell(item.time)} ${cell(item.title)} | Weekly schedule | ${cell(item.minutes)} | — | Planned | — | ${cell(item.recordedBy)} | ${cell(item.notes)} |`), ...eventsOn(events, date).map(event => `| ${date} | ${cell(event.time)} ${cell(event.title)} | ${cell(event.sport)} | ${event.minutes} | — | Scheduled | — | — | — |`)];
  });
- return `## Training overview\n\n| Date | Session | Part / sport | Planned min | Actual min | Status | Result | Plan | Notes |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nTimes follow the source schedule. Tracker connections are not available in this prototype.`;
+ return `${weeklyStrategy(plan, dates[0] ?? '')}## Training overview\n\n| Date | Session | Part / sport | Planned min | Actual min | Status | Result | Plan | Notes |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nTimes follow the source schedule. Tracker connections are not available in this prototype.`;
 }
 
 /** Show the complete imported second-sheet schedule, including dates outside this week. */

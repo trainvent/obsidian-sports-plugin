@@ -7,7 +7,7 @@ import { unzipSync, zipSync, strToU8, strFromU8 } from 'fflate';
 import { pathToFileURL } from 'node:url';
 const temp = mkdtempSync(`${tmpdir()}/sports-tests-`);
 process.on('exit', () => rmSync(temp, { recursive: true, force: true }));
-const output = await build({ entryPoints: ['src/notes/blocks.ts', 'src/model/calendar.ts', 'src/workbook/parse.ts', 'src/workbook/template.ts', 'src/notes/render.ts'], bundle: true, format: 'esm', platform: 'browser', write: false, outdir: '/tmp/sports-tests' });
+const output = await build({ entryPoints: ['src/notes/blocks.ts', 'src/model/calendar.ts', 'src/workbook/parse.ts', 'src/workbook/template.ts', 'src/notes/render.ts', 'src/notes/plan.ts'], bundle: true, format: 'esm', platform: 'browser', write: false, outdir: '/tmp/sports-tests' });
 async function moduleNamed(name) {
  const text = output.outputFiles.find(file => file.path.endsWith(`/${name}.js`)).text;
  const path = `${temp}/${name}.mjs`; writeFileSync(path, text);
@@ -18,6 +18,7 @@ async function moduleNamed(name) {
 const { mergeBlock, generatedBlock } = await moduleNamed('blocks');
 const { weekDates, eventsOn } = await moduleNamed('calendar');
 const { parseWorkbook } = await moduleNamed('parse');
+const { plannedWeeks, planMarkdown } = await moduleNamed('plan');
 const { weekMarkdown, trainingLogMarkdown } = await moduleNamed('render');
 const { exampleWorkbook: workbook } = await moduleNamed('template');
 test('refresh preserves reflections and detects edits or missing markers', () => {
@@ -169,4 +170,59 @@ test('training log shows the full second-sheet schedule and daily results', asyn
  assert.ok(trainingLogMarkdown(null).includes('No training log entries'));
  const legacy = await parseWorkbook(workbook());
  assert.ok(trainingLogMarkdown(legacy).includes(legacy.parts[0].prescription));
+});
+
+function withWeekPlans(rows) {
+ const files = unzipSync(new Uint8Array(workbook()));
+ const escape = value => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;');
+ const data = [['Week plans'], ['Week','Start','Phase','Focus','Targets','Advance when','Minutes'], ...rows];
+ const xml = data.map((row, r) => `<row r="${100+r}">${row.map((value,c) => `<c r="${String.fromCharCode(65+c)}${100+r}" t="inlineStr"><is><t>${escape(value)}</t></is></c>`).join('')}</row>`).join('');
+ files['xl/worksheets/sheet1.xml'] = strToU8(strFromU8(files['xl/worksheets/sheet1.xml']).replace('</sheetData>', `${xml}</sheetData>`));
+ return zipSync(files).buffer;
+}
+test('explicit weekly plans create future weeks and show strategy without claiming results', async () => {
+ const row = ['1','2026-12-28','Foundation','Establish starting level','Record controlled variation','Review then progress','120'];
+ const plan = await parseWorkbook(withWeekPlans([row]));
+ const dates = plannedWeeks(plan, new Date(2026, 9, 20, 12));
+ assert.ok(dates.includes('2026-10-19'));
+ assert.ok(dates.includes('2026-12-28'));
+ assert.equal(new Set(dates).size, dates.length);
+ const markdown = weekMarkdown(plan, [], ['2026-12-28']);
+ assert.ok(markdown.includes('Establish starting level'));
+ assert.ok(markdown.includes('Review then progress'));
+ assert.ok(markdown.includes('120 min'));
+ assert.ok(!markdown.includes('completed'));
+ assert.ok(planMarkdown(plan, 'Sports', dates).includes('[[Sports/Weeks/2026-12-28\\|2026-12-28]]'));
+ const preserved = await parseWorkbook(mappedWorkbook({ removeStrategy: true }), { strategySheet: '', trackingSheet: 'My sessions', previous: plan });
+ assert.deepEqual(preserved.weekPlans, plan.weekPlans);
+ await assert.rejects(parseWorkbook(withWeekPlans([row, row])), /unique/);
+ await assert.rejects(parseWorkbook(withWeekPlans([[...row.slice(0,1), '2026-12-29', ...row.slice(2)]])), /Monday/);
+ await assert.rejects(parseWorkbook(withWeekPlans([[...row.slice(0,6), '-1']])), /nonnegative/);
+});
+
+test('12-week workbook imports all planned sessions, typed dates, and blank results', async () => {
+ const bytes = readFileSync('templates/Sports-12-week.xlsx');
+ const plan = await parseWorkbook(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+ assert.equal(plan.weekPlans.length, 12);
+ assert.equal(plan.sessions.length, 132);
+ assert.equal(plan.weekPlans[0].start, '2026-09-28');
+ assert.equal(plan.weekPlans.at(-1).start, '2026-12-14');
+ assert.equal(plan.sessions[0].date, '2026-09-28');
+ assert.equal(plan.sessions.at(-1).date, '2026-12-20');
+ assert.equal(plan.weekPlans[3].phase, 'Deload');
+ assert.equal(plan.weekPlans[7].phase, 'Deload');
+ assert.equal(plan.weekPlans[11].phase, 'Test');
+ assert.equal(plan.sessions[1].title, 'Guided swim (Mon PM)');
+ assert.equal(plan.sessions[1].sport, 'swimming');
+ assert.equal(plan.sessions[0].plannedMinutes, 65);
+ assert.ok(plan.sessions.every(session => session.actualMinutes === null && session.status === 'planned'));
+ assert.ok(plan.sessions.every(session => Object.values(session.results).every(value => value === '')));
+ assert.ok(plan.sessions.every(session => session.checks['Core done'] === null));
+ for (const week of plan.weekPlans) {
+  const dates = weekDates(new Date(`${week.start}T12:00:00`));
+  const required = plan.sessions.filter(session => dates.includes(session.date) && !session.title.includes('optional'));
+  assert.equal(required.reduce((sum, session) => sum + session.plannedMinutes, 0), week.minutes);
+ }
+ assert.ok(plan.sessions.find(session => session.title.startsWith('Quality run')).prescription.includes('4:40-4:50'));
+ assert.equal(plan.goals.find(goal => goal.id === 'running').baseline, '12 km at 5:00/km (reported)');
 });

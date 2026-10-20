@@ -8,6 +8,8 @@ import { RecurringModal } from './ui/recurring';
 import { createLocalTemplate } from './workbook/local-file';
 import { templateWorkbook } from './workbook/template-file';
 import { syncWorkbook } from './workbook/sync';
+import { noteLink } from './notes/plan';
+import { syncNotes } from './notes/sync';
 import { updateNote } from './notes/store';
 import { weekMarkdown, trainingLogMarkdown } from './notes/render';
 
@@ -23,13 +25,17 @@ export default class SportsPlugin extends Plugin {
   this.addRibbonIcon(SPORTS_ICON_ID, 'Open dashboard', () => { void this.openDashboard(); });
   this.addCommand({ id: 'open-sports-dashboard', name: 'Open dashboard', callback: () => this.openDashboard() });
   this.addCommand({ id: 'create-sports-example', name: 'Create example workbook', callback: () => this.createExample() });
+  this.addCommand({ id: 'refresh-sports-notes', name: 'Generate notes from imported data', callback: () => this.refreshNotes() });
   this.addCommand({ id: 'sync-sports', name: 'Sync now', callback: () => this.sync() });
   this.addCommand({ id: 'open-sports-week', name: 'Create or open weekly note', callback: () => this.openWeekly() });
   this.addCommand({ id: 'open-sports-log', name: 'Open training log', callback: () => this.openTrainingLog() });
   this.addCommand({ id: 'add-sports-recurring', name: 'Add recurring activity', callback: () => this.addRecurring() });
   this.addSettingTab(new SportsSettingTab(this.app, this));
   this.scheduleSync();
-  if (this.data.syncOnStartup) this.app.workspace.onLayoutReady(() => { void this.sync(); });
+  this.app.workspace.onLayoutReady(() => {
+   if (this.data.syncOnStartup) void this.sync();
+   else if (this.data.plan) void this.refreshNotes(false);
+  });
  }
  onunload(): void { if (this.timer !== undefined) window.clearInterval(this.timer); }
  async createExample(): Promise<void> {
@@ -44,6 +50,16 @@ export default class SportsPlugin extends Plugin {
   }
  }
  async save(): Promise<void> { await this.saveData(this.data); }
+ async refreshNotes(notify = true): Promise<void> {
+  if (this.syncing || this.noteBusy || !this.data.plan) return;
+  this.noteBusy = true;
+  try {
+   const issues = await syncNotes(this, this.data.plan);
+   if (issues.length) { this.data.lastError = issues[0]!; await this.save(); }
+   if (notify || issues.length) new Notice(issues[0] || 'Sports notes generated in the notes folder.');
+  } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not generate notes.'); }
+  finally { this.noteBusy = false; this.refreshViews(); }
+ }
  async sync(): Promise<void> { await syncWorkbook(this); }
  scheduleSync(): void {
   if (this.timer !== undefined) window.clearInterval(this.timer);
@@ -65,7 +81,7 @@ export default class SportsPlugin extends Plugin {
   if (this.noteBusy) return;
   this.noteBusy = true;
   try {
-   const file = await updateNote(this, 'Training log.md', 'training-log', trainingLogMarkdown(this.data.plan), '# Training log\n\n## Commentary\n');
+   const file = await updateNote(this, 'complete-log.md', 'training-log', `${noteLink(this.data.notesFolder, 'Plan', 'Training plan')}\n\n${trainingLogMarkdown(this.data.plan)}`, '# Training log\n\n## Commentary\n');
    await this.app.workspace.getLeaf(false).openFile(file);
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not update the training log.'); }
   finally { this.noteBusy = false; }
@@ -75,7 +91,7 @@ export default class SportsPlugin extends Plugin {
   this.noteBusy = true;
   try {
    const dates = weekDates(anchor);
-   const file = await updateNote(this, `Weeks/${dates[0]}.md`, `week:${dates[0]}`, weekMarkdown(this.data.plan, this.data.events, dates), `# Week of ${dates[0]}\n\n## Reflections\n\n### What improved\n\n### Recovery and comfort\n\n### What to adjust\n\n### Next week's focus\n`);
+   const file = await updateNote(this, `Weeks/${dates[0]}.md`, `week:${dates[0]}`, `${noteLink(this.data.notesFolder, 'Plan', 'Training plan')} · ${noteLink(this.data.notesFolder, 'complete-log', 'Complete log')}\n\n${weekMarkdown(this.data.plan, this.data.events, dates)}`, `# Week of ${dates[0]}\n\n## Reflections\n\n### What improved\n\n### Recovery and comfort\n\n### What to adjust\n\n### Next week's focus\n`);
    await this.app.workspace.getLeaf(false).openFile(file);
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not update the weekly note.'); }
   finally { this.noteBusy = false; }

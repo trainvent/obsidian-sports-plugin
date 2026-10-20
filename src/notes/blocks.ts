@@ -18,6 +18,6 @@ export function mergeBlock(existing: string, id: string, body: string, previous?
 export function generatedBlock(id: string, body: string): string {
  return `<!-- sports:begin ${id} -->\n${body.trim()}\n<!-- sports:end ${id} -->`;
 }
-export function cell(value: string | number | null): string {
+export function cell(value: string | number | null | undefined): string {
  return String(value ?? '—').replace(/\|/g, '\\|').replace(/[\r\n]+/g, ' ');
 }

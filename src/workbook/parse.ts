@@ -1,4 +1,5 @@
 import { parseWeeklySchedule } from './weekly-schedule';
+import { parseWeekPlans } from './week-plans';
 import { dailyLog } from './daily-log';
 import { checkWorkbookArchive } from './zip-safety';
 import readXlsxFile, { type SheetData } from 'read-excel-file/browser';
@@ -18,7 +19,7 @@ function tables(rows: SheetData): Map<string, RecordRow[]> {
   while (values.length && !values[values.length - 1]) values.pop();
   if (!values.some(Boolean)) { name = ''; headers = []; continue; }
   const first = values[0] ?? '';
-  if (['Plan', 'Goals', 'Parts', 'PartGoals', 'Exercises', 'Sessions', 'Weekly schedule'].includes(first) && values.slice(1).every(value => !value)) {
+  if (['Plan', 'Goals', 'Parts', 'PartGoals', 'Exercises', 'Sessions', 'Weekly schedule', 'Week plans'].includes(first) && values.slice(1).every(value => !value)) {
    if (result.has(first)) throw new Error(`Duplicate table: ${first}`);
    name = first; headers = []; result.set(name, []); continue;
   }
@@ -76,6 +77,7 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
  let goals: Goal[] = previous?.goals ?? [];
  let parts: TrainingPart[] = previous?.parts ?? [];
  let weeklySchedule = previous?.weeklySchedule ?? [];
+ let weekPlans = previous?.weekPlans ?? [];
  if (strategy) {
  const metadata = table(strategy, 'Plan');
  if (metadata.length !== 1) throw new Error('Plan must contain exactly one metadata row.');
@@ -85,7 +87,7 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
  id = required(meta, 'plan_id', 'Plan');
  name = required(meta, 'plan_name', 'Plan');
  try { new Intl.DateTimeFormat('en', { timeZone: timezone }); } catch { throw new Error('Plan: invalid timezone.'); }
- goals = table(strategy, 'Goals').map(row => ({ id: required(row, 'goal_id', 'Goals'), title: required(row, 'title', 'Goals'), benchmark: row.benchmark ?? '' }));
+ goals = table(strategy, 'Goals').map(row => ({ id: required(row, 'goal_id', 'Goals'), title: required(row, 'title', 'Goals'), benchmark: row.benchmark ?? '', baseline: row.baseline ?? '', test: row.test ?? '' }));
  parts = table(strategy, 'Parts').map(row => ({ id: required(row, 'part_id', 'Parts'), version: required(row, 'version', 'Parts'), title: required(row, 'title', 'Parts'), prescription: required(row, 'prescription', 'Parts'), goalIds: [] }));
  unique(goals.map(goal => goal.id), 'Goals');
  unique(parts.map(part => JSON.stringify([part.id, part.version])), 'Parts');
@@ -94,6 +96,7 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
   if (!part || !goals.some(goal => goal.id === row.goal_id)) throw new Error('PartGoals: unknown goal or part/version.');
   if (!part.goalIds.includes(row.goal_id!)) part.goalIds.push(row.goal_id!);
  }
+ weekPlans = parseWeekPlans(strategy.get('Week plans') ?? []);
  weeklySchedule = parseWeeklySchedule(strategy.get('Weekly schedule') ?? []);
  if (strategy.get('Exercises')?.length) throw new Error('Exercise-level tables are not supported in this prototype. Use the part prescription field.');
  }
@@ -111,5 +114,5 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
    plannedMinutes: minutes(row.planned_minutes, context), actualMinutes: minutes(row.actual_minutes, context), result: row.result ?? '', status, notes: row.notes ?? '' };
  }) : previous?.sessions ?? []);
  unique(sessions.map(session => session.id), 'Sessions');
- return { id, name, timezone, goals, parts, weeklySchedule, sessions, importedAt: new Date().toISOString() };
+ return { id, name, timezone, goals, parts, weeklySchedule, weekPlans, sessions, importedAt: new Date().toISOString() };
 }

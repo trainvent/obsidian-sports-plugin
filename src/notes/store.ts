@@ -21,7 +21,11 @@ export async function updateNote(plugin: SportsPlugin, relativePath: string, id:
  } else if (existing) throw new Error(`A folder occupies ${path}.`);
  else {
   if (plugin.data.generatedBlocks[key] !== undefined) throw new Error(`Previously generated note ${path} was removed. It has not been recreated.`);
-  file = await plugin.app.vault.create(path, mergeBlock(initial, id, body));
+  // Put the generated overview after the title, with personal sections below it.
+  const boundary = initial.indexOf('\n\n');
+  const title = boundary < 0 ? initial : initial.slice(0, boundary);
+  const commentary = boundary < 0 ? '' : initial.slice(boundary).trim();
+  file = await plugin.app.vault.create(path, `${mergeBlock(title, id, body)}${commentary ? `\n${commentary}\n` : ''}`);
  }
  plugin.data.generatedBlocks[key] = generatedBlock(id, body);
  await plugin.save();

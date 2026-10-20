@@ -1,4 +1,4 @@
-import template from '../../templates/Sports-template.xlsx';
+import template from '../../templates/Sports-12-week.xlsx';
 
 /** Return an independent copy; imported workbooks are never modified. */
 export function templateWorkbook(): ArrayBuffer {

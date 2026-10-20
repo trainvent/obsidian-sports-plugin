@@ -1,4 +1,4 @@
-export interface Goal { id: string; title: string; benchmark: string }
+export interface Goal { id: string; title: string; benchmark: string; baseline?: string; test?: string }
 export interface TrainingPart { id: string; version: string; title: string; prescription: string; goalIds: string[] }
 export interface Session {
  id: string; date: string; sport: string; title: string;
@@ -7,9 +7,11 @@ export interface Session {
  actualMinutes: number | null; result: string; status: string; notes: string;
 }
 export interface WeeklyScheduleItem { id: string; weekday: number; time: string; minutes: number | null; title: string; recordedBy: string; notes: string }
+export interface WeekPlan { week: number; start: string; phase: string; focus: string; targets: string; advanceWhen: string; minutes: number | null }
 export interface TrainingPlan {
  id: string; name: string; timezone: string; goals: Goal[];
  weeklySchedule?: WeeklyScheduleItem[];
+ weekPlans?: WeekPlan[];
  parts: TrainingPart[]; sessions: Session[]; importedAt: string;
 }
 export interface RecurringEvent { id: string; title: string; sport: string; weekday: number; time: string; minutes: number; startDate: string; endDate: string }
