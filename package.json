@@ -8,7 +8,8 @@
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
-		"lint": "eslint ."
+		"lint": "eslint .",
+		"test": "node --test tests/*.test.mjs"
 	},
 	"keywords": [],
 	"license": "0-BSD",
@@ -35,5 +36,9 @@
 	},
 	"bugs": {
 		"url": "https://github.com/trainvent/obsidian-sports-plugin/issues"
+	},
+	"dependencies": {
+		"fflate": "^0.8.3",
+		"read-excel-file": "^9.3.12"
 	}
 }
