@@ -9,6 +9,7 @@ import { createLocalTemplate } from './workbook/local-file';
 import { templateWorkbook } from './workbook/template-file';
 import { syncWorkbook } from './workbook/sync';
 import { noteLink } from './notes/plan';
+import { clearImportCache } from './notes/cache';
 import { migrateNoteNames } from './notes/migrate';
 import { syncNotes } from './notes/sync';
 import { updateNote } from './notes/store';
@@ -26,6 +27,8 @@ export default class SportsPlugin extends Plugin {
   this.addRibbonIcon(SPORTS_ICON_ID, 'Open dashboard', () => { void this.openDashboard(); });
   this.addCommand({ id: 'open-sports-dashboard', name: 'Open dashboard', callback: () => this.openDashboard() });
   this.addCommand({ id: 'create-sports-example', name: 'Create example workbook', callback: () => this.createExample() });
+  this.addCommand({ id: 'clear-sports-cache', name: 'Clear cached data', callback: () => this.clearCachedData() });
+  this.addCommand({ id: 'recreate-sports-notes', name: 'Recreate missing notes', callback: () => this.refreshNotes(true, true) });
   this.addCommand({ id: 'refresh-sports-notes', name: 'Generate notes from imported data', callback: () => this.refreshNotes() });
   this.addCommand({ id: 'sync-sports', name: 'Sync now', callback: () => this.sync() });
   this.addCommand({ id: 'open-sports-week', name: 'Create or open weekly note', callback: () => this.openWeekly() });
@@ -51,17 +54,28 @@ export default class SportsPlugin extends Plugin {
   }
  }
  async save(): Promise<void> { await this.saveData(this.data); }
- async refreshNotes(notify = true): Promise<void> {
-  if (this.syncing || this.noteBusy || !this.data.plan) return;
+ async refreshNotes(notify = true, recreateMissing = false): Promise<void> {
+  if (this.syncing || this.noteBusy) return;
+  if (!this.data.plan) { if (notify) new Notice('Sync a workbook before generating notes.'); return; }
   this.noteBusy = true;
   try {
-   const issues = await syncNotes(this, this.data.plan);
-   if (issues.length) { this.data.lastError = issues[0]!; await this.save(); }
+   const issues = await syncNotes(this, this.data.plan, recreateMissing);
+   if (issues.length || recreateMissing) { this.data.lastError = issues[0] || ''; await this.save(); }
    if (notify || issues.length) new Notice(issues[0] || 'Sports notes generated in the notes folder.');
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not generate notes.'); }
   finally { this.noteBusy = false; this.refreshViews(); }
  }
- async sync(): Promise<void> { await syncWorkbook(this); }
+ async clearCachedData(): Promise<void> {
+  if (this.syncing || this.noteBusy) { new Notice('Wait for the current sync to finish before clearing cached data.'); return; }
+  this.noteBusy = true;
+  try {
+   clearImportCache(this.data);
+   await this.save(); this.refreshViews();
+   new Notice('Cached training data cleared. Sync the workbook to rebuild notes. Existing notes will be backed up before rebuilding.');
+  } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not clear cached data.'); }
+  finally { this.noteBusy = false; }
+ }
+ async sync(): Promise<void> { if (!this.noteBusy) await syncWorkbook(this); }
  scheduleSync(): void {
   if (this.timer !== undefined) window.clearInterval(this.timer);
   this.timer = undefined;
@@ -80,6 +94,7 @@ export default class SportsPlugin extends Plugin {
  addRecurring(): void { new RecurringModal(this).open(); }
  async openTrainingLog(): Promise<void> {
   if (this.noteBusy) return;
+  if (this.data.resetNoteBaselines && !this.data.plan) { new Notice('Sync the workbook before opening generated notes.'); return; }
   this.noteBusy = true;
   try {
    const issues = await migrateNoteNames(this);
@@ -91,6 +106,7 @@ export default class SportsPlugin extends Plugin {
  }
  async openWeekly(anchor = new Date()): Promise<void> {
   if (this.noteBusy) return;
+  if (this.data.resetNoteBaselines && !this.data.plan) { new Notice('Sync the workbook before opening generated notes.'); return; }
   this.noteBusy = true;
   try {
    const dates = weekDates(anchor);

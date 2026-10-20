@@ -25,9 +25,9 @@ and Markdown remain available. Mobile runtime behavior is not yet verified.
    note** to create or refresh that week's note.
 
 **Settings → Sports Plugin** offers an absolute workbook path (or `~/Sports/...`), notes folder, startup sync,
-and intervals of five minutes, fifteen minutes, or one hour. **Manual only** is the
-default. Scheduling runs inside Obsidian; closed apps and mobile suspension stop or
-delay it. No external scheduler or Python installation is required.
+and intervals of five, ten, or fifteen minutes, or one hour. Startup sync is on
+and the interval is ten minutes by default. Select **Manual only** to disable periodic sync.
+Scheduling runs inside Obsidian; closed apps and mobile suspension stop or delay it. No external scheduler or Python installation is required.
 
 Generated notes default to `Sports/Strategy.md` and `Sports/Weeks/YYYY-MM-DD.md`
 inside the user's vault. Sync refreshes the strategy and previously generated weekly
@@ -109,9 +109,17 @@ On **Strategy**, include:
 | Table label | Headers |
 | --- | --- |
 | `Plan` | `schema_version`, `plan_id`, `plan_name`, `timezone` |
-| `Goals` | `goal_id`, `title`, `benchmark`; optional `baseline`, `test` |
+| `Goals` | `goal_id`, `title`, `benchmark`; optional `baseline`, `test`, `category` |
 | `Parts` | `part_id`, `version`, `title`, `prescription` |
 | `PartGoals` | `part_id`, `version`, `goal_id` |
+
+The optional Goals `category` is `milestone` for a new capability or `maintenance`
+for an ability to maintain or improve. Blank or missing categories default to
+`milestone`, keeping older workbooks compatible. Strategy and Plans notes display
+**Aspiration** and **Maintenance** separately. The example
+classifies the three skills as milestones and running as maintenance. Its Core
+part links to all three skill goals through PartGoals, shown as **Supports** in
+the strategy note. Add goal links to any training part in the same way.
 
 `Plan` contains exactly one row. Set `schema_version` to `1` and use an IANA timezone,
 such as `Europe/Berlin`. Each `PartGoals` row links one part version to one goal.
@@ -263,3 +271,19 @@ workbook weekly activities and recurring activities in the dashboard and weekly
 notes. Changing it refreshes generated notes from cached data. The log and plans notes
 contain only explicit Training log rows; dated sessions entered there remain
 visible regardless of this setting.
+
+If you delete generated notes to start again, use **Settings → Sports Plugin →
+Recreate missing notes** (or the command with that name). It rebuilds missing notes
+from the last successfully imported workbook, keeps existing files protected, and
+clears the missing-note error after success. Sync the new workbook first if you
+want to use its schedule. Removed historical weeks outside the current plan are
+not recreated. Reloading the plugin alone does not reset saved note baselines.
+
+For a full fresh start, use **Clear cached data**, then **Sync now**. This clears
+the imported plan (including cached history), note baselines, and the last error.
+Workbook settings and recurring activities are kept; note files are not deleted.
+On the next sync, existing target notes are backed up in the notes folder's
+`Backups/<timestamp>/` directory before generated sections are rebuilt. Commentary
+outside generated markers is preserved. Invalid markers and notes managed by the
+original Fitness scripts still require attention. Resetting the cache does not
+recover training results that were never saved in the workbook.

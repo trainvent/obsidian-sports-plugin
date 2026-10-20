@@ -1,5 +1,6 @@
 import type { TrainingPlan } from '../model/types';
 import { weekDates } from '../model/calendar';
+import { groupedGoals } from './goals';
 import { cell } from './blocks';
 
 export function noteLink(folder: string, path: string, label: string): string {
@@ -22,10 +23,10 @@ export function weeklyStrategy(plan: TrainingPlan | null, start: string): string
 }
 
 export function planMarkdown(plan: TrainingPlan, folder: string, weeks: string[]): string {
- const goals = plan.goals.map(goal => `| ${cell(goal.title)} | ${cell(goal.baseline ?? '') || 'Not recorded'} | ${cell(goal.benchmark)} | ${cell(goal.test ?? '') || 'Not set'} |`).join('\n');
+ const goals = groupedGoals(plan.goals, true);
  const rows = weeks.map(start => {
   const week = plan.weekPlans?.find(week => week.start === start);
   return `| ${noteLink(folder, `Weeks/${start}`, start).replace('|', '\\|')} | ${week?.week ?? '—'} | ${cell(week?.phase ?? '') || '—'} | ${cell(week?.focus ?? '') || '—'} | ${cell(week?.targets ?? '') || '—'} |`;
  });
- return `${noteLink(folder, 'Log', 'Log')} · ${noteLink(folder, 'Strategy', 'Strategy and exercise guide')}\n\n## Starting point and goals\n\n| Goal | Starting level | Goal level | Test standard |\n| --- | --- | --- | --- |\n${goals}\n\n## Weekly plan\n\n| Week starting | Program week | Phase | Focus | Targets |\n| --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nEdit plans and record results in the workbook. Write your reflections outside the generated sections. Each week is a proposal to review before progressing.`;
+ return `${noteLink(folder, 'Log', 'Log')} · ${noteLink(folder, 'Strategy', 'Strategy and exercise guide')}\n\n## Starting point and goals\n\n${goals}\n\n## Weekly plan\n\n| Week starting | Program week | Phase | Focus | Targets |\n| --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nEdit plans and record results in the workbook. Write your reflections outside the generated sections. Each week is a proposal to review before progressing.`;
 }

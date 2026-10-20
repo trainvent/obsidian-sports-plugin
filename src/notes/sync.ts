@@ -6,7 +6,7 @@ import { strategyMarkdown, datedLogMarkdown, weekMarkdown } from './render';
 import { migrateNoteNames } from './migrate';
 import { noteLink, plannedWeeks, planMarkdown } from './plan';
 
-export async function syncNotes(plugin: SportsPlugin, plan: TrainingPlan): Promise<string[]> {
+export async function syncNotes(plugin: SportsPlugin, plan: TrainingPlan, recreateMissing = false): Promise<string[]> {
  const migrationIssues = await migrateNoteNames(plugin);
  const folder = plugin.data.notesFolder;
  const weeks = new Set(plannedWeeks(plan));
@@ -14,7 +14,7 @@ export async function syncNotes(plugin: SportsPlugin, plan: TrainingPlan): Promi
  for (const key of Object.keys(plugin.data.generatedBlocks)) {
   if (!key.startsWith(prefix)) continue;
   const date = key.slice(prefix.length).split('.md:week:')[0] ?? '';
-  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) weeks.add(date);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date) && plugin.app.vault.getAbstractFileByPath(`${folder}/Weeks/${date}.md`)) weeks.add(date);
  }
  const ordered = [...weeks].sort();
  const tasks = [
@@ -26,8 +26,9 @@ export async function syncNotes(plugin: SportsPlugin, plan: TrainingPlan): Promi
  const issues: string[] = [...migrationIssues];
  for (const task of tasks) {
   if (migrationIssues.some(issue => issue.startsWith(`${task.path}:`))) continue;
-  try { await updateNote(plugin, task.path, task.id, task.body, task.initial); }
+  try { await updateNote(plugin, task.path, task.id, task.body, task.initial, recreateMissing); }
   catch (error) { issues.push(`${task.path}: ${error instanceof Error ? error.message : 'Note update failed.'}`); }
  }
+ if (!issues.length && plugin.data.resetNoteBaselines) { plugin.data.resetNoteBaselines = false; await plugin.save(); }
  return issues;
 }

@@ -287,3 +287,34 @@ test('new workbooks start next Monday, with cached dates rebased across year and
  }
  assert.deepEqual(source, original);
 });
+
+test('an already-current generated section recovers a stale baseline without overwriting commentary', () => {
+ const note = `# Plans\n${generatedBlock('plan', 'Current output')}\nPersonal commentary\n`;
+ assert.equal(mergeBlock(note, 'plan', 'Current output', generatedBlock('plan', 'Old output')), note);
+ assert.equal(mergeBlock(note, 'plan', 'Current output'), note);
+ assert.throws(() => mergeBlock(note, 'plan', 'Different output'), /trusted baseline/);
+});
+
+test('goal categories separate new skills from maintenance and core supports all three milestones', async () => {
+ const source = new Uint8Array(readFileSync('templates/Sports-12-week.xlsx'));
+ const plan = await parseWorkbook(source.buffer.slice(source.byteOffset, source.byteOffset + source.byteLength));
+ const milestones = plan.goals.filter(goal => goal.category === 'milestone');
+ assert.deepEqual(milestones.map(goal => goal.id), ['muscle-up', 'hspu', 'pistol']);
+ assert.equal(plan.goals.find(goal => goal.id === 'running').category, 'maintenance');
+ assert.deepEqual(plan.parts.find(part => part.id === 'Core').goalIds, ['muscle-up', 'hspu', 'pistol']);
+ for (const markdown of [strategyMarkdown(plan), planMarkdown(plan, 'Sports', [])]) {
+  assert.ok(markdown.includes('### Aspiration'));
+  assert.ok(markdown.includes('### Maintenance'));
+  assert.ok(markdown.indexOf('Running') > markdown.indexOf('### Maintenance'));
+ }
+ const core = strategyMarkdown(plan).split('### Core circuit')[1];
+ assert.ok(core.includes('Supports: Muscle-up, Handstand push-up, Pistol squat'));
+ const legacy = await parseWorkbook(workbook());
+ assert.ok(legacy.goals.every(goal => goal.category === 'milestone'));
+ const files = unzipSync(source);
+ const xml = strFromU8(files['xl/worksheets/sheet1.xml']);
+ const invalid = xml.replace('milestone', 'unknown-category');
+ assert.notEqual(invalid, xml);
+ files['xl/worksheets/sheet1.xml'] = strToU8(invalid);
+ await assert.rejects(parseWorkbook(zipSync(files).buffer), /category must be/);
+});

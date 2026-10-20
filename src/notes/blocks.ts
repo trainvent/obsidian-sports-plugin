@@ -12,6 +12,8 @@ export function mergeBlock(existing: string, id: string, body: string, previous?
   throw new Error('Generated markers are incomplete or duplicated. The note was preserved.');
  }
  const current = existing.slice(start, finish + end.length);
+ // Already-current output needs no overwrite, even if the saved baseline is stale.
+ if (current === block) return existing;
  if (previous === undefined || current !== previous) throw new Error('The generated section was edited or has no trusted baseline. The note was preserved.');
  return existing.slice(0, start) + block + existing.slice(finish + end.length);
 }

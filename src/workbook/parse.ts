@@ -87,7 +87,11 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
  id = required(meta, 'plan_id', 'Plan');
  name = required(meta, 'plan_name', 'Plan');
  try { new Intl.DateTimeFormat('en', { timeZone: timezone }); } catch { throw new Error('Plan: invalid timezone.'); }
- goals = table(strategy, 'Goals').map(row => ({ id: required(row, 'goal_id', 'Goals'), title: required(row, 'title', 'Goals'), benchmark: row.benchmark ?? '', baseline: row.baseline ?? '', test: row.test ?? '' }));
+ goals = table(strategy, 'Goals').map(row => {
+  const category = row.category || 'milestone';
+  if (category !== 'milestone' && category !== 'maintenance') throw new Error('Goals: category must be milestone or maintenance.');
+  return { id: required(row, 'goal_id', 'Goals'), title: required(row, 'title', 'Goals'), benchmark: row.benchmark ?? '', baseline: row.baseline ?? '', test: row.test ?? '', category };
+ });
  parts = table(strategy, 'Parts').map(row => ({ id: required(row, 'part_id', 'Parts'), version: required(row, 'version', 'Parts'), title: required(row, 'title', 'Parts'), prescription: required(row, 'prescription', 'Parts'), goalIds: [] }));
  unique(goals.map(goal => goal.id), 'Goals');
  unique(parts.map(part => JSON.stringify([part.id, part.version])), 'Parts');

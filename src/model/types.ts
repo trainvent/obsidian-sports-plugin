@@ -1,4 +1,5 @@
-export interface Goal { id: string; title: string; benchmark: string; baseline?: string; test?: string }
+export type GoalCategory = 'milestone' | 'maintenance';
+export interface Goal { id: string; title: string; benchmark: string; baseline?: string; test?: string; category?: GoalCategory }
 export interface TrainingPart { id: string; version: string; title: string; prescription: string; goalIds: string[] }
 export interface Session {
  id: string; date: string; sport: string; title: string;
@@ -18,9 +19,9 @@ export interface RecurringEvent { id: string; title: string; sport: string; week
 export interface SportsData {
  workbookPath: string; strategySheet: string; trackingSheet: string; notesFolder: string; syncMinutes: number;
  showRegularActivities: boolean; syncOnStartup: boolean; plan: TrainingPlan | null; events: RecurringEvent[];
- generatedBlocks: Record<string, string>; lastError: string;
+ resetNoteBaselines: boolean; generatedBlocks: Record<string, string>; lastError: string;
 }
 export const DEFAULT_DATA: SportsData = {
- workbookPath: '~/Sports/Training.xlsx', strategySheet: 'Strategy', trackingSheet: 'Training log', notesFolder: 'Sports', syncMinutes: 0, syncOnStartup: false, showRegularActivities: false,
- plan: null, events: [], generatedBlocks: {}, lastError: '',
+ workbookPath: '~/Sports/Training.xlsx', strategySheet: 'Strategy', trackingSheet: 'Training log', notesFolder: 'Sports', syncMinutes: 10, syncOnStartup: true, showRegularActivities: false,
+ plan: null, events: [], resetNoteBaselines: false, generatedBlocks: {}, lastError: '',
 };
