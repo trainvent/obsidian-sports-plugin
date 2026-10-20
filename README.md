@@ -7,20 +7,24 @@ An Obsidian plugin developed by [Trainvent](https://github.com/trainvent).
 An offline TypeScript prototype is implemented: optional strategy/tracking XLSX import, a weekly dashboard,
 weekly recurring activities, manual/interval sync, and protected Markdown generation.
 Cloud sources and tracker integrations are planned in [STRATEGY.md](STRATEGY.md).
-Obsidian 1.7.2 or later is required. Mobile runtime behavior is not yet verified.
+Obsidian 1.7.2 or later is required. Local workbook reading and template creation
+require desktop. Those actions show an explanation on mobile; cached dashboards
+and Markdown remain available. Mobile runtime behavior is not yet verified.
 
 ## Try the prototype
 
 1. Build the plugin, reload Obsidian, and enable **Sports Plugin**.
 2. Run **Sports Plugin: Create example workbook** from the command palette. This
-   creates a fictional two-sheet workbook inside the vault and selects it in settings.
+   creates a fictional workbook at the configured local path, defaulting to
+   `~/Documents/Sports/Training.xlsx`. Existing files are never overwritten.
 3. Run **Sports Plugin: Open dashboard**, then select **Sync now**.
 4. Open the workbook with your spreadsheet editor to change plans or record results.
-   Save it back to the selected path inside the vault, then sync again.
+   Save it at the configured local path, then sync again. The workbook stays outside
+   the vault; only notes and imported dashboard data belong to Obsidian.
 5. Select **Add recurring activity** to schedule a weekly sport. Select **Open weekly
    note** to create or refresh that week's note.
 
-**Settings → Sports Plugin** offers the workbook path, notes folder, startup sync,
+**Settings → Sports Plugin** offers an absolute workbook path (or `~/Documents/...`), notes folder, startup sync,
 and intervals of five minutes, fifteen minutes, or one hour. **Manual only** is the
 default. Scheduling runs inside Obsidian; closed apps and mobile suspension stop or
 delay it. No external scheduler or Python installation is required.
@@ -29,6 +33,12 @@ Generated notes default to `Sports/Strategy.md` and `Sports/Weeks/YYYY-MM-DD.md`
 inside the user's vault. Sync refreshes the strategy and previously generated weekly
 notes. Adding/removing a recurring activity is reflected immediately in the dashboard;
 reopen its weekly note or sync to refresh the Markdown overview.
+
+Local sources use desktop filesystem access, so local paths are device-specific.
+A previous vault-relative setting must be replaced with an absolute external path.
+The plugin does not move or delete your existing workbook. Missing files and failed
+reads retain the last imported plan. Choose another path before creating a second
+template. Cloud sources will later provide an alternative for mobile devices.
 
 ## Workbook format (prototype schema 1)
 
@@ -102,6 +112,19 @@ part references, and versions used by completed sessions must remain unchanged.
 Removed completed rows are retained locally; removed uncompleted rows currently
 disappear from the active plan.
 
+## Weekly schedule without manual results
+
+The last section of the Strategy sheet is an optional **Weekly schedule** table.
+Its seven blank Monday–Sunday rows are ready to fill in. Columns are `Day`, `Time`,
+`Minutes`, `Activity`, `Recorded by`, and `Notes`. Enter an Activity to activate a row;
+empty activities are ignored. Add rows for multiple activities on the same weekday.
+Use a text time such as `18:00` and optional positive minutes.
+
+These activities appear each week in the dashboard and Markdown without manual
+result fields in the daily log. `Recorded by` can be Garmin, another tracker, or
+No manual log. This records intent only; tracker integration is still pending and
+scheduled activities are never automatically marked completed.
+
 ## Markdown ownership and safety
 
 Synchronization always flows **XLSX → Obsidian**. The plugin never writes changes
@@ -157,10 +180,14 @@ The release workflow builds the plugin and creates a draft release containing
 
 ## Privacy
 
-The prototype runs locally and makes no external service calls. Imported plan data,
+The prototype runs locally and makes no external service calls. With local-file
+sync enabled on desktop, it reads the one workbook path you configure outside the
+vault. It does not scan other folders or modify the source workbook. Template
+creation is an explicit action and refuses to overwrite existing files. Imported plan data,
 recurring activities, sync preferences, and generated-block baselines are stored in local
 plugin settings; these may travel with the vault if your sync tool includes plugin settings.
-Generated notes and example workbooks are ordinary vault files.
+Generated notes are ordinary vault files. Source workbooks and newly created
+templates stay at the configured external local path.
 Local plugin settings (`data.json`), dependencies, environment files, and compiled
 output are excluded from version control.
 

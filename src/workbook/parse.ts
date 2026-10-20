@@ -1,3 +1,4 @@
+import { parseWeeklySchedule } from './weekly-schedule';
 import { dailyLog } from './daily-log';
 import { checkWorkbookArchive } from './zip-safety';
 import readXlsxFile, { type SheetData } from 'read-excel-file/browser';
@@ -17,7 +18,7 @@ function tables(rows: SheetData): Map<string, RecordRow[]> {
   while (values.length && !values[values.length - 1]) values.pop();
   if (!values.some(Boolean)) { name = ''; headers = []; continue; }
   const first = values[0] ?? '';
-  if (['Plan', 'Goals', 'Parts', 'PartGoals', 'Exercises', 'Sessions'].includes(first) && values.slice(1).every(value => !value)) {
+  if (['Plan', 'Goals', 'Parts', 'PartGoals', 'Exercises', 'Sessions', 'Weekly schedule'].includes(first) && values.slice(1).every(value => !value)) {
    if (result.has(first)) throw new Error(`Duplicate table: ${first}`);
    name = first; headers = []; result.set(name, []); continue;
   }
@@ -74,6 +75,7 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
  let timezone = previous?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
  let goals: Goal[] = previous?.goals ?? [];
  let parts: TrainingPart[] = previous?.parts ?? [];
+ let weeklySchedule = previous?.weeklySchedule ?? [];
  if (strategy) {
  const metadata = table(strategy, 'Plan');
  if (metadata.length !== 1) throw new Error('Plan must contain exactly one metadata row.');
@@ -92,6 +94,7 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
   if (!part || !goals.some(goal => goal.id === row.goal_id)) throw new Error('PartGoals: unknown goal or part/version.');
   if (!part.goalIds.includes(row.goal_id!)) part.goalIds.push(row.goal_id!);
  }
+ weeklySchedule = parseWeeklySchedule(strategy.get('Weekly schedule') ?? []);
  if (strategy.get('Exercises')?.length) throw new Error('Exercise-level tables are not supported in this prototype. Use the part prescription field.');
  }
  const daily = log ? dailyLog(log, parts, Boolean(strategy)) : null;
@@ -108,5 +111,5 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
    plannedMinutes: minutes(row.planned_minutes, context), actualMinutes: minutes(row.actual_minutes, context), result: row.result ?? '', status, notes: row.notes ?? '' };
  }) : previous?.sessions ?? []);
  unique(sessions.map(session => session.id), 'Sessions');
- return { id, name, timezone, goals, parts, sessions, importedAt: new Date().toISOString() };
+ return { id, name, timezone, goals, parts, weeklySchedule, sessions, importedAt: new Date().toISOString() };
 }

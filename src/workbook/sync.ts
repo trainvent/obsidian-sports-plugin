@@ -1,5 +1,6 @@
-import { Notice, TFile } from 'obsidian';
+import { Notice } from 'obsidian';
 import type SportsPlugin from '../main';
+import { readLocalWorkbook } from './local-file';
 import { parseWorkbook } from './parse';
 import { strategyMarkdown, weekMarkdown } from '../notes/render';
 import { weekDates } from '../model/calendar';
@@ -10,9 +11,7 @@ export async function syncWorkbook(plugin: SportsPlugin): Promise<void> {
  plugin.syncing = true; plugin.refreshViews();
  try {
   if (!plugin.data.strategySheet && !plugin.data.trackingSheet) { new Notice('Workbook sync is disabled. Select a strategy or tracking sheet in settings to enable it.'); return; }
-  const file = plugin.app.vault.getAbstractFileByPath(plugin.data.workbookPath);
-  if (!(file instanceof TFile) || file.extension.toLowerCase() !== 'xlsx') throw new Error('Select an XLSX workbook inside the vault in Sports settings.');
-  const next = await parseWorkbook(await plugin.app.vault.readBinary(file), { strategySheet: plugin.data.strategySheet, trackingSheet: plugin.data.trackingSheet, previous: plugin.data.plan });
+  const next = await parseWorkbook(await readLocalWorkbook(plugin.data.workbookPath), { strategySheet: plugin.data.strategySheet, trackingSheet: plugin.data.trackingSheet, previous: plugin.data.plan });
   const previous = plugin.data.plan;
   if (previous && previous.id !== next.id && previous.id !== 'sports-tracking-only') throw new Error('This workbook has a different plan ID. Multiple-plan switching is not supported yet.');
   for (const session of previous?.sessions ?? []) {

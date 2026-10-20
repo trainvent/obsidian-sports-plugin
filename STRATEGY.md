@@ -22,7 +22,7 @@ cloud/tracker connections, import previews, and robust multi-file recovery are n
 - [ ] Make XLSX the first supported external training-plan format, with a documented template and import preview.
 - [ ] Offer a template with **Strategy** and **Training log**, but make both roles optional and let users select their own sheet names. Use selected sheets as the source for strategy, scheduled sessions, and workbook-entered results. Sync workbook → plugin → dashboard and generated Markdown blocks; keep personal reflections editable in Obsidian.
 - [ ] Store manual calendar events, completion decisions, and reflections locally in the vault. Keep them separate from imported plan records.
-- [ ] Support a workbook inside the vault first, then WebDAV/Nextcloud, then Google Drive. Users select one authoritative source per plan.
+- [ ] Support an explicitly selected local workbook outside the vault first (default ~/Documents/Sports/Training.xlsx), then WebDAV/Nextcloud, then Google Drive. Users select one authoritative source per plan.
 - [ ] Make Garmin the first tracker feasibility investigation; provide activity-file import so core features do not depend on API approval.
 - [ ] Treat direct tracker connections as optional adapters, with clear supported-provider status rather than a promise to support every device.
 - [ ] Target desktop first while keeping core modules browser-compatible; verify mobile authentication and storage before advertising mobile support.
@@ -86,10 +86,17 @@ The offered workbook template has two sheets: **Strategy** describes why and how
 - [x] State the exact duration: **16 minutes 40 seconds including the final rest** (5 × 4 × 50 seconds); the informal “16-minute core workout” refers to this circuit.
 - [x] Keep **Core done** as its own tracking field, separate from skill results and whole-session completion.
 
+### Weekly schedule without manual tracking
+
+- [x] Add an optional **Weekly schedule** section at the bottom of Strategy, with blank Monday–Sunday rows to fill in.
+- [x] Support Day, optional Time and Minutes, Activity, Recorded by (such as Garmin), and Notes. Allow multiple rows per day for swimming courses, football, runs, rides, and other regular activities.
+- [x] Show these as planned recurring activities in the dashboard and generated strategy/weekly Markdown, without creating manual-result fields or daily-log rows.
+- [x] Keep tracker measurements separate. Listing Garmin as the recording source is a planning preference, not proof that data has been imported or that a workout was completed.
+
 ## 3. Workbook connectivity and dashboard sync
 
 - [ ] Implement a common source interface: select source, fetch content/version, validate, preview changes, apply, and report status.
-- [ ] Local source: select a file within the vault, watch changes with debounce, and support manual refresh.
+- [ ] Local source: use a configured absolute path or ~/Documents/ path outside the vault on desktop; read only that file. Offer manual and interval refresh. Keep generated notes inside the vault. No workbook edits, copies into the vault, or folder scans during sync.
 - [ ] WebDAV source: configure server and workbook path; support generic WebDAV credentials and evaluate Nextcloud browser authorization as an additional convenience.
 - [ ] Google Drive source: select a specific XLSX file through authorized file access; validate OAuth setup, scopes, verification requirements, and desktop/mobile redirects in a prototype.
 - [ ] Treat native Google Sheets as a separate later adapter or explicit XLSX export path; do not silently assume it behaves like a stored XLSX file.
@@ -192,7 +199,7 @@ Start with a clear ownership rule rather than automatic two-way editing of prose
 - [ ] Use HTTPS by default and provide disconnect/revoke guidance for each provider.
 - [ ] Offer separate controls to disconnect a source, remove its cached data, or delete imported records; preserve user notes unless explicitly selected for deletion.
 - [ ] Keep caches bounded and logs redacted. Do not add telemetry by default.
-- [ ] Avoid Python, system timers, desktop sync clients, or access outside the vault as runtime requirements.
+- [ ] Avoid Python, system timers, and desktop sync clients as runtime requirements. The selected local workbook is the explicit exception to vault-only access: desktop filesystem reads are restricted to that configured file. Template creation is a separate explicit command at the configured path, with exclusive creation and no overwrite.
 - [ ] Defer parsing and history loading until needed; index incrementally and clean up all listeners, timers, and network work on unload.
 
 ## 9. Delivery sequence and acceptance gates

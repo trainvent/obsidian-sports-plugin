@@ -16,8 +16,9 @@ const context = await esbuild.context({
 	},
 	entryPoints: ['src/main.ts'],
 	bundle: true,
-	loader: { '.xlsx': 'binary' },
+	loader: { '.xlsx': 'binary', '.svg': 'text' },
 	external: [
+		'node:*',
 		'obsidian',
 		'electron',
 		'@codemirror/autocomplete',

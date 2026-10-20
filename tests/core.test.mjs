@@ -138,3 +138,22 @@ test('daily results and core checkbox remain separate from whole-session complet
  await assert.rejects(parseWorkbook(dailyWorkbook({ duplicate: true })), /duplicate IDs/);
  await assert.rejects(parseWorkbook(dailyWorkbook({ core: 'yes' })), /TRUE, FALSE/);
 });
+
+test('strategy weekly schedule creates planned activities without daily result rows', async () => {
+ const files = unzipSync(new Uint8Array(workbook()));
+ const rows = [['Weekly schedule'], ['Day','Time','Minutes','Activity','Recorded by','Notes'], ['Monday','18:00','60','Swim course','Garmin','Coached session'], ['Tuesday','','','','','']];
+ const xml = rows.map((row,r) => `<row r="${100+r}">${row.map((value,c) => `<c r="${String.fromCharCode(65+c)}${100+r}" t="inlineStr"><is><t>${value}</t></is></c>`).join('')}</row>`).join('');
+ files['xl/worksheets/sheet1.xml'] = strToU8(strFromU8(files['xl/worksheets/sheet1.xml']).replace('</sheetData>', `${xml}</sheetData>`));
+ const plan = await parseWorkbook(zipSync(files).buffer);
+ assert.equal(plan.weeklySchedule.length, 1);
+ assert.equal(plan.sessions.length, 1);
+ assert.equal(plan.weeklySchedule[0].recordedBy, 'Garmin');
+ assert.equal(plan.weeklySchedule[0].minutes, 60);
+ const markdown = weekMarkdown(plan, [], ['2026-10-19']);
+ assert.ok(markdown.includes('Swim course'));
+ assert.ok(markdown.includes('Planned'));
+ assert.ok(markdown.includes('Garmin'));
+ assert.ok(!markdown.includes('completed'));
+ const preserved = await parseWorkbook(mappedWorkbook({ removeStrategy: true }), { strategySheet: '', trackingSheet: 'My sessions', previous: plan });
+ assert.deepEqual(preserved.weeklySchedule, plan.weeklySchedule);
+});

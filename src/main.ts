@@ -1,9 +1,11 @@
-import { Plugin, Notice } from 'obsidian';
+import { Plugin, Notice, addIcon, Platform } from 'obsidian';
 import { DEFAULT_DATA, type SportsData } from './model/types';
 import { weekDates } from './model/calendar';
+import { SPORTS_ICON_ID, SPORTS_ICON_SVG } from './ui/icon';
 import { SportsSettingTab } from './settings';
 import { SPORTS_VIEW, SportsDashboard } from './ui/dashboard';
 import { RecurringModal } from './ui/recurring';
+import { createLocalTemplate } from './workbook/local-file';
 import { templateWorkbook } from './workbook/template-file';
 import { syncWorkbook } from './workbook/sync';
 import { updateNote } from './notes/store';
@@ -16,8 +18,9 @@ export default class SportsPlugin extends Plugin {
  private noteBusy = false;
  async onload(): Promise<void> {
   this.data = Object.assign({}, DEFAULT_DATA, await this.loadData() as Partial<SportsData>);
+  addIcon(SPORTS_ICON_ID, SPORTS_ICON_SVG);
   this.registerView(SPORTS_VIEW, leaf => new SportsDashboard(leaf, this));
-  this.addRibbonIcon('activity', 'Open dashboard', () => { void this.openDashboard(); });
+  this.addRibbonIcon(SPORTS_ICON_ID, 'Open dashboard', () => { void this.openDashboard(); });
   this.addCommand({ id: 'open-sports-dashboard', name: 'Open dashboard', callback: () => this.openDashboard() });
   this.addCommand({ id: 'create-sports-example', name: 'Create example workbook', callback: () => this.createExample() });
   this.addCommand({ id: 'sync-sports', name: 'Sync now', callback: () => this.sync() });
@@ -30,18 +33,21 @@ export default class SportsPlugin extends Plugin {
  onunload(): void { if (this.timer !== undefined) window.clearInterval(this.timer); }
  async createExample(): Promise<void> {
   try {
-   const path = `Sports-example-${Date.now()}.xlsx`;
-   await this.app.vault.createBinary(path, templateWorkbook());
+   const path = this.data.workbookPath || '~/Documents/Sports/Training.xlsx';
+   await createLocalTemplate(path, templateWorkbook());
    this.data.workbookPath = path; this.data.strategySheet = 'Strategy'; this.data.trackingSheet = 'Training log'; await this.save();
-   new Notice('Example workbook created and selected. Import it with the sync button.');
-  } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not create the example workbook.'); }
+   new Notice('Template created at the configured local path. Import it with the sync button.');
+  } catch (error) {
+   const message = error instanceof Error && 'code' in error && error.code === 'EEXIST' ? 'A workbook already exists there. Choose a new path to create a template; existing workbooks are never overwritten.' : error instanceof Error ? error.message : 'Could not create the example workbook.';
+   new Notice(message);
+  }
  }
  async save(): Promise<void> { await this.saveData(this.data); }
  async sync(): Promise<void> { await syncWorkbook(this); }
  scheduleSync(): void {
   if (this.timer !== undefined) window.clearInterval(this.timer);
   this.timer = undefined;
-  if ((this.data.strategySheet || this.data.trackingSheet) && Number.isFinite(this.data.syncMinutes) && this.data.syncMinutes >= 5) this.timer = this.registerInterval(window.setInterval(() => { void this.sync(); }, this.data.syncMinutes * 60_000));
+  if (Platform.isDesktop && (this.data.strategySheet || this.data.trackingSheet) && Number.isFinite(this.data.syncMinutes) && this.data.syncMinutes >= 5) this.timer = this.registerInterval(window.setInterval(() => { void this.sync(); }, this.data.syncMinutes * 60_000));
   this.refreshViews();
  }
  refreshViews(): void {

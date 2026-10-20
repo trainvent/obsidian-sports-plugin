@@ -1,13 +1,14 @@
 import { ItemView, WorkspaceLeaf, Setting } from 'obsidian';
+import { SPORTS_ICON_ID } from './icon';
 import type SportsPlugin from '../main';
-import { eventsOn, weekDates } from '../model/calendar';
+import { eventsOn, weekDates, scheduleOn } from '../model/calendar';
 export const SPORTS_VIEW = 'sports-dashboard';
 export class SportsDashboard extends ItemView {
  private anchor = new Date();
  constructor(leaf: WorkspaceLeaf, private plugin: SportsPlugin) { super(leaf); }
  getViewType(): string { return SPORTS_VIEW; }
  getDisplayText(): string { return 'Sports'; }
- getIcon(): string { return 'activity'; }
+ getIcon(): string { return SPORTS_ICON_ID; }
  async onOpen(): Promise<void> { this.render(); }
  render(): void {
   const root = this.contentEl; root.empty(); root.addClass('sports-dashboard');
@@ -15,7 +16,7 @@ export class SportsDashboard extends ItemView {
   new Setting(root).setName('Training overview')
    .addButton(button => button.setButtonText(this.plugin.syncing ? 'Syncing…' : 'Sync now').setDisabled(this.plugin.syncing).onClick(() => this.plugin.sync()))
    .addButton(button => button.setButtonText('Add recurring activity').onClick(() => this.plugin.addRecurring()));
-  root.createEl('p', { text: this.plugin.data.plan ? `${this.plugin.data.plan.name} · Last imported ${new Date(this.plugin.data.plan.importedAt).toLocaleString()}` : 'Select a workbook and its sheets in Settings → Sports Plugin to get started.' });
+  root.createEl('p', { text: this.plugin.data.plan ? `${this.plugin.data.plan.name} · Last imported ${new Date(this.plugin.data.plan.importedAt).toLocaleString()}` : 'Set a local workbook path and its sheets in Settings → Sports Plugin to get started.' });
   if (this.plugin.data.lastError) root.createEl('p', { text: this.plugin.data.lastError, cls: 'sports-error' });
   root.createEl('p', { text: (this.plugin.data.strategySheet || this.plugin.data.trackingSheet) && this.plugin.data.syncMinutes ? `Automatic workbook sync every ${this.plugin.data.syncMinutes} minutes while Obsidian is running.` : 'Automatic sync is off. Use Sync now to import changes.' });
   new Setting(root).setName('Week')
@@ -28,7 +29,8 @@ export class SportsDashboard extends ItemView {
    const section = root.createDiv({ cls: 'sports-day' }); section.createEl('h3', { text: date });
    const sessions = this.plugin.data.plan?.sessions.filter(session => session.date === date) ?? [];
    const events = eventsOn(this.plugin.data.events, date);
-   if (!sessions.length && !events.length) section.createEl('p', { text: 'No sessions planned.' });
+   const scheduled = scheduleOn(this.plugin.data.plan, date);
+   if (!sessions.length && !events.length && !scheduled.length) section.createEl('p', { text: 'No sessions planned.' });
    for (const session of sessions) {
     section.createEl('strong', { text: session.title });
     const part = this.plugin.data.plan?.parts.find(part => part.id === session.partId && part.version === session.partVersion);
@@ -37,6 +39,10 @@ export class SportsDashboard extends ItemView {
     if (part) { const details = section.createEl('details'); details.createEl('summary', { text: `${part.title} · v${part.version}` }); details.createEl('p', { text: part.prescription }); }
     if (session.notes) section.createEl('p', { text: session.notes });
     if (session.result) section.createEl('p', { text: session.result });
+   }
+   for (const item of scheduled) {
+    section.createEl('p', { text: `${item.time} ${item.title} · ${item.minutes ?? '—'} min · ${item.recordedBy} · Planned, no manual results` });
+    if (item.notes) section.createEl('p', { text: item.notes });
    }
    for (const event of events) section.createEl('p', { text: `${event.time} ${event.title} · ${event.sport} · ${event.minutes} min · Recurring` });
   }

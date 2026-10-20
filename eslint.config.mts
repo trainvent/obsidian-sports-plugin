@@ -29,5 +29,7 @@ export default defineConfig(
 		},
 	},
 	...obsidianmd.configs.recommended,
+ // Obsidian desktop plugins load built-ins through CommonJS, after a desktop guard.
+ { files: ['src/workbook/local-file.ts'], languageOptions: { globals: { require: 'readonly' } }, rules: { '@typescript-eslint/no-require-imports': ['error', { allow: ['^(os|path|fs)$'] }] } },
  { files: ['tests/*.mjs'], languageOptions: { globals: globals.node }, rules: { 'obsidianmd/no-nodejs-modules': 'off' } },
 );
