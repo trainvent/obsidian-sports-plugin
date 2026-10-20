@@ -19,6 +19,6 @@ export interface SportsData {
  generatedBlocks: Record<string, string>; lastError: string;
 }
 export const DEFAULT_DATA: SportsData = {
- workbookPath: '~/Documents/Sports/Training.xlsx', strategySheet: 'Strategy', trackingSheet: 'Training log', notesFolder: 'Sports', syncMinutes: 0, syncOnStartup: false,
+ workbookPath: '~/Sports/Training.xlsx', strategySheet: 'Strategy', trackingSheet: 'Training log', notesFolder: 'Sports', syncMinutes: 0, syncOnStartup: false,
  plan: null, events: [], generatedBlocks: {}, lastError: '',
 };

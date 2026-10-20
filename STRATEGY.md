@@ -22,7 +22,7 @@ cloud/tracker connections, import previews, and robust multi-file recovery are n
 - [ ] Make XLSX the first supported external training-plan format, with a documented template and import preview.
 - [ ] Offer a template with **Strategy** and **Training log**, but make both roles optional and let users select their own sheet names. Use selected sheets as the source for strategy, scheduled sessions, and workbook-entered results. Sync workbook → plugin → dashboard and generated Markdown blocks; keep personal reflections editable in Obsidian.
 - [ ] Store manual calendar events, completion decisions, and reflections locally in the vault. Keep them separate from imported plan records.
-- [ ] Support an explicitly selected local workbook outside the vault first (default ~/Documents/Sports/Training.xlsx), then WebDAV/Nextcloud, then Google Drive. Users select one authoritative source per plan.
+- [ ] Support an explicitly selected local workbook outside the vault first (default ~/Sports/Training.xlsx), then WebDAV/Nextcloud, then Google Drive. Users select one authoritative source per plan.
 - [ ] Make Garmin the first tracker feasibility investigation; provide activity-file import so core features do not depend on API approval.
 - [ ] Treat direct tracker connections as optional adapters, with clear supported-provider status rather than a promise to support every device.
 - [ ] Target desktop first while keeping core modules browser-compatible; verify mobile authentication and storage before advertising mobile support.
@@ -96,7 +96,7 @@ The offered workbook template has two sheets: **Strategy** describes why and how
 ## 3. Workbook connectivity and dashboard sync
 
 - [ ] Implement a common source interface: select source, fetch content/version, validate, preview changes, apply, and report status.
-- [ ] Local source: use a configured absolute path or ~/Documents/ path outside the vault on desktop; read only that file. Offer manual and interval refresh. Keep generated notes inside the vault. No workbook edits, copies into the vault, or folder scans during sync.
+- [ ] Local source: use a configured absolute path or ~/ path outside the vault on desktop; read only that file. Offer manual and interval refresh. Keep generated notes inside the vault. No workbook edits, copies into the vault, or folder scans during sync.
 - [ ] WebDAV source: configure server and workbook path; support generic WebDAV credentials and evaluate Nextcloud browser authorization as an additional convenience.
 - [ ] Google Drive source: select a specific XLSX file through authorized file access; validate OAuth setup, scopes, verification requirements, and desktop/mobile redirects in a prototype.
 - [ ] Treat native Google Sheets as a separate later adapter or explicit XLSX export path; do not silently assume it behaves like a stored XLSX file.

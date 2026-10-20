@@ -18,3 +18,14 @@ export function weekMarkdown(plan: TrainingPlan | null, events: RecurringEvent[]
  });
  return `## Training overview\n\n| Date | Session | Part / sport | Planned min | Actual min | Status | Result | Plan | Notes |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nTimes follow the source schedule. Tracker connections are not available in this prototype.`;
 }
+
+/** Show the complete imported second-sheet schedule, including dates outside this week. */
+export function trainingLogMarkdown(plan: TrainingPlan | null): string {
+ const sessions = [...(plan?.sessions ?? [])].sort((left, right) => left.date.localeCompare(right.date));
+ if (!sessions.length) return 'No training log entries imported yet. Select the second sheet under Tracking sheet in Sports settings, then select Sync now.';
+ const rows = sessions.map(session => {
+  const part = plan?.parts.find(part => part.id === session.partId && part.version === session.partVersion);
+  return `| ${cell(session.date)} | ${cell(session.block ?? session.title)} | ${cell(session.title)} | ${cell(session.prescription ?? part?.prescription ?? '')} | ${cell(session.sport)} | ${cell(session.plannedMinutes)} | ${cell(session.actualMinutes)} | ${cell(session.status)} | ${cell(session.result)} | ${cell(session.notes)} |`;
+ });
+ return `## Imported schedule\n\n| Date | Block / session | Training | Plan | Sport | Planned min | Actual min | Status | Results and completion | Notes |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n${rows.join('\n')}`;
+}

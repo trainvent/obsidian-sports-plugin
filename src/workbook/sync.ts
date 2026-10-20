@@ -2,7 +2,7 @@ import { Notice } from 'obsidian';
 import type SportsPlugin from '../main';
 import { readLocalWorkbook } from './local-file';
 import { parseWorkbook } from './parse';
-import { strategyMarkdown, weekMarkdown } from '../notes/render';
+import { strategyMarkdown, weekMarkdown, trainingLogMarkdown } from '../notes/render';
 import { weekDates } from '../model/calendar';
 import { updateNote } from '../notes/store';
 
@@ -28,6 +28,7 @@ export async function syncWorkbook(plugin: SportsPlugin): Promise<void> {
   }
   plugin.data.plan = next; plugin.data.lastError = ''; await plugin.save();
   if (plugin.data.strategySheet) await updateNote(plugin, 'Strategy.md', 'strategy', strategyMarkdown(next), '# Training strategy\n\n## Commentary\n');
+  if (plugin.data.trackingSheet) await updateNote(plugin, 'Training log.md', 'training-log', trainingLogMarkdown(next), '# Training log\n\n## Commentary\n');
   const issues: string[] = [];
   const prefix = `${plugin.data.notesFolder}/Weeks/`;
   for (const key of Object.keys(plugin.data.generatedBlocks)) {

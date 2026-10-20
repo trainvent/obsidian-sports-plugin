@@ -15,6 +15,7 @@ export class SportsDashboard extends ItemView {
   root.createEl('h1', { text: 'Sports' });
   new Setting(root).setName('Training overview')
    .addButton(button => button.setButtonText(this.plugin.syncing ? 'Syncing…' : 'Sync now').setDisabled(this.plugin.syncing).onClick(() => this.plugin.sync()))
+   .addButton(button => button.setButtonText('Open training log').onClick(() => this.plugin.openTrainingLog()))
    .addButton(button => button.setButtonText('Add recurring activity').onClick(() => this.plugin.addRecurring()));
   root.createEl('p', { text: this.plugin.data.plan ? `${this.plugin.data.plan.name} · Last imported ${new Date(this.plugin.data.plan.importedAt).toLocaleString()}` : 'Set a local workbook path and its sheets in Settings → Sports Plugin to get started.' });
   if (this.plugin.data.lastError) root.createEl('p', { text: this.plugin.data.lastError, cls: 'sports-error' });

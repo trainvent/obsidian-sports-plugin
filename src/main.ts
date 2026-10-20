@@ -9,7 +9,7 @@ import { createLocalTemplate } from './workbook/local-file';
 import { templateWorkbook } from './workbook/template-file';
 import { syncWorkbook } from './workbook/sync';
 import { updateNote } from './notes/store';
-import { weekMarkdown } from './notes/render';
+import { weekMarkdown, trainingLogMarkdown } from './notes/render';
 
 export default class SportsPlugin extends Plugin {
  data!: SportsData;
@@ -25,6 +25,7 @@ export default class SportsPlugin extends Plugin {
   this.addCommand({ id: 'create-sports-example', name: 'Create example workbook', callback: () => this.createExample() });
   this.addCommand({ id: 'sync-sports', name: 'Sync now', callback: () => this.sync() });
   this.addCommand({ id: 'open-sports-week', name: 'Create or open weekly note', callback: () => this.openWeekly() });
+  this.addCommand({ id: 'open-sports-log', name: 'Open training log', callback: () => this.openTrainingLog() });
   this.addCommand({ id: 'add-sports-recurring', name: 'Add recurring activity', callback: () => this.addRecurring() });
   this.addSettingTab(new SportsSettingTab(this.app, this));
   this.scheduleSync();
@@ -33,7 +34,7 @@ export default class SportsPlugin extends Plugin {
  onunload(): void { if (this.timer !== undefined) window.clearInterval(this.timer); }
  async createExample(): Promise<void> {
   try {
-   const path = this.data.workbookPath || '~/Documents/Sports/Training.xlsx';
+   const path = this.data.workbookPath || DEFAULT_DATA.workbookPath;
    await createLocalTemplate(path, templateWorkbook());
    this.data.workbookPath = path; this.data.strategySheet = 'Strategy'; this.data.trackingSheet = 'Training log'; await this.save();
    new Notice('Template created at the configured local path. Import it with the sync button.');
@@ -60,6 +61,15 @@ export default class SportsPlugin extends Plugin {
   await this.app.workspace.revealLeaf(leaf);
  }
  addRecurring(): void { new RecurringModal(this).open(); }
+ async openTrainingLog(): Promise<void> {
+  if (this.noteBusy) return;
+  this.noteBusy = true;
+  try {
+   const file = await updateNote(this, 'Training log.md', 'training-log', trainingLogMarkdown(this.data.plan), '# Training log\n\n## Commentary\n');
+   await this.app.workspace.getLeaf(false).openFile(file);
+  } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not update the training log.'); }
+  finally { this.noteBusy = false; }
+ }
  async openWeekly(anchor = new Date()): Promise<void> {
   if (this.noteBusy) return;
   this.noteBusy = true;

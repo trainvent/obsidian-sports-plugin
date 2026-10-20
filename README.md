@@ -16,7 +16,7 @@ and Markdown remain available. Mobile runtime behavior is not yet verified.
 1. Build the plugin, reload Obsidian, and enable **Sports Plugin**.
 2. Run **Sports Plugin: Create example workbook** from the command palette. This
    creates a fictional workbook at the configured local path, defaulting to
-   `~/Documents/Sports/Training.xlsx`. Existing files are never overwritten.
+   `~/Sports/Training.xlsx` in your home folder, independent of the system language. Existing files are never overwritten.
 3. Run **Sports Plugin: Open dashboard**, then select **Sync now**.
 4. Open the workbook with your spreadsheet editor to change plans or record results.
    Save it at the configured local path, then sync again. The workbook stays outside
@@ -24,7 +24,7 @@ and Markdown remain available. Mobile runtime behavior is not yet verified.
 5. Select **Add recurring activity** to schedule a weekly sport. Select **Open weekly
    note** to create or refresh that week's note.
 
-**Settings → Sports Plugin** offers an absolute workbook path (or `~/Documents/...`), notes folder, startup sync,
+**Settings → Sports Plugin** offers an absolute workbook path (or `~/Sports/...`), notes folder, startup sync,
 and intervals of five minutes, fifteen minutes, or one hour. **Manual only** is the
 default. Scheduling runs inside Obsidian; closed apps and mobile suspension stop or
 delay it. No external scheduler or Python installation is required.
@@ -53,6 +53,12 @@ Disabling a role retains its last imported local data and notes. A selected tab 
 is missing or invalid fails the import rather than silently clearing data. With only
 tracking selected, a strategy is not required and paired part references may remain
 unresolved. A new tracking-only plan uses the device timezone until strategy supplies one.
+
+Select **Open training log** in the Sports dashboard (or command palette) to view
+the complete schedule from the tracking sheet, including plans, completion checks,
+results, and notes. Sync refreshes `Training log.md` in the configured notes folder.
+Commentary outside its generated section is preserved. The dashboard also shows
+these entries in their corresponding weeks.
 
 Each table begins
 with its name alone in column A, followed immediately by a header row and data rows.

@@ -18,7 +18,7 @@ async function moduleNamed(name) {
 const { mergeBlock, generatedBlock } = await moduleNamed('blocks');
 const { weekDates, eventsOn } = await moduleNamed('calendar');
 const { parseWorkbook } = await moduleNamed('parse');
-const { weekMarkdown } = await moduleNamed('render');
+const { weekMarkdown, trainingLogMarkdown } = await moduleNamed('render');
 const { exampleWorkbook: workbook } = await moduleNamed('template');
 test('refresh preserves reflections and detects edits or missing markers', () => {
  const previous = generatedBlock('week:2026-10-19', 'Old overview');
@@ -156,4 +156,17 @@ test('strategy weekly schedule creates planned activities without daily result r
  assert.ok(!markdown.includes('completed'));
  const preserved = await parseWorkbook(mappedWorkbook({ removeStrategy: true }), { strategySheet: '', trackingSheet: 'My sessions', previous: plan });
  assert.deepEqual(preserved.weeklySchedule, plan.weeklySchedule);
+});
+
+test('training log shows the full second-sheet schedule and daily results', async () => {
+ const plan = await parseWorkbook(dailyWorkbook());
+ plan.sessions.push({ ...plan.sessions[0], id: 'earlier', date: '2025-01-01', notes: 'Earlier | entry' });
+ const original = plan.sessions.map(session => session.id);
+ const markdown = trainingLogMarkdown(plan);
+ assert.ok(markdown.indexOf('2025-01-01') < markdown.indexOf('2026-10-20'));
+ for (const value of ['Skills and core', 'Core done: yes', 'Muscle-up result: 3 x 5 assisted', 'Keep these notes', 'in-progress', 'Earlier \\| entry']) assert.ok(markdown.includes(value), value);
+ assert.deepEqual(plan.sessions.map(session => session.id), original);
+ assert.ok(trainingLogMarkdown(null).includes('No training log entries'));
+ const legacy = await parseWorkbook(workbook());
+ assert.ok(trainingLogMarkdown(legacy).includes(legacy.parts[0].prescription));
 });

@@ -42,7 +42,7 @@ test('template creation refuses to overwrite an existing workbook', async () => 
  assert.deepEqual(new Uint8Array(await readLocalWorkbook(file)), new Uint8Array(original));
 });
 test('paths support home expansion and reject old vault-relative sources', async () => {
- assert.equal(await workbookLocation('~/Documents/Sports/Training.xlsx'), join(homedir(), 'Documents', 'Sports', 'Training.xlsx'));
+ assert.equal(await workbookLocation('~/Sports/Training.xlsx'), join(homedir(), 'Sports', 'Training.xlsx'));
  await assert.rejects(workbookLocation('Sports/Training.xlsx'), /absolute workbook path/);
  await assert.rejects(workbookLocation(join(temp, 'Training.txt')), /ending in .xlsx/);
  await assert.rejects(readLocalWorkbook(join(temp, 'missing.xlsx')), { code: 'ENOENT' });
