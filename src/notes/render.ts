@@ -11,9 +11,9 @@ export function weekMarkdown(plan: TrainingPlan | null, events: RecurringEvent[]
  const rows = dates.flatMap(date => {
   const sessions = (plan?.sessions ?? []).filter(session => session.date === date).map(session => {
    const part = plan?.parts.find(part => part.id === session.partId && part.version === session.partVersion);
-   return `| ${date} | ${cell(session.title)} | ${cell(part?.title ?? session.sport)} | ${cell(session.plannedMinutes)} | ${cell(session.actualMinutes)} | ${cell(session.status)} | ${cell(session.result)} |`;
+   return `| ${date} | ${cell(session.title)} | ${cell(part?.title ?? session.sport)} | ${cell(session.plannedMinutes)} | ${cell(session.actualMinutes)} | ${cell(session.status)} | ${cell(session.result)} | ${cell(session.prescription ?? '')} | ${cell(session.notes)} |`;
   });
-  return [...sessions, ...eventsOn(events, date).map(event => `| ${date} | ${cell(event.time)} ${cell(event.title)} | ${cell(event.sport)} | ${event.minutes} | — | Scheduled | — |`)];
+  return [...sessions, ...eventsOn(events, date).map(event => `| ${date} | ${cell(event.time)} ${cell(event.title)} | ${cell(event.sport)} | ${event.minutes} | — | Scheduled | — | — | — |`)];
  });
- return `## Training overview\n\n| Date | Session | Part / sport | Planned min | Actual min | Status | Result |\n| --- | --- | --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nTimes follow the source schedule. Tracker connections are not available in this prototype.`;
+ return `## Training overview\n\n| Date | Session | Part / sport | Planned min | Actual min | Status | Result | Plan | Notes |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nTimes follow the source schedule. Tracker connections are not available in this prototype.`;
 }

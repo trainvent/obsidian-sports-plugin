@@ -4,7 +4,7 @@ An Obsidian plugin developed by [Trainvent](https://github.com/trainvent).
 
 ## Status
 
-An offline TypeScript prototype is implemented: two-sheet XLSX import, a weekly dashboard,
+An offline TypeScript prototype is implemented: optional strategy/tracking XLSX import, a weekly dashboard,
 weekly recurring activities, manual/interval sync, and protected Markdown generation.
 Cloud sources and tracker integrations are planned in [STRATEGY.md](STRATEGY.md).
 Obsidian 1.7.2 or later is required. Mobile runtime behavior is not yet verified.
@@ -32,7 +32,19 @@ reopen its weekly note or sync to refresh the Markdown overview.
 
 ## Workbook format (prototype schema 1)
 
-Use exactly two sheets named **Strategy** and **Training log**. Each table begins
+Download the reusable [Sports template](templates/Sports-template.xlsx), or create it
+from Sports settings. It includes example strategy and tracking sheets.
+
+In settings, choose the exact **Strategy sheet** and **Tracking sheet** tab names.
+Leave either blank to disable that import; both may be blank for calendar/notes-only
+use. You can rename tabs and keep other sheets in the workbook. Selected tabs still
+need the column/table structure below; arbitrary column mapping is not supported.
+Disabling a role retains its last imported local data and notes. A selected tab that
+is missing or invalid fails the import rather than silently clearing data. With only
+tracking selected, a strategy is not required and paired part references may remain
+unresolved. A new tracking-only plan uses the device timezone until strategy supplies one.
+
+Each table begins
 with its name alone in column A, followed immediately by a header row and data rows.
 Separate tables with a blank row. These are simple labeled ranges, not Excel named
 tables; no formulas or AI interpretation are needed. The example command generates
@@ -50,28 +62,50 @@ On **Strategy**, include:
 `Plan` contains exactly one row. Set `schema_version` to `1` and use an IANA timezone,
 such as `Europe/Berlin`. Each `PartGoals` row links one part version to one goal.
 
-On **Training log**, use the table label `Sessions`:
+On **Training log**, the offered template follows a simple daily layout. Put these
+headers in row 1; there is no technical `Sessions` marker:
 
-| Required headers | Optional headers |
-| --- | --- |
-| `session_id`, `date`, `sport`, `title` | `part_id`, `part_version`, `planned_minutes`, `actual_minutes`, `result`, `status`, `notes` |
+| Date | Block | Plan | Core done | Muscle-up result | HSPU result | Pistol result | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-19 | A | Muscle-up + pistol practice, then core | FALSE | | | | |
 
-Use stable IDs, ISO dates (`YYYY-MM-DD`), and nonnegative numeric minutes. A part
-reference needs both its ID and version. Allowed statuses are `planned`, `completed`,
-`skipped`, and `cancelled`; an empty status defaults to `planned`. Empty actual fields
-stay unknown. Use separate rows for multiple sessions on one day.
+Use one row per day, with block `A`, `B`, `Technique`, or `Empty` in the example.
+`Block` links to a Strategy part's `part_id`; you may define your own block names.
+`Plan` stays readable free text and is shown in Obsidian without AI interpretation.
+Use `Empty` or an empty block for a day without a manual prescription.
 
-The prototype reads the documented columns only. Distance, exercise tables, progression
-rules, import previews, custom intervals, and per-occurrence recurrence edits remain
-planned. Use the part prescription for exercise details for now. Date display and weekly
-navigation use the device's local calendar; schedule-timezone conversion is not yet implemented.
-Only one plan is active; changing to a different plan ID is rejected. Completed sessions
-cannot change dates or part references, and versions used by completed sessions must
-remain unchanged. Removed completed rows are retained locally; removed uncompleted
-rows currently disappear from the active plan.
+- Required columns: `Date`, `Block`, `Plan`.
+- Customize skill columns using the suffix ` result`, such as `Squat result`.
+- Completion flags use ` done`, such as `Core done`, with TRUE, FALSE, or blank.
+- `Notes` is optional. Additional optional fields are `Sport`, `Status`, `Session ID`,
+  and `Part version`.
+- Results and completion flags remain separate. An entered result or a TRUE flag
+  means `in-progress`, never automatic completion of the whole session. Explicit
+  `Status` supports `planned`, `in-progress`, `completed`, `skipped`, and `cancelled`.
+- Without `Session ID`, identity uses Date + Block. Keep these stable for existing
+  entries; add distinct Session IDs if the same block occurs twice on one date.
+- With strategy selected, each nonempty block must resolve to one part/version.
+  Add `Part version` when the same block has several strategy versions. Tracking
+  works on its own with strategy disabled.
+
+The technical `Sessions` table remains supported for existing workbooks, with required
+`session_id`, `date`, `sport`, `title`, and optional `part_id`, `part_version`,
+`planned_minutes`, `actual_minutes`, `result`, `status`, and `notes` columns.
+
+Dates may be spreadsheet dates or ISO text (`YYYY-MM-DD`). Daily Plan text is not
+parsed into invented durations, distances, or sets. Distance fields, exercise tables,
+progression rules, import previews, custom intervals, and per-occurrence recurrence
+edits remain planned. Date display and weekly navigation use the device calendar;
+schedule-timezone conversion is not yet implemented. Only one plan is active; changing
+to a different strategy plan ID is rejected. Completed sessions cannot change dates or
+part references, and versions used by completed sessions must remain unchanged.
+Removed completed rows are retained locally; removed uncompleted rows currently
+disappear from the active plan.
 
 ## Markdown ownership and safety
 
+Synchronization always flows **XLSX → Obsidian**. The plugin never writes changes
+back to an existing workbook. Creating a new template is a separate explicit action.
 Edit structured plans/results in the workbook and reflections in Markdown. The plugin
 updates only its `sports:begin` / `sports:end` blocks and preserves surrounding prose.
 If a generated block changes or loses its markers, refresh reports a conflict and leaves
@@ -80,7 +114,7 @@ it to resume updates. Renamed/deleted managed notes are not automatically redisc
 keep their generated paths stable in this prototype. A deleted generated note is not
 silently recreated.
 
-Imports validate both sheets before replacing cached plan data. Invalid workbooks retain
+Imports validate selected sheets before replacing cached plan data. Invalid workbooks retain
 the prior plan. A valid import can succeed while a conflicting Markdown note remains stale;
 the dashboard shows the error and refreshing again retries generation. Durable multi-file
 recovery and conflict resolution UI remain planned.

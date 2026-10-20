@@ -20,13 +20,14 @@ cloud/tracker connections, import previews, and robust multi-file recovery are n
 
 - [ ] Use a local-first design: manual planning, calendar, notes, and cached dashboards work without a cloud account.
 - [ ] Make XLSX the first supported external training-plan format, with a documented template and import preview.
-- [ ] Use two workbook sheets, **Strategy** and **Training log**, as the source for strategy, scheduled sessions, and workbook-entered results. Sync workbook → plugin → dashboard and generated Markdown blocks; keep personal reflections editable in Obsidian.
+- [ ] Offer a template with **Strategy** and **Training log**, but make both roles optional and let users select their own sheet names. Use selected sheets as the source for strategy, scheduled sessions, and workbook-entered results. Sync workbook → plugin → dashboard and generated Markdown blocks; keep personal reflections editable in Obsidian.
 - [ ] Store manual calendar events, completion decisions, and reflections locally in the vault. Keep them separate from imported plan records.
 - [ ] Support a workbook inside the vault first, then WebDAV/Nextcloud, then Google Drive. Users select one authoritative source per plan.
 - [ ] Make Garmin the first tracker feasibility investigation; provide activity-file import so core features do not depend on API approval.
 - [ ] Treat direct tracker connections as optional adapters, with clear supported-provider status rather than a promise to support every device.
 - [ ] Target desktop first while keeping core modules browser-compatible; verify mobile authentication and storage before advertising mobile support.
-- [ ] Exclude workbook write-back, workout upload to watches, external calendar sync, coaching recommendations, and a hosted Sports account from the first release.
+- [x] Fix sync direction permanently: XLSX → plugin → Obsidian Markdown/dashboard. Never write plan, tracking, or Markdown changes back to XLSX. Creating a new template is a separate explicit action, not synchronization.
+- [ ] Exclude workout upload to watches, external calendar sync, coaching recommendations, and a hosted Sports account from the first release.
 
 ## 1. Foundation and shared data model
 
@@ -42,7 +43,7 @@ cloud/tracker connections, import previews, and robust multi-file recovery are n
 
 ## 2. Training-plan workbook contract
 
-The v1 workbook has exactly two sheets: **Strategy** describes why and how to train; **Training log** keeps daily planning and recording simple. Both use explicitly named, header-based tables so parsing needs no AI. Multiple sessions per day are separate rows; future rows are planned sessions and completed rows also contain actual results. Recurring club/course events can still be managed in the plugin.
+The offered workbook template has two sheets: **Strategy** describes why and how to train; **Training log** keeps daily planning and recording simple. Neither role is mandatory. Users choose the exact sheet name for each role independently, or leave it unset. Support strategy-only, tracking-only, both, and neither (calendar/notes only). Extra sheets are allowed and ignored. Selected sheets use explicitly labeled, header-based tables so parsing needs no AI. Multiple sessions per day are separate rows; future rows are planned sessions and completed rows also contain actual results. Recurring club/course events can still be managed in the plugin.
 
 | Sheet | Named table | Content |
 | --- | --- | --- |
@@ -51,8 +52,12 @@ The v1 workbook has exactly two sheets: **Strategy** describes why and how to tr
 | `Strategy` | `Parts` | `part_id`, `version`, title, prescription, optional phase and progression rules |
 | `Strategy` | `PartGoals` | One relationship per row: `part_id`, `version`, `goal_id` |
 | `Strategy` | `Exercises` | Optional detail: `exercise_id`, `part_id`, `version`, order, name, sets/reps/load/duration/rest and guide link |
-| `Training log` | `Sessions` | Required: `session_id`, `date`, `sport`, `title`. Optional: `part_id`, `part_version`, start time, planned duration/distance/target, actual duration/distance/result, status, notes, program week and optional-session flag |
+| `Training log` | Daily log (default) | Required: `Date`, `Block`, `Plan`; optional `Core done`, goal-specific `… result` columns and `Notes`. Links Block to strategy parts without exposing IDs in daily use. |
+| `Training log` | `Sessions` (technical compatibility) | Required: `session_id`, `date`, `sport`, `title`. Optional: `part_id`, `part_version`, start time, planned duration/distance/target, actual duration/distance/result, status, notes, program week and optional-session flag |
 
+- [x] Offer a daily tracking sheet modeled on the existing simple log: Date, Block, readable Plan, Core done, separate skill results, and Notes. Keep future plans and entered results on the same row.
+- [x] Preserve custom result/check fields independently. A checked core flag is partial progress, not whole-session completion. Do not infer durations, goals achieved, or exercise results from prose.
+- [x] Support the daily layout directly, with no Sessions marker or mandatory technical session-ID column. Keep technical Sessions imports compatible.
 - [ ] Provide clearly separated tables on Strategy with readable headings; keep Training log as one filterable daily table. The template supplies technical IDs and column explanations.
 - [ ] Link goals → training parts → scheduled sessions → results through IDs. A part may support several goals, and a goal may be supported by several parts.
 - [ ] Use a fictional example with three goals and two parts: A supports muscle-up + pistol; B supports handstand push-up + pistol. A daily row only needs a short part reference to expose its detailed prescription.
@@ -74,6 +79,13 @@ The v1 workbook has exactly two sheets: **Strategy** describes why and how to tr
 - [ ] Apply a validated import atomically and retain the last working snapshot for recovery.
 - [ ] Consider a mapping wizard for arbitrary workbooks after the standard format works reliably.
 
+### Core circuit used in the example strategy
+
+- [x] Include a reusable **Core circuit** training part after Skills A and Skills B.
+- [x] Prescribe **5 rounds × 4 exercises**, with **30 seconds work + 20 seconds rest** per exercise, in this order: pull-ups → push-ups → weighted squats → upside-down hanging shoulder/ab work. Repeat the circuit five times.
+- [x] State the exact duration: **16 minutes 40 seconds including the final rest** (5 × 4 × 50 seconds); the informal “16-minute core workout” refers to this circuit.
+- [x] Keep **Core done** as its own tracking field, separate from skill results and whole-session completion.
+
 ## 3. Workbook connectivity and dashboard sync
 
 - [ ] Implement a common source interface: select source, fetch content/version, validate, preview changes, apply, and report status.
@@ -93,7 +105,7 @@ The v1 workbook has exactly two sheets: **Strategy** describes why and how to tr
 - [ ] Keep the last successful dataset on offline, authentication, or validation failure. Show last attempt, last successful sync, source, and stale-data warnings.
 - [ ] Refresh dashboard and generated note blocks from the same validated snapshot so views agree.
 - [ ] Make retries idempotent, cancel requests on unload, and distinguish a confirmed source deletion from a failed or incomplete fetch.
-- [ ] If write-back is later requested, design conflict handling and conditional writes first; never overwrite a newer cloud workbook silently.
+- [x] Treat all connected workbook sources as read-only. Markdown edits and local overrides are never uploaded to XLSX; do not implement a publish-to-workbook action.
 
 ## 4. Garmin and other trackers
 
@@ -160,8 +172,8 @@ Start with a clear ownership rule rather than automatic two-way editing of prose
 - [ ] Propose a configurable vault folder with `Strategy.md`, `Parts/`, `Sessions/`, and `Weeks/`; create detailed session/part notes on demand to avoid unnecessary files. The dashboard can remain a live plugin view.
 - [ ] Identify managed notes with namespaced frontmatter IDs, including plan/session/part/version or week identity, rather than filenames alone. Keep links working when users rename files.
 - [ ] Give each generated block a stable identity, for example `<!-- sports:begin strategy:plan-01 -->` and its matching end marker. Keep reflections outside generated blocks.
-- [ ] On **Sync now** or an interval: fetch workbook → validate both sheets together → resolve references → stage a new dataset → update affected Markdown blocks and dashboard from that dataset.
-- [ ] Reject the workbook update if either sheet is invalid or a required referenced version is missing; never combine a new log with an incompatible old strategy.
+- [ ] On **Sync now** or an interval: fetch workbook → validate selected sheets together → resolve available references → stage a new dataset → update affected Markdown blocks and dashboard from that dataset.
+- [ ] Reject the workbook update if a selected sheet is missing or invalid. A disabled role is not an error and retains its last imported local data; it does not erase history or generated Markdown. Validate part references against strategy when strategy is selected. Tracking-only imports can keep paired part/version references unresolved until a strategy is supplied.
 - [ ] Compare against the last generated block content before replacing it. If the user edited it, preserve the edit and show a conflict with options to keep it as commentary or restore the workbook rendering. Do not silently overwrite.
 - [ ] Persist a pending-generation journal and recover interrupted multi-file updates. Publish the new dataset revision once staged, label any notes still on an older revision, and retry their updates safely; do not promise an atomic transaction across Markdown files.
 - [ ] Watch user-owned notes to refresh links and indexes without uploading their prose or triggering a sync loop. Identical inputs produce no file changes.
@@ -171,7 +183,7 @@ Start with a clear ownership rule rather than automatic two-way editing of prose
 - [ ] Provide **Open source workbook**, **Refresh generated sections**, and a per-note sync/conflict indicator so ownership is visible.
 - [ ] Acceptance: changing a part updates linked future-session and weekly blocks; past completed prescriptions remain unchanged. Recording a result in Training log updates session/history blocks while reflections remain byte-for-byte intact.
 - [ ] Acceptance: row reorder, renamed notes, repeated refreshes, manually edited generated blocks, and interruption midway through note writes cause neither duplicate records nor lost prose.
-- [ ] Later, if editing structured results directly in Markdown is needed, specify an explicit **Publish changes to workbook** action with field-level validation, three-way comparison against the last shared snapshot, preview, backup, and source-version conflict checks. Keep this outside v1; freeform prose is never parsed into workbook changes automatically.
+- [x] Keep the synchronization strictly one-way for all releases: edit structured source data in XLSX; edit personal prose in Markdown. Detect generated-block edits locally and never convert them into workbook changes.
 
 ## 8. Privacy, security, and operational behavior
 
@@ -219,7 +231,7 @@ Start with a clear ownership rule rather than automatic two-way editing of prose
 
 ## Open decisions for our next discussion
 
-- [ ] Confirm the proposed ownership model: Strategy and Training log are edited in XLSX; reflections and local event overrides stay in Obsidian. Decide later whether structured Markdown-to-workbook publishing is needed.
+- [ ] Apply the agreed ownership model: Strategy and Training log are edited in XLSX; reflections and local event overrides stay in Obsidian. Workbook write-back is excluded permanently.
 - [ ] Decide whether WebDAV should be the first cloud connector, followed by Google Drive, as proposed.
 - [ ] Prioritize the next tracker after Garmin and whether activity-file import is an acceptable interim Garmin path.
 - [ ] Choose a compact dashboard versus a calendar-first landing view.

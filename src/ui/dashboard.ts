@@ -15,9 +15,9 @@ export class SportsDashboard extends ItemView {
   new Setting(root).setName('Training overview')
    .addButton(button => button.setButtonText(this.plugin.syncing ? 'Syncing…' : 'Sync now').setDisabled(this.plugin.syncing).onClick(() => this.plugin.sync()))
    .addButton(button => button.setButtonText('Add recurring activity').onClick(() => this.plugin.addRecurring()));
-  root.createEl('p', { text: this.plugin.data.plan ? `${this.plugin.data.plan.name} · Last imported ${new Date(this.plugin.data.plan.importedAt).toLocaleString()}` : 'Select a two-sheet workbook in Settings → Sports Plugin to get started.' });
+  root.createEl('p', { text: this.plugin.data.plan ? `${this.plugin.data.plan.name} · Last imported ${new Date(this.plugin.data.plan.importedAt).toLocaleString()}` : 'Select a workbook and its sheets in Settings → Sports Plugin to get started.' });
   if (this.plugin.data.lastError) root.createEl('p', { text: this.plugin.data.lastError, cls: 'sports-error' });
-  root.createEl('p', { text: this.plugin.data.syncMinutes ? `Automatic workbook sync every ${this.plugin.data.syncMinutes} minutes while Obsidian is running.` : 'Automatic sync is off. Use Sync now to import changes.' });
+  root.createEl('p', { text: (this.plugin.data.strategySheet || this.plugin.data.trackingSheet) && this.plugin.data.syncMinutes ? `Automatic workbook sync every ${this.plugin.data.syncMinutes} minutes while Obsidian is running.` : 'Automatic sync is off. Use Sync now to import changes.' });
   new Setting(root).setName('Week')
    .addButton(button => button.setButtonText('Previous').onClick(() => { this.anchor.setDate(this.anchor.getDate() - 7); this.render(); }))
    .addButton(button => button.setButtonText('Today').onClick(() => { this.anchor = new Date(); this.render(); }))
@@ -33,6 +33,7 @@ export class SportsDashboard extends ItemView {
     section.createEl('strong', { text: session.title });
     const part = this.plugin.data.plan?.parts.find(part => part.id === session.partId && part.version === session.partVersion);
     section.createEl('p', { text: `${session.sport} · ${session.status} · Planned ${session.plannedMinutes ?? '—'} min · Actual ${session.actualMinutes ?? '—'} min` });
+    if (session.prescription) section.createEl('p', { text: session.prescription });
     if (part) { const details = section.createEl('details'); details.createEl('summary', { text: `${part.title} · v${part.version}` }); details.createEl('p', { text: part.prescription }); }
     if (session.notes) section.createEl('p', { text: session.notes });
     if (session.result) section.createEl('p', { text: session.result });

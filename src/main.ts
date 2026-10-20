@@ -4,7 +4,7 @@ import { weekDates } from './model/calendar';
 import { SportsSettingTab } from './settings';
 import { SPORTS_VIEW, SportsDashboard } from './ui/dashboard';
 import { RecurringModal } from './ui/recurring';
-import { exampleWorkbook } from './workbook/template';
+import { templateWorkbook } from './workbook/template-file';
 import { syncWorkbook } from './workbook/sync';
 import { updateNote } from './notes/store';
 import { weekMarkdown } from './notes/render';
@@ -31,8 +31,8 @@ export default class SportsPlugin extends Plugin {
  async createExample(): Promise<void> {
   try {
    const path = `Sports-example-${Date.now()}.xlsx`;
-   await this.app.vault.createBinary(path, exampleWorkbook());
-   this.data.workbookPath = path; await this.save();
+   await this.app.vault.createBinary(path, templateWorkbook());
+   this.data.workbookPath = path; this.data.strategySheet = 'Strategy'; this.data.trackingSheet = 'Training log'; await this.save();
    new Notice('Example workbook created and selected. Import it with the sync button.');
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not create the example workbook.'); }
  }
@@ -41,7 +41,7 @@ export default class SportsPlugin extends Plugin {
  scheduleSync(): void {
   if (this.timer !== undefined) window.clearInterval(this.timer);
   this.timer = undefined;
-  if (Number.isFinite(this.data.syncMinutes) && this.data.syncMinutes >= 5) this.timer = this.registerInterval(window.setInterval(() => { void this.sync(); }, this.data.syncMinutes * 60_000));
+  if ((this.data.strategySheet || this.data.trackingSheet) && Number.isFinite(this.data.syncMinutes) && this.data.syncMinutes >= 5) this.timer = this.registerInterval(window.setInterval(() => { void this.sync(); }, this.data.syncMinutes * 60_000));
   this.refreshViews();
  }
  refreshViews(): void {

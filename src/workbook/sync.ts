@@ -9,11 +9,12 @@ export async function syncWorkbook(plugin: SportsPlugin): Promise<void> {
  if (plugin.syncing) return;
  plugin.syncing = true; plugin.refreshViews();
  try {
+  if (!plugin.data.strategySheet && !plugin.data.trackingSheet) { new Notice('Workbook sync is disabled. Select a strategy or tracking sheet in settings to enable it.'); return; }
   const file = plugin.app.vault.getAbstractFileByPath(plugin.data.workbookPath);
   if (!(file instanceof TFile) || file.extension.toLowerCase() !== 'xlsx') throw new Error('Select an XLSX workbook inside the vault in Sports settings.');
-  const next = await parseWorkbook(await plugin.app.vault.readBinary(file));
+  const next = await parseWorkbook(await plugin.app.vault.readBinary(file), { strategySheet: plugin.data.strategySheet, trackingSheet: plugin.data.trackingSheet, previous: plugin.data.plan });
   const previous = plugin.data.plan;
-  if (previous && previous.id !== next.id) throw new Error('This workbook has a different plan ID. Multiple-plan switching is not supported yet.');
+  if (previous && previous.id !== next.id && previous.id !== 'sports-tracking-only') throw new Error('This workbook has a different plan ID. Multiple-plan switching is not supported yet.');
   for (const session of previous?.sessions ?? []) {
    if (session.status !== 'completed') continue;
    const replacement = next.sessions.find(item => item.id === session.id);
@@ -27,7 +28,7 @@ export async function syncWorkbook(plugin: SportsPlugin): Promise<void> {
    if (!replacement) next.sessions.push(session);
   }
   plugin.data.plan = next; plugin.data.lastError = ''; await plugin.save();
-  await updateNote(plugin, 'Strategy.md', 'strategy', strategyMarkdown(next), '# Training strategy\n\n## Commentary\n');
+  if (plugin.data.strategySheet) await updateNote(plugin, 'Strategy.md', 'strategy', strategyMarkdown(next), '# Training strategy\n\n## Commentary\n');
   const issues: string[] = [];
   const prefix = `${plugin.data.notesFolder}/Weeks/`;
   for (const key of Object.keys(plugin.data.generatedBlocks)) {

@@ -1,3 +1,4 @@
+import { dailyLog } from './daily-log';
 import { checkWorkbookArchive } from './zip-safety';
 import readXlsxFile, { type SheetData } from 'read-excel-file/browser';
 import type { Goal, TrainingPart, Session, TrainingPlan } from '../model/types';
@@ -48,21 +49,42 @@ function minutes(value: string | undefined, context: string): number | null {
 function table(source: Map<string, RecordRow[]>, name: string): RecordRow[] {
  const value = source.get(name); if (!value) throw new Error(`Missing table: ${name}`); return value;
 }
-export async function parseWorkbook(buffer: ArrayBuffer): Promise<TrainingPlan> {
+export interface WorkbookMapping {
+ strategySheet: string;
+ trackingSheet: string;
+ previous?: TrainingPlan | null;
+}
+export const DEFAULT_MAPPING: WorkbookMapping = { strategySheet: 'Strategy', trackingSheet: 'Training log' };
+export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMapping = DEFAULT_MAPPING): Promise<TrainingPlan> {
+ if (!mapping.strategySheet && !mapping.trackingSheet) throw new Error('Select at least one sheet to sync a workbook.');
+ if (mapping.strategySheet && mapping.strategySheet === mapping.trackingSheet) throw new Error('Choose different sheets for strategy and tracking.');
  if (buffer.byteLength > 5 * 1024 * 1024) throw new Error('Workbook exceeds the prototype limit of 5 MB.');
  checkWorkbookArchive(buffer);
  const sheets = await readXlsxFile(new Blob([buffer]));
- if (sheets.length !== 2 || !sheets.some(sheet => sheet.sheet === 'Strategy') || !sheets.some(sheet => sheet.sheet === 'Training log')) throw new Error('Use exactly two sheets named Strategy and Training log.');
- const strategy = tables(sheets.find(sheet => sheet.sheet === 'Strategy')!.data);
- const log = tables(sheets.find(sheet => sheet.sheet === 'Training log')!.data);
+ const selected = (name: string): SheetData => {
+  const sheet = sheets.find(sheet => sheet.sheet === name);
+  if (!sheet) throw new Error(`Selected sheet "${name}" was not found. Update the sheet selection in Sports settings.`);
+  return sheet.data;
+ };
+ const strategy = mapping.strategySheet ? tables(selected(mapping.strategySheet)) : null;
+ const log = mapping.trackingSheet ? selected(mapping.trackingSheet) : null;
+ const previous = mapping.previous;
+ let id = previous?.id ?? 'sports-tracking-only';
+ let name = previous?.name ?? 'Training log';
+ let timezone = previous?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+ let goals: Goal[] = previous?.goals ?? [];
+ let parts: TrainingPart[] = previous?.parts ?? [];
+ if (strategy) {
  const metadata = table(strategy, 'Plan');
  if (metadata.length !== 1) throw new Error('Plan must contain exactly one metadata row.');
  const meta = metadata[0]!;
  if (meta.schema_version !== '1') throw new Error('Expected schema_version 1.');
- const timezone = required(meta, 'timezone', 'Plan');
+ timezone = required(meta, 'timezone', 'Plan');
+ id = required(meta, 'plan_id', 'Plan');
+ name = required(meta, 'plan_name', 'Plan');
  try { new Intl.DateTimeFormat('en', { timeZone: timezone }); } catch { throw new Error('Plan: invalid timezone.'); }
- const goals: Goal[] = table(strategy, 'Goals').map(row => ({ id: required(row, 'goal_id', 'Goals'), title: required(row, 'title', 'Goals'), benchmark: row.benchmark ?? '' }));
- const parts: TrainingPart[] = table(strategy, 'Parts').map(row => ({ id: required(row, 'part_id', 'Parts'), version: required(row, 'version', 'Parts'), title: required(row, 'title', 'Parts'), prescription: required(row, 'prescription', 'Parts'), goalIds: [] }));
+ goals = table(strategy, 'Goals').map(row => ({ id: required(row, 'goal_id', 'Goals'), title: required(row, 'title', 'Goals'), benchmark: row.benchmark ?? '' }));
+ parts = table(strategy, 'Parts').map(row => ({ id: required(row, 'part_id', 'Parts'), version: required(row, 'version', 'Parts'), title: required(row, 'title', 'Parts'), prescription: required(row, 'prescription', 'Parts'), goalIds: [] }));
  unique(goals.map(goal => goal.id), 'Goals');
  unique(parts.map(part => JSON.stringify([part.id, part.version])), 'Parts');
  for (const row of table(strategy, 'PartGoals')) {
@@ -71,17 +93,20 @@ export async function parseWorkbook(buffer: ArrayBuffer): Promise<TrainingPlan> 
   if (!part.goalIds.includes(row.goal_id!)) part.goalIds.push(row.goal_id!);
  }
  if (strategy.get('Exercises')?.length) throw new Error('Exercise-level tables are not supported in this prototype. Use the part prescription field.');
- const sessions: Session[] = table(log, 'Sessions').map((row, index) => {
+ }
+ const daily = log ? dailyLog(log, parts, Boolean(strategy)) : null;
+ const sessions: Session[] = daily ?? (log ? table(tables(log), 'Sessions').map((row, index) => {
   const context = `Sessions row ${index + 1}`;
   const date = required(row, 'date', context);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(`${date}T12:00:00Z`)) || new Date(`${date}T12:00:00Z`).toISOString().slice(0, 10) !== date) throw new Error(`${context}: use a valid YYYY-MM-DD date.`);
   const partId = row.part_id ?? ''; const partVersion = row.part_version ?? '';
-  if ((partId || partVersion) && !parts.some(part => part.id === partId && part.version === partVersion)) throw new Error(`${context}: unknown part/version.`);
+  if (Boolean(partId) !== Boolean(partVersion)) throw new Error(`${context}: supply both part_id and part_version, or leave both blank.`);
+  if (strategy && (partId || partVersion) && !parts.some(part => part.id === partId && part.version === partVersion)) throw new Error(`${context}: unknown part/version.`);
   const status = row.status || 'planned';
-  if (!['planned', 'completed', 'skipped', 'cancelled'].includes(status)) throw new Error(`${context}: invalid status.`);
+  if (!['planned', 'in-progress', 'completed', 'skipped', 'cancelled'].includes(status)) throw new Error(`${context}: invalid status.`);
   return { id: required(row, 'session_id', context), date, sport: required(row, 'sport', context), title: required(row, 'title', context), partId, partVersion,
    plannedMinutes: minutes(row.planned_minutes, context), actualMinutes: minutes(row.actual_minutes, context), result: row.result ?? '', status, notes: row.notes ?? '' };
- });
+ }) : previous?.sessions ?? []);
  unique(sessions.map(session => session.id), 'Sessions');
- return { id: required(meta, 'plan_id', 'Plan'), name: required(meta, 'plan_name', 'Plan'), timezone, goals, parts, sessions, importedAt: new Date().toISOString() };
+ return { id, name, timezone, goals, parts, sessions, importedAt: new Date().toISOString() };
 }

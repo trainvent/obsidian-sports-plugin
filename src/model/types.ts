@@ -3,6 +3,7 @@ export interface TrainingPart { id: string; version: string; title: string; pres
 export interface Session {
  id: string; date: string; sport: string; title: string;
  partId: string; partVersion: string; plannedMinutes: number | null;
+ block?: string; prescription?: string; checks?: Record<string, boolean | null>; results?: Record<string, string>;
  actualMinutes: number | null; result: string; status: string; notes: string;
 }
 export interface TrainingPlan {
@@ -11,11 +12,11 @@ export interface TrainingPlan {
 }
 export interface RecurringEvent { id: string; title: string; sport: string; weekday: number; time: string; minutes: number; startDate: string; endDate: string }
 export interface SportsData {
- workbookPath: string; notesFolder: string; syncMinutes: number;
+ workbookPath: string; strategySheet: string; trackingSheet: string; notesFolder: string; syncMinutes: number;
  syncOnStartup: boolean; plan: TrainingPlan | null; events: RecurringEvent[];
  generatedBlocks: Record<string, string>; lastError: string;
 }
 export const DEFAULT_DATA: SportsData = {
- workbookPath: '', notesFolder: 'Sports', syncMinutes: 0, syncOnStartup: false,
+ workbookPath: '', strategySheet: 'Strategy', trackingSheet: 'Training log', notesFolder: 'Sports', syncMinutes: 0, syncOnStartup: false,
  plan: null, events: [], generatedBlocks: {}, lastError: '',
 };
