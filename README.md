@@ -370,9 +370,12 @@ Garmin stops all Garmin requests and retains cached summaries locally.
 ### Combined plan calendar
 
 `Calendar.md` provides one chronological table for today and upcoming dates,
-with XLSX daily plans and optional Garmin Coach plans side by side. Multiple
+with recurring weekly training, XLSX daily plans and optional Garmin Coach plans side by side. Multiple
 workouts share one date row. Open it through the **Calendar** link in `Plans.md`.
 The existing weekly and daily views remain available. Weekly strategy is not
 expanded into invented daily sessions. Coach visibility follows **Show Garmin
 Coach plans**; blank cells mean no imported prescription, not a rest day.
+Recurring training comes from the workbook weekly schedule and appears for the next
+28 days, plus any later imported daily or Coach plan dates. This calendar column
+is independent of the weekly-note regular-activity visibility setting.
 Write personal calendar reviews below the generated section; sync preserves them.

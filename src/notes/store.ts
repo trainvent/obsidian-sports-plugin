@@ -1,3 +1,4 @@
+import { initialNoteTitle, withoutNoteTitle } from './titles';
 import { normalizePath, TFile } from 'obsidian';
 import type SportsPlugin from '../main';
 import { backupBeforeReset } from './cache';
@@ -15,6 +16,14 @@ export async function updateNote(plugin: SportsPlugin, relativePath: string, id:
  }
  const existing = plugin.app.vault.getAbstractFileByPath(path);
  const key = `${path}:${id}`;
+ const expectedTitle = initialNoteTitle(initial) ?? (id === 'calendar' ? 'Calendar' : undefined);
+ const removeGeneratedHeading = (content: string): string => {
+  if (!expectedTitle) return content;
+  const stripped = withoutNoteTitle(content, expectedTitle);
+  // Only migrate the old title directly before this plugin's generated block.
+  const prefix = stripped.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '').trimStart();
+  return prefix.startsWith(`<!-- sports:begin ${id} -->`) ? stripped : content;
+ };
  let file: TFile;
  if (existing instanceof TFile) {
   if (plugin.data.resetNoteBaselines && plugin.data.generatedBlocks[key] === undefined) {
@@ -29,7 +38,7 @@ export async function updateNote(plugin: SportsPlugin, relativePath: string, id:
    await backupBeforeReset(plugin, path, snapshot);
    await plugin.app.vault.process(existing, content => {
     if (content !== snapshot) throw new Error(`${path} changed during recovery. Retry sync.`);
-    return restored;
+    return removeGeneratedHeading(restored);
    });
    plugin.data.generatedBlocks[key] = generatedBlock(id, body);
    await plugin.save();
@@ -37,16 +46,18 @@ export async function updateNote(plugin: SportsPlugin, relativePath: string, id:
   }
   await plugin.app.vault.process(existing, content => {
    if (/<!-- complete-(?:log|plans):start -->/.test(content)) throw new Error(`${path} is managed by the existing Fitness refresh scripts. Choose a separate notes folder to avoid mixing generators.`);
-   return mergeBlock(content, id, body, plugin.data.generatedBlocks[key]);
+   return removeGeneratedHeading(mergeBlock(content, id, body, plugin.data.generatedBlocks[key]));
   });
   file = existing;
  } else if (existing) throw new Error(`A folder occupies ${path}.`);
  else {
   if (plugin.data.generatedBlocks[key] !== undefined && !recreateMissing) throw new Error(`Previously generated note ${path} was removed. Use Recreate missing notes in Sports settings to restore it.`);
   // Put the generated overview after the title, with personal sections below it.
-  const boundary = initial.indexOf('\n\n');
-  const title = boundary < 0 ? initial : initial.slice(0, boundary);
-  const commentary = boundary < 0 ? '' : initial.slice(boundary).trim();
+  const cleanInitial = expectedTitle ? withoutNoteTitle(initial, expectedTitle) : initial;
+ const frontmatterEnd = cleanInitial.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n/)?.[0] ?? '';
+ const boundary = frontmatterEnd ? frontmatterEnd.length : 0;
+  const title = cleanInitial.slice(0, boundary);
+  const commentary = cleanInitial.slice(boundary).trim();
   file = await plugin.app.vault.create(path, `${mergeBlock(title, id, body)}${commentary ? `\n${commentary}\n` : ''}`);
  }
  plugin.data.generatedBlocks[key] = generatedBlock(id, body);

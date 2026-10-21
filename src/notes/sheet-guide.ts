@@ -1,3 +1,4 @@
+import { withoutNoteTitle } from './titles';
 import { normalizePath, TFile } from 'obsidian';
 import type SportsPlugin from '../main';
 import sheetGuide from '../../SHEET_GUIDE.md';
@@ -8,7 +9,10 @@ export async function ensureSheetGuide(plugin: SportsPlugin): Promise<void> {
  if (!folder || folder.startsWith('/') || folder.split(/[\\/]/).some(part => part === '..' || part.startsWith('.'))) throw new Error('Choose a normal vault folder for Sports notes.');
  const path = normalizePath(`${folder}/Guide/SHEET_GUIDE.md`);
  const existing = plugin.app.vault.getAbstractFileByPath(path);
- if (existing instanceof TFile) return;
+ if (existing instanceof TFile) {
+  await plugin.app.vault.process(existing, content => withoutNoteTitle(content, 'Adapting the Sports workbook'));
+  return;
+ }
  if (existing) throw new Error(`A folder occupies ${path}.`);
  const pieces = path.split('/'); pieces.pop();
  let current = '';
@@ -16,5 +20,5 @@ export async function ensureSheetGuide(plugin: SportsPlugin): Promise<void> {
   current = current ? `${current}/${piece}` : piece;
   if (!plugin.app.vault.getAbstractFileByPath(current)) await plugin.app.vault.createFolder(current);
  }
- await plugin.app.vault.create(path, sheetGuide);
+ await plugin.app.vault.create(path, withoutNoteTitle(sheetGuide));
 }

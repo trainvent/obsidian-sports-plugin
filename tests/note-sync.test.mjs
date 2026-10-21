@@ -314,3 +314,109 @@ test('calendar sync preserves reviews, protects generated edits and supports Coa
  assert.ok(standalone.files.has('Sports/Calendar.md'));
  assert.match(standalone.files.get('Sports/Plans.md').content, /Calendar/);
 });
+
+test('calendar expands workbook weekly training across DST and on later dated plans without legacy events', () => {
+ const { plan } = fixture();
+ plan.weeklySchedule = [
+  { id: 'late', weekday: 0, time: '18:00', title: 'Evening | run', minutes: 30, recordedBy: 'Tracker', notes: 'Easy' },
+  { id: 'early', weekday: 0, time: '09:00', title: 'Swim', minutes: null, recordedBy: 'Garmin', notes: '' },
+ ];
+ plan.sessions = [{ date: '2026-12-27', title: 'Later daily plan', plannedMinutes: null }];
+ const original = JSON.stringify(plan);
+ const body = calendarMarkdown(plan, false, undefined, new Date('2026-10-24T23:30:00Z'));
+ assert.match(body, /starting 2026-10-25/);
+ assert.match(body, /\| Date \| Recurring \| Specialized \|/);
+ const rows = body.split('\n').filter(row => /^\| 2026-/.test(row));
+ assert.deepEqual(rows.map(row => row.slice(2,12)), ['2026-10-25','2026-11-01','2026-11-08','2026-11-15','2026-12-27']);
+ for (const row of rows) {
+  assert.ok(row.indexOf('09:00') < row.indexOf('18:00'));
+  assert.match(row, /Evening &#124; run/); assert.doesNotMatch(row, /null min/);
+ }
+ assert.match(rows.at(-1), /Later daily plan/);
+ assert.equal(JSON.stringify(plan), original);
+});
+
+
+test('calendar removes disabled source columns and stale source-only dates during note sync', async () => {
+ const { plugin, plan, files } = fixture();
+ plan.sessions = [{ date: '2099-01-01', title: 'Cached specialized plan', plannedMinutes: 30 }];
+ plugin.data.showGarminCoachPlans = true;
+ plugin.data.garminCoachCache = { workouts: [{ date: '2099-01-02', name: 'Cached coach workout', plan: 'Coach', sport: 'running', duration: null, distance: null, description: '' }] };
+ await syncNotes(plugin, plan);
+ const note = files.get('Sports/Calendar.md');
+ assert.match(note.content, /\| Date \| Recurring \| Specialized \| Garmin Coach \|/);
+ note.content += '\nKeep this calendar review\n';
+ plugin.data.showGarminCoachPlans = false;
+ plugin.data.trackingSheet = '';
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.doesNotMatch(note.content, /Specialized|Garmin Coach|2099-01-01|2099-01-02|Cached specialized|Cached coach/);
+ assert.match(note.content, /\| Date \| Recurring \|\n\| --- \| --- \|/);
+ assert.match(note.content, /Keep this calendar review/);
+ plugin.data.trackingSheet = 'Custom log';
+ await syncNotes(plugin, plan);
+ assert.match(note.content, /Specialized/); assert.doesNotMatch(note.content, /Garmin Coach/);
+ plugin.data.trackingSheet = undefined;
+ plugin.data.showGarminCoachPlans = true;
+ await syncNotes(plugin, plan);
+ assert.doesNotMatch(note.content, /Specialized|2099-01-01/);
+ assert.match(note.content, /\| Date \| Recurring \| Garmin Coach \|/);
+});
+
+
+test('Calendar relies on the inline filename title and removes only its legacy generated heading', async () => {
+ const { plugin, plan, files } = fixture();
+ await syncNotes(plugin, plan);
+ const note = files.get('Sports/Calendar.md');
+ assert.doesNotMatch(note.content, /^# Calendar/m);
+ note.content = '# Calendar\n\n' + note.content.trimStart() + '\nPersonal review\n';
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.doesNotMatch(note.content, /^# Calendar/m);
+ assert.match(note.content, /Personal review/);
+ note.content = '# My custom calendar\n\n' + note.content;
+ await syncNotes(plugin, plan);
+ assert.match(note.content, /^# My custom calendar/);
+});
+
+test('all generated notes omit redundant titles and migrate legacy headings while preserving frontmatter and reviews', async () => {
+ const { plugin, plan, files } = fixture();
+ plan.goals = [{ id: 'running', title: 'Running', benchmark: 'Maintain' }];
+ await syncNotes(plugin, plan);
+ const headings = new Map([
+  ['Sports/Plans.md', 'Plans'], ['Sports/Log.md', 'Log'], ['Sports/Strategy.md', 'Training strategy'],
+  ['Sports/Weeks/2026-12-28.md', 'Week of 2026-12-28'], ['Sports/Goals/running.md', 'Running'],
+ ]);
+ for (const [path, title] of headings) {
+  const file = files.get(path);
+  assert.doesNotMatch(file.content, /^# /m, path);
+  if (path.includes('/Goals/')) file.content = file.content.replace(/^(---\n[\s\S]*?\n---\n)/, `$1# ${title}\n\n`);
+  else file.content = `# ${title}\n\n${file.content.trimStart()}`;
+  file.content += '\nPersonal review stays\n';
+ }
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ for (const [path] of headings) {
+  assert.doesNotMatch(files.get(path).content, /^# /m, path);
+  assert.match(files.get(path).content, /Personal review stays/);
+ }
+ assert.match(files.get('Sports/Goals/running.md').content, /^---\ntags: \[sports\/goal\]\ngoal_id: "running"\n---/);
+ assert.doesNotMatch(files.get('Sports/Guide/SHEET_GUIDE.md').content, /^# /m);
+ assert.match(files.get('Sports/Plans.md').content, /sports:end plan -->\n\n## Reflections/);
+});
+
+test('Garmin-only historical weeks recover missing baselines for refresh-time-only differences, protecting actual edits', async () => {
+ const { plugin, plan, files } = fixture();
+ plugin.data.garminCache = { activities: [{ id: '123', date: '2026-07-26', time: '08:20', name: 'Run', type: 'running', duration: 3600, distance: 10000, average_hr: 140 }], start: '2026-07-23', end: '2026-10-21', lastSuccess: '2026-10-21T09:15:00.457Z', error: '' };
+ await syncNotes(plugin, plan);
+ const path = 'Sports/Weeks/2026-07-20.md';
+ const note = files.get(path); note.content += '\nPersonal historical review\n';
+ delete plugin.data.generatedBlocks[`${path}:week:2026-07-20`];
+ plugin.data.garminCache.lastSuccess = '2026-10-21T12:30:25.824Z';
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.match(note.content, /12:30:25.824Z/); assert.match(note.content, /Personal historical review/);
+ assert.ok(plugin.data.generatedBlocks[`${path}:week:2026-07-20`]);
+ delete plugin.data.generatedBlocks[`${path}:week:2026-07-20`];
+ note.content = note.content.replace('10000', '99999').replace('10.00 km', '99.99 km');
+ const edited = note.content;
+ plugin.data.garminCache.lastSuccess = '2026-10-21T13:30:25.824Z';
+ assert.ok((await syncNotes(plugin, plan)).some(issue => issue.startsWith('Weeks/2026-07-20.md:')));
+ assert.equal(note.content, edited);
+});
