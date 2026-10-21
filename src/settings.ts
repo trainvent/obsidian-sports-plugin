@@ -56,6 +56,11 @@ export class SportsSettingTab extends PluginSettingTab {
   }));
   new Setting(sync).setName('Refresh all sources').addButton(button => button.setButtonText('Sync now').setDisabled(!Platform.isDesktop).onClick(() => this.plugin.sync(true)));
 
+  const links = root.createDiv({ cls: 'sports-settings-links' });
+  links.createEl('a', { text: '❤️ Donate', href: 'https://ko-fi.com/trainvent', cls: 'sports-settings-link', attr: { target: '_blank', rel: 'noopener noreferrer' } });
+  links.createEl('a', { text: 'Support', href: 'https://next.trainvent.com/de/software-support/', cls: 'sports-settings-link', attr: { target: '_blank', rel: 'noopener noreferrer' } });
+  links.createEl('a', { text: 'Report an issue', href: 'https://github.com/trainvent/obsidian-sports-plugin/issues', cls: 'sports-settings-link', attr: { target: '_blank', rel: 'noopener noreferrer' } });
+
   const advanced = root.createEl('details', { cls: 'sports-advanced' });
   advanced.createEl('summary', { text: 'Advanced · recovery' });
   new Setting(advanced).setName('Recreate missing notes').setDesc('Restore deleted notes. Existing notes and edits are preserved.').addButton(button => button.setButtonText('Recreate notes').setDisabled(!this.plugin.data.plan && !this.plugin.data.garminCache && !this.plugin.data.garminCoachCache).onClick(() => this.plugin.refreshNotes(true, true)));

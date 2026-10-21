@@ -6,5 +6,6 @@
 	"description": "Sports plugin for Obsidian, developed by Trainvent.",
 	"author": "Trainvent",
 	"authorUrl": "https://github.com/trainvent",
-	"isDesktopOnly": false
+	"isDesktopOnly": false,
+	"fundingUrl": "https://ko-fi.com/trainvent"
 }
