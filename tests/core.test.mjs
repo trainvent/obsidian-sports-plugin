@@ -318,3 +318,25 @@ test('goal categories separate new skills from maintenance and core supports all
  files['xl/worksheets/sheet1.xml'] = strToU8(invalid);
  await assert.rejects(parseWorkbook(zipSync(files).buffer), /category must be/);
 });
+
+test('new three-sheet example imports and rebases Log without changing Recurring', async () => {
+ const source = new Uint8Array(readFileSync('templates/Training-example.xlsx'));
+ const plan = await parseWorkbook(startTemplateNextMonday(source, new Date(2026, 11, 31, 12)));
+ assert.equal(plan.sessions.length, 48);
+ assert.equal(plan.sessions[0].date, '2027-01-04');
+ assert.equal(plan.sessions.at(-1).date, '2027-03-27');
+ assert.equal(plan.weekPlans[0].start, '2027-01-04');
+ assert.deepEqual(plan.parts.find(part => part.id === 'A').goalIds, ['muscle-up', 'pistol']);
+ assert.deepEqual(plan.weeklySchedule.map(item => [item.weekday, item.time, item.minutes]), [[2, '20:00', 60], [0, '10:30', 60]]);
+ assert.ok(plan.weekPlans[0].blocks.A.includes('Scapular pull-up'));
+ assert.ok(plan.exerciseArsenal.length > 40);
+ assert.ok(strategyMarkdown(plan).includes('Exercise arsenal'));
+ assert.ok(weeklyStrategy(plan, '2027-01-04').includes('Scapular pull-up'));
+ assert.ok(plan.sessions.every(session => session.status === 'planned' && session.actualMinutes === null));
+ const files = unzipSync(source);
+ const strings = strFromU8(files['xl/sharedStrings.xml']);
+ const invalid = strings.replaceAll('Easy scapular pull-up', 'Easy, scapular pull-up');
+ assert.notEqual(invalid, strings);
+ files['xl/sharedStrings.xml'] = strToU8(invalid);
+ await assert.rejects(parseWorkbook(zipSync(files).buffer), /must not contain commas/);
+});

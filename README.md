@@ -42,26 +42,19 @@ template. Cloud sources will later provide an alternative for mobile devices.
 
 ## Workbook format (prototype schema 1)
 
-Use the [12-week workbook](templates/Sports-12-week.xlsx), or create a copy from
-Sports settings at a new workbook path. The smaller [daily example](templates/Sports-template.xlsx)
-remains available. Existing workbooks are never overwritten.
+Use the [example workbook](templates/Training-example.xlsx), or select **Create workbook**
+in Sports settings to create it at a new local path. It uses **Strategy**, **Recurring**,
+and **Log** tabs. The fixed example contains 12 weekly plans and 48 manual sessions;
+actual results are blank. Template creation and note sync save `Guide/SHEET_GUIDE.md` inside the configured
+vault notes folder (by default `Sports/Guide/SHEET_GUIDE.md`), preserving an existing guide. No customization flow is required. Give the workbook and
+[SHEET_GUIDE.md](SHEET_GUIDE.md) to your own chatbot to adapt it safely.
 
-The 12-week workbook adapts the existing Fitness weekly structure: foundation, deload, build, deload, specific practice, and test week.
-It contains 12 weekly strategies and 48 manual skill and core session slots. The Strategy sheet also
-includes editable regular activities: Tuesday swimming at 20:00 and Sunday running
-at 10:30. Their durations are left blank for you to set. All actual results
-are blank. Set `start_date` in **Strategy** (cell E3) to shift all weekly and session dates
-together. **Create workbook** fixes the start to the next Monday in the user's local
-calendar and uses their local timezone. This is a saved date, so reopening the
-workbook does not move the plan. The downloadable workbook is a dated example;
-plugin-created copies always rebase to the next Monday. Targets remain editable. Changing the start
-after recording completed history is blocked by sync's history protections. Amber cells identify weekly planning and result inputs.
-The Training log contains four manual sessions per week: skills A with core,
-handstand technique, skills B with core, and light skill practice. Combined
-run/handstand and skill/bike sessions retain only their manual skill/core portion.
-Weekly time budgets cover those manual sessions only. Regular swimming and running
-belong in Weekly schedule, outside the manual log. Source references: `Persönlich/Fitness/Strategy.md`, `Goals and Benchmarks.md`,
-and `Weeks/Week 01.md` through `Week 12.md` in the user's existing Strainvent vault.
+Column colors have consistent roles: pale blue for identifiers, amber for planning
+inputs, green for recorded training, and gray for formulas. The guide explains the
+exact headers, ID links, exercise-name delimiters, formula caches and history rules.
+Plugin-created copies start next Monday and use the local timezone. Existing files
+are never overwritten. Select Strategy and Log as the sheet mappings; Recurring is
+read automatically with Strategy. The older templates and formats remain supported.
 
 In settings, choose the exact **Strategy sheet** and **Tracking sheet** tab names.
 Leave either blank to disable that import; both may be blank for calendar/notes-only

@@ -11,15 +11,15 @@ function text(value: unknown): string {
  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value).trim();
  return '';
 }
-function tables(rows: SheetData): Map<string, RecordRow[]> {
+function tables(rows: SheetData, allowBlankRows = false): Map<string, RecordRow[]> {
  const result = new Map<string, RecordRow[]>();
  let name = ''; let headers: string[] = [];
  for (const row of rows) {
-  const values = row.map(text);
+  const values = row.map((value, index) => value instanceof Date && ['Time', 'Time Start', 'Time End'].includes(headers[index] ?? '') ? value.toISOString().slice(11, 16) : text(value));
   while (values.length && !values[values.length - 1]) values.pop();
-  if (!values.some(Boolean)) { name = ''; headers = []; continue; }
+  if (!values.some(Boolean)) { if (!allowBlankRows) { name = ''; headers = []; } continue; }
   const first = values[0] ?? '';
-  if (['Plan', 'Goals', 'Parts', 'PartGoals', 'Exercises', 'Sessions', 'Weekly schedule', 'Week plans'].includes(first) && values.slice(1).every(value => !value)) {
+  if (['Plan', 'Goals', 'Parts', 'PartGoals', 'Exercises', 'Sessions', 'Weekly schedule', 'Week plans', 'Exercise arsenal'].includes(first) && values.slice(1).every(value => !value)) {
    if (result.has(first)) throw new Error(`Duplicate table: ${first}`);
    name = first; headers = []; result.set(name, []); continue;
   }
@@ -56,7 +56,7 @@ export interface WorkbookMapping {
  trackingSheet: string;
  previous?: TrainingPlan | null;
 }
-export const DEFAULT_MAPPING: WorkbookMapping = { strategySheet: 'Strategy', trackingSheet: 'Training log' };
+export const DEFAULT_MAPPING: WorkbookMapping = { strategySheet: 'Strategy', trackingSheet: 'Log' };
 export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMapping = DEFAULT_MAPPING): Promise<TrainingPlan> {
  if (!mapping.strategySheet && !mapping.trackingSheet) throw new Error('Select at least one sheet to sync a workbook.');
  if (mapping.strategySheet && mapping.strategySheet === mapping.trackingSheet) throw new Error('Choose different sheets for strategy and tracking.');
@@ -69,7 +69,9 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
   return sheet.data;
  };
  const strategy = mapping.strategySheet ? tables(selected(mapping.strategySheet)) : null;
- const log = mapping.trackingSheet ? selected(mapping.trackingSheet) : null;
+ // Keep the old default usable without rewriting saved user mappings.
+ const tracking = mapping.trackingSheet === 'Log' && !sheets.some(sheet => sheet.sheet === 'Log') && sheets.some(sheet => sheet.sheet === 'Training log') ? 'Training log' : mapping.trackingSheet;
+ const log = tracking ? selected(tracking) : null;
  const previous = mapping.previous;
  let id = previous?.id ?? 'sports-tracking-only';
  let name = previous?.name ?? 'Training log';
@@ -78,6 +80,7 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
  let parts: TrainingPart[] = previous?.parts ?? [];
  let weeklySchedule = previous?.weeklySchedule ?? [];
  let weekPlans = previous?.weekPlans ?? [];
+ let exerciseArsenal = previous?.exerciseArsenal ?? [];
  if (strategy) {
  const metadata = table(strategy, 'Plan');
  if (metadata.length !== 1) throw new Error('Plan must contain exactly one metadata row.');
@@ -95,13 +98,31 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
  parts = table(strategy, 'Parts').map(row => ({ id: required(row, 'part_id', 'Parts'), version: required(row, 'version', 'Parts'), title: required(row, 'title', 'Parts'), prescription: required(row, 'prescription', 'Parts'), goalIds: [] }));
  unique(goals.map(goal => goal.id), 'Goals');
  unique(parts.map(part => JSON.stringify([part.id, part.version])), 'Parts');
- for (const row of table(strategy, 'PartGoals')) {
+ for (const row of strategy.get('Parts') ?? []) {
+  const part = parts.find(part => part.id === row.part_id && part.version === row.version)!;
+  for (const goalId of (row.goal_ids ?? '').split(',').map(value => value.trim()).filter(Boolean)) {
+   if (!goals.some(goal => goal.id === goalId)) throw new Error('Parts: unknown goal in goal_ids.');
+   if (!part.goalIds.includes(goalId)) part.goalIds.push(goalId);
+  }
+ }
+ if (!strategy.has('PartGoals') && !(strategy.get('Parts') ?? []).every(row => 'goal_ids' in row)) throw new Error('Parts: supply goal_ids or a PartGoals table.');
+ for (const row of strategy.get('PartGoals') ?? []) {
   const part = parts.find(part => part.id === row.part_id && part.version === row.version);
   if (!part || !goals.some(goal => goal.id === row.goal_id)) throw new Error('PartGoals: unknown goal or part/version.');
   if (!part.goalIds.includes(row.goal_id!)) part.goalIds.push(row.goal_id!);
  }
  weekPlans = parseWeekPlans(strategy.get('Week plans') ?? []);
- weeklySchedule = parseWeeklySchedule(strategy.get('Weekly schedule') ?? []);
+ const recurring = sheets.find(sheet => sheet.sheet === 'Recurring');
+ if (recurring && strategy.has('Weekly schedule')) throw new Error('Keep Weekly schedule in Strategy or Recurring, not both.');
+ weeklySchedule = parseWeeklySchedule(recurring ? table(tables(recurring.data, true), 'Weekly schedule') : strategy.get('Weekly schedule') ?? []);
+ let group = '';
+ exerciseArsenal = (strategy.get('Exercise arsenal') ?? []).map(row => {
+  group = row.Group || group;
+  if (!group || !row.Exercise) throw new Error('Exercise arsenal: supply a Group and one Exercise per row.');
+  if (row.Exercise.includes(',') || row.Exercise.includes(':')) throw new Error('Exercise arsenal: exercise names must not contain commas or colons.');
+  return { group, exercise: row.Exercise };
+ });
+ unique(exerciseArsenal.map(item => item.exercise), 'Exercise arsenal');
  if (strategy.get('Exercises')?.length) throw new Error('Exercise-level tables are not supported in this prototype. Use the part prescription field.');
  }
  const daily = log ? dailyLog(log, parts, Boolean(strategy)) : null;
@@ -118,5 +139,5 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
    plannedMinutes: minutes(row.planned_minutes, context), actualMinutes: minutes(row.actual_minutes, context), result: row.result ?? '', status, notes: row.notes ?? '' };
  }) : previous?.sessions ?? []);
  unique(sessions.map(session => session.id), 'Sessions');
- return { id, name, timezone, goals, parts, weeklySchedule, weekPlans, sessions, importedAt: new Date().toISOString() };
+ return { id, name, timezone, goals, parts, weeklySchedule, weekPlans, exerciseArsenal, sessions, importedAt: new Date().toISOString() };
 }

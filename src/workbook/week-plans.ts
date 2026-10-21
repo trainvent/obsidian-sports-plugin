@@ -14,6 +14,6 @@ export function parseWeekPlans(rows: Record<string, string>[]): WeekPlan[] {
   if (minutes !== null && (!Number.isFinite(minutes) || minutes < 0)) throw new Error('Week plans: Minutes must be a nonnegative number or blank.');
   if (!row.Phase || !row.Focus) throw new Error(`Week plans week ${week}: supply Phase and Focus.`);
   numbers.add(week); starts.add(start);
-  return { week, start, phase: row.Phase, focus: row.Focus, targets: row.Targets ?? '', advanceWhen: row['Advance when'] ?? '', minutes };
+  return { week, start, phase: row.Phase, focus: row.Focus, targets: row.Targets ?? '', advanceWhen: row['Advance when'] ?? '', minutes, blocks: Object.fromEntries(['A', 'B'].filter(key => row[key]).map(key => [key, row[key]!])) };
  }).sort((left, right) => left.start.localeCompare(right.start));
 }

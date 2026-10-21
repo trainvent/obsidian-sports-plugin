@@ -1,6 +1,7 @@
 import type SportsPlugin from '../main';
 import type { TrainingPlan } from '../model/types';
 import { weekDates } from '../model/calendar';
+import { ensureSheetGuide } from './sheet-guide';
 import { updateNote } from './store';
 import { strategyMarkdown, datedLogMarkdown, weekMarkdown } from './render';
 import { migrateNoteNames } from './migrate';
@@ -24,6 +25,8 @@ export async function syncNotes(plugin: SportsPlugin, plan: TrainingPlan, recrea
   ...ordered.map(date => ({ path: `Weeks/${date}.md`, id: `week:${date}`, body: `${noteLink(folder, 'Plans', 'Plans')} · ${noteLink(folder, 'Log', 'Log')}\n\n${weekMarkdown(plan, plugin.data.events, weekDates(new Date(`${date}T12:00:00`)), plugin.data.showRegularActivities)}`, initial: `# Week of ${date}\n\n## Weekly review\n\n### What improved\n\n### Recovery and comfort\n\n### Repeat or progress\n\n### What to adjust\n` })),
  ];
  const issues: string[] = [...migrationIssues];
+ try { await ensureSheetGuide(plugin); }
+ catch (error) { issues.push(`Guide/SHEET_GUIDE.md: ${error instanceof Error ? error.message : 'Guide creation failed.'}`); }
  for (const task of tasks) {
   if (migrationIssues.some(issue => issue.startsWith(`${task.path}:`))) continue;
   try { await updateNote(plugin, task.path, task.id, task.body, task.initial, recreateMissing); }

@@ -8,9 +8,10 @@ export interface Session {
  actualMinutes: number | null; result: string; status: string; notes: string;
 }
 export interface WeeklyScheduleItem { id: string; weekday: number; time: string; minutes: number | null; title: string; recordedBy: string; notes: string }
-export interface WeekPlan { week: number; start: string; phase: string; focus: string; targets: string; advanceWhen: string; minutes: number | null }
+export interface WeekPlan { week: number; start: string; phase: string; focus: string; targets: string; advanceWhen: string; minutes: number | null; blocks?: Record<string, string> }
 export interface TrainingPlan {
  id: string; name: string; timezone: string; goals: Goal[];
+ exerciseArsenal?: { group: string; exercise: string }[];
  weeklySchedule?: WeeklyScheduleItem[];
  weekPlans?: WeekPlan[];
  parts: TrainingPart[]; sessions: Session[]; importedAt: string;
@@ -22,6 +23,6 @@ export interface SportsData {
  resetNoteBaselines: boolean; generatedBlocks: Record<string, string>; lastError: string;
 }
 export const DEFAULT_DATA: SportsData = {
- workbookPath: '~/Sports/Training.xlsx', strategySheet: 'Strategy', trackingSheet: 'Training log', notesFolder: 'Sports', syncMinutes: 10, syncOnStartup: true, showRegularActivities: false,
+ workbookPath: '~/Sports/Training.xlsx', strategySheet: 'Strategy', trackingSheet: 'Log', notesFolder: 'Sports', syncMinutes: 10, syncOnStartup: true, showRegularActivities: false,
  plan: null, events: [], resetNoteBaselines: false, generatedBlocks: {}, lastError: '',
 };

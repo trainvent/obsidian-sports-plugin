@@ -6,6 +6,7 @@ import { SportsSettingTab } from './settings';
 import { SPORTS_VIEW, SportsDashboard } from './ui/dashboard';
 import { RecurringModal } from './ui/recurring';
 import { createLocalTemplate } from './workbook/local-file';
+import { ensureSheetGuide } from './notes/sheet-guide';
 import { templateWorkbook } from './workbook/template-file';
 import { syncWorkbook } from './workbook/sync';
 import { noteLink } from './notes/plan';
@@ -46,8 +47,9 @@ export default class SportsPlugin extends Plugin {
   try {
    const path = this.data.workbookPath || DEFAULT_DATA.workbookPath;
    await createLocalTemplate(path, templateWorkbook());
-   this.data.workbookPath = path; this.data.strategySheet = 'Strategy'; this.data.trackingSheet = 'Training log'; await this.save();
-   new Notice('Template created at the configured local path, starting next week. Import it with the sync button.');
+   await ensureSheetGuide(this);
+   this.data.workbookPath = path; this.data.strategySheet = 'Strategy'; this.data.trackingSheet = 'Log'; await this.save();
+   new Notice('Workbook created, starting next week. The sheet guide is in your vault notes folder. Existing guides are preserved.');
   } catch (error) {
    const message = error instanceof Error && 'code' in error && error.code === 'EEXIST' ? 'A workbook already exists there. Choose a new path to create a template; existing workbooks are never overwritten.' : error instanceof Error ? error.message : 'Could not create the example workbook.';
    new Notice(message);

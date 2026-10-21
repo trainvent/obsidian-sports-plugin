@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url';
 const temp = mkdtempSync(`${tmpdir()}/sports-note-tests-`);
 process.on('exit', () => rmSync(temp, { recursive: true, force: true }));
 const output = await build({
- stdin: { contents: "export { syncNotes } from './src/notes/sync'; export { clearImportCache } from './src/notes/cache';", resolveDir: process.cwd(), loader: 'ts' }, bundle: true, format: 'esm', platform: 'browser', write: false,
+ stdin: { contents: "export { syncNotes } from './src/notes/sync'; export { clearImportCache } from './src/notes/cache';", resolveDir: process.cwd(), loader: 'ts' }, bundle: true, format: 'esm', platform: 'browser', write: false, loader: { '.md': 'text' },
  plugins: [{ name: 'obsidian-test-vault', setup(builder) {
   builder.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'obsidian', namespace: 'test' }));
   builder.onLoad({ filter: /.*/, namespace: 'test' }, () => ({ contents: 'export class TFile { constructor(path) { this.path = path; } } export const normalizePath = path => path;' }));
@@ -185,4 +185,17 @@ test('cache recovery leaves malformed generated sections untouched and remains r
  assert.ok((await syncNotes(plugin, plan)).some(issue => issue.includes('incomplete')));
  assert.equal(log.content, before);
  assert.equal(plugin.data.resetNoteBaselines, true);
+});
+
+test('sheet guide lives in the configured vault Guide folder and preserves edits', async () => {
+ const { plugin, plan, files } = fixture();
+ plugin.data.notesFolder = 'Training/Sports';
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ const guide = files.get('Training/Sports/Guide/SHEET_GUIDE.md');
+ assert.ok(guide instanceof TFile);
+ assert.ok(guide.content.includes('Exercise arsenal'));
+ guide.content = 'My adapted guide';
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.equal(guide.content, 'My adapted guide');
+ assert.ok(!files.has('Training/Sports/SHEET_GUIDE.md'));
 });

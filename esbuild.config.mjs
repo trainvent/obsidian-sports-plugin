@@ -16,7 +16,7 @@ const context = await esbuild.context({
 	},
 	entryPoints: ['src/main.ts'],
 	bundle: true,
-	loader: { '.xlsx': 'binary', '.svg': 'text' },
+	loader: { '.xlsx': 'binary', '.svg': 'text', '.md': 'text' },
 	external: [
 		'node:*',
 		'obsidian',

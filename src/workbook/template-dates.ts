@@ -9,7 +9,7 @@ export function startTemplateNextMonday(template: Uint8Array, now = new Date()):
  const serial = (Date.UTC(start.getFullYear(), start.getMonth(), start.getDate()) - Date.UTC(1899, 11, 30)) / DAY + 0.5;
  const files = unzipSync(template);
  const strategyPath = 'xl/worksheets/sheet1.xml';
- const logPath = 'xl/worksheets/sheet2.xml';
+ const logPath = files['xl/worksheets/sheet3.xml'] ? 'xl/worksheets/sheet3.xml' : 'xl/worksheets/sheet2.xml';
  let strategy = strFromU8(files[strategyPath]!);
  const cellPattern = (address: string) => new RegExp(`<(?:(?:\\w+):)?c\\b(?![^>]*\\/>)[^>]*\\br="${address}"[^>]*>[\\s\\S]*?<\\/(?:(?:\\w+):)?c>`, 'g');
  const startCell = strategy.match(cellPattern('E3'))?.[0];
