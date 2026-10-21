@@ -4,7 +4,7 @@ import { syncWorkbook } from '../workbook/sync';
 import { syncGarmin } from './sync';
 import { syncNotes } from '../notes/sync';
 import { updateNote } from '../notes/store';
-import { garminMarkdown } from './render';
+import { combinedLogMarkdown } from '../notes/combined-log';
 
 export async function syncSources(plugin: SportsPlugin, forceGarmin: boolean): Promise<void> {
  if (plugin.syncing) return;
@@ -15,7 +15,7 @@ export async function syncSources(plugin: SportsPlugin, forceGarmin: boolean): P
  try {
   await syncGarmin(plugin, forceGarmin);
   const issues = plugin.data.plan ? await syncNotes(plugin, plugin.data.plan) : [];
-  if (!plugin.data.plan) await updateNote(plugin, 'Log.md', 'training-log', garminMarkdown(plugin.data.garminCache), '# Log\n\n## Reflections\n');
+  if (!plugin.data.plan) await updateNote(plugin, 'Log.md', 'training-log', combinedLogMarkdown(null, plugin.data.garminCache), '# Log\n\n## Reflections\n');
   if (issues.length) new Notice(issues[0]!);
   if (plugin.data.garminCache?.error) new Notice(plugin.data.garminCache.error);
  } catch { new Notice('Could not refresh Garmin notes. Existing notes were preserved.'); }

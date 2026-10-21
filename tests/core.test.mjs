@@ -16,7 +16,7 @@ async function moduleNamed(name) {
  return import(pathToFileURL(path).href);
 }
 const { mergeBlock, generatedBlock } = await moduleNamed('blocks');
-const { weekDates, eventsOn, scheduleOn } = await moduleNamed('calendar');
+const { weekDates, scheduleOn } = await moduleNamed('calendar');
 const { parseWorkbook } = await moduleNamed('parse');
 const { startTemplateNextMonday } = await moduleNamed('template-dates');
 const { plannedWeeks, planMarkdown, weeklyStrategy } = await moduleNamed('plan');
@@ -31,12 +31,9 @@ test('refresh preserves reflections and detects edits or missing markers', () =>
  assert.throws(() => mergeBlock('No markers', 'week:2026-10-19', 'New', previous), /removed/);
  assert.equal(mergeBlock(updated, 'week:2026-10-19', 'New overview', generatedBlock('week:2026-10-19', 'New overview')), updated);
 });
-test('calendar crosses year boundaries and respects recurrence bounds', () => {
+test('calendar crosses year boundaries', () => {
  assert.deepEqual(weekDates(new Date(2027, 0, 1, 12)), ['2026-12-28','2026-12-29','2026-12-30','2026-12-31','2027-01-01','2027-01-02','2027-01-03']);
- const event = { weekday: 1, startDate: '2026-10-19', endDate: '2026-10-26' };
- assert.equal(eventsOn([event], '2026-10-19').length, 1);
- assert.equal(eventsOn([event], '2026-10-20').length, 0);
- assert.equal(eventsOn([event], '2026-11-02').length, 0);
+
 });
 test('workbook rejects invalid input and oversized archives before parsing', async () => {
  await assert.rejects(parseWorkbook(new ArrayBuffer(30)), /Invalid workbook/);
@@ -128,7 +125,7 @@ test('daily results and core checkbox remain separate from whole-session complet
  assert.equal(session.prescription, 'Skills and core');
  assert.equal(session.notes, 'Keep these notes');
  assert.equal(session.plannedMinutes, null);
- const markdown = weekMarkdown(plan, [], [session.date]);
+ const markdown = weekMarkdown(plan, [session.date]);
  assert.ok(markdown.includes('Skills and core'));
  assert.ok(markdown.includes('Muscle-up result: 3 x 5 assisted'));
  assert.ok(markdown.includes('Core done: yes'));
@@ -151,7 +148,7 @@ test('strategy weekly schedule creates planned activities without daily result r
  assert.equal(plan.sessions.length, 1);
  assert.equal(plan.weeklySchedule[0].recordedBy, 'Garmin');
  assert.equal(plan.weeklySchedule[0].minutes, 60);
- const markdown = weekMarkdown(plan, [], ['2026-10-19'], true);
+ const markdown = weekMarkdown(plan, ['2026-10-19'], true);
  assert.ok(markdown.includes('Swim course'));
  assert.ok(markdown.includes('Planned'));
  assert.ok(markdown.includes('Garmin'));
@@ -188,7 +185,7 @@ test('explicit weekly plans create future weeks and show strategy without claimi
  assert.ok(dates.includes('2026-10-19'));
  assert.ok(dates.includes('2026-12-28'));
  assert.equal(new Set(dates).size, dates.length);
- const markdown = weekMarkdown(plan, [], ['2026-12-28']);
+ const markdown = weekMarkdown(plan, ['2026-12-28']);
  assert.ok(markdown.includes('Establish starting level'));
  assert.ok(markdown.includes('Review then progress'));
  assert.ok(markdown.includes('120 min'));
@@ -208,7 +205,7 @@ test('12-week workbook imports all planned sessions, typed dates, and blank resu
  assert.deepEqual(plan.weeklySchedule.map(item => [item.weekday, item.time, item.title, item.minutes]), [[2, '20:00', 'Swimming', null], [0, '10:30', 'Running', null]]);
  assert.equal(scheduleOn(plan, '2026-10-20')[0].title, 'Swimming');
  assert.equal(scheduleOn(plan, '2027-04-04')[0].title, 'Running');
- const weekly = weekMarkdown(plan, [], weekDates(new Date(2026, 9, 20, 12)), true);
+ const weekly = weekMarkdown(plan, weekDates(new Date(2026, 9, 20, 12)), true);
  assert.ok(weekly.includes('20:00 Swimming'));
  assert.ok(weekly.includes('10:30 Running'));
  assert.equal(plan.weekPlans.length, 12);
@@ -242,14 +239,11 @@ test('regular activities are hidden by default without hiding explicit log entri
  const plan = await parseWorkbook(workbook());
  const date = plan.sessions[0].date;
  plan.weeklySchedule = [{ id: 'swim', weekday: new Date(`${date}T12:00:00`).getDay(), time: '20:00', minutes: 60, title: 'Regular swim', recordedBy: 'Tracker', notes: '' }];
- const events = [{ id: 'run', title: 'Regular run', sport: 'running', weekday: new Date(`${date}T12:00:00`).getDay(), time: '10:30', minutes: 60, startDate: date, endDate: '' }];
- const hidden = weekMarkdown(plan, events, [date]);
+ const hidden = weekMarkdown(plan, [date]);
  assert.ok(!hidden.includes('Regular swim'));
- assert.ok(!hidden.includes('Regular run'));
  assert.ok(hidden.includes(plan.sessions[0].title));
- const shown = weekMarkdown(plan, events, [date], true);
+ const shown = weekMarkdown(plan, [date], true);
  assert.ok(shown.includes('20:00 Regular swim'));
- assert.ok(shown.includes('10:30 Regular run'));
  assert.ok(strategyMarkdown(plan).includes('Regular swim'));
  assert.ok(!trainingLogMarkdown(plan).includes('Regular swim'));
 });

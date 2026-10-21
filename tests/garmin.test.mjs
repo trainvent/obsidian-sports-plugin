@@ -10,7 +10,7 @@ const platform = { isDesktop: true };
 const state = { platform, request: async () => { throw new Error('Unexpected network request'); } };
 globalThis.__sportsGarminTest = state;
 const output = await build({
- stdin: { contents: "export { parseActivities } from './src/garmin/activities'; export { normalizeGarmin } from './src/garmin/normalize'; export { garminMarkdown } from './src/garmin/render'; export { tokenStore, nativeFetch, newGarminClient } from './src/garmin/client'; export { syncGarmin } from './src/garmin/sync';", resolveDir: process.cwd(), loader: 'ts' },
+ stdin: { contents: "export { garminSignInError } from './src/garmin/errors'; export { createDesktopFetch } from './src/garmin/desktop-http'; export { parseActivities } from './src/garmin/activities'; export { normalizeGarmin } from './src/garmin/normalize'; export { garminMarkdown } from './src/garmin/render'; export { tokenStore, nativeFetch, newGarminClient } from './src/garmin/client'; export { syncGarmin } from './src/garmin/sync';", resolveDir: process.cwd(), loader: 'ts' },
  bundle: true, format: 'cjs', platform: 'node', write: false,
  plugins: [{ name: 'stub-obsidian', setup(builder) {
   builder.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'obsidian', namespace: 'test' }));
@@ -18,7 +18,11 @@ const output = await build({
  } }],
 });
 writeFileSync(`${temp}/garmin.cjs`, output.outputFiles[0].text);
-const { parseActivities, normalizeGarmin, garminMarkdown, tokenStore, nativeFetch, newGarminClient, syncGarmin } = createRequire(import.meta.url)(`${temp}/garmin.cjs`);
+const built = createRequire(import.meta.url)(`${temp}/garmin.cjs`);
+const { parseActivities, normalizeGarmin, garminMarkdown, tokenStore, createDesktopFetch, garminSignInError } = built;
+const nativeFetch = createDesktopFetch((url, init) => state.request({ ...init, url, headers: Object.fromEntries(init.headers) }));
+const newGarminClient = (app, id, store) => built.newGarminClient(app, id, store, nativeFetch);
+const syncGarmin = (plugin, force) => built.syncGarmin(plugin, force, newGarminClient);
 const activity = { id: '123', date: '2026-10-20', time: '20:00', name: 'Swimming', type: 'lap_swimming', duration: 3600, distance: 2000, average_hr: 130 };
 const response = (body, headers = {}) => ({ status: 200, headers, arrayBuffer: new TextEncoder().encode(JSON.stringify(body)).buffer });
 function fixture() {
@@ -53,7 +57,7 @@ test('secret storage round-trips full tokens separately from ordinary plugin dat
 });
 test('native transport forwards auth headers, separates cookies and rejects unexpected hosts', async () => {
  let request;
- state.request = async input => { request = input; return response({ ok: true }, { 'set-cookie': 'a=1; Expires=Wed, 21 Oct 2026 10:00:00 GMT, b=2; Path=/' }); };
+ state.request = async input => { request = input; return response({ ok: true }, { 'set-cookie': ['a=1; Expires=Wed, 21 Oct 2036 10:00:00 GMT', 'b=2; Path=/'] }); };
  const res = await nativeFetch('https://sso.garmin.com/mobile/api/login', { method: 'POST', headers: { cookie: 'session=test' }, body: '{}' });
  assert.equal(request.headers.cookie, 'session=test'); assert.equal(request.body, '{}');
  assert.equal(res.headers.getSetCookie().length, 2);
@@ -107,4 +111,73 @@ test('bundled client requests MFA inside the sign-in flow without storing the pa
  assert.ok(!JSON.stringify(result.mfaState).includes('temporary-password'));
  assert.equal(await tokenStore(plugin.app, 'test-mfa').load(), null);
  assert.equal(JSON.parse(requests.find(row => row.url.includes('/mobile/api/login')).body).username, 'test@example.com');
+});
+
+test('sign-in redirects retain cookies and the final URL without forwarding passwords across hosts', async () => {
+ const requests = [];
+ const fetcher = createDesktopFetch(async (url, init) => {
+  requests.push({ url, init });
+  if (requests.length === 1) return { ...response({}), status: 302, headers: { location: '/sso/signin', 'set-cookie': ['session=redirect-cookie; Path=/; Secure'] } };
+  return response({ ready: true });
+ });
+ const result = await fetcher('https://sso.garmin.com/sso/embed', { headers: { cookie: 'initial=value' } });
+ assert.equal(result.url, 'https://sso.garmin.com/sso/signin');
+ assert.ok(requests[1].init.headers.get('cookie').includes('session=redirect-cookie'));
+ assert.ok(requests[1].init.headers.get('cookie').includes('initial=value'));
+ assert.deepEqual(result.headers.getSetCookie(), ['session=redirect-cookie; Path=/; Secure']);
+ let calls = 0;
+ const blocked = createDesktopFetch(async () => { calls++; return { ...response({}), status: 307, headers: { location: 'https://thegarth.s3.amazonaws.com/oauth_consumer.json' } }; });
+ await assert.rejects(blocked('https://sso.garmin.com/mobile/api/login', { method: 'POST', body: 'password=secret' }), /redirect/);
+ assert.equal(calls, 1);
+});
+
+test('redirect cookies respect paths and an unrelated origin never receives authentication headers', async () => {
+ let step = 0;
+ const fetcher = createDesktopFetch(async (url, init) => {
+  step++;
+  if (step === 1) return { ...response({}), status: 302, headers: { location: '/other', 'set-cookie': ['private=value; Path=/private', 'forged=value; Domain=example.com; Path=/'] } };
+  if (step === 2) {
+   assert.ok(!init.headers.get('cookie'));
+   return { ...response({}), status: 302, headers: { location: 'https://connectapi.garmin.com/public' } };
+  }
+  assert.equal(init.headers.get('authorization'), null);
+  assert.equal(init.headers.get('cookie'), null);
+  return response({});
+ });
+ await fetcher('https://sso.garmin.com/private/start', { headers: { authorization: 'Bearer test' } });
+});
+
+test('sign-in errors distinguish connection failures and explicit credential rejections without leaking secrets', () => {
+ assert.ok(garminSignInError(new Error('Not authorized for https://sso.garmin.com/path?password=secret (403)')).includes('blocked-sign-in'));
+ assert.ok(garminSignInError(new Error('Rate limited by Garmin at https://connectapi.garmin.com/oauth-service/oauth/preauthorized?ticket=secret')).includes('http-429-token-exchange'));
+ assert.ok(garminSignInError(new Error('SSO error: INVALID_USERNAME_PASSWORD')).includes('credentials-rejected'));
+ assert.ok(garminSignInError({ cause: { code: 'ENOTFOUND' } }).includes('network-connection'));
+ assert.ok(garminSignInError(new Error('raw token secret'), true).includes('save-connection'));
+ for (const error of [new Error('password=secret'), { status: 429, body: 'secret' }, new Error('Cloudflare challenge secret')]) assert.ok(!garminSignInError(error).includes('secret'));
+});
+
+test('native HTTPS sends a complete credential body with an explicit byte length', async () => {
+ const { default: https } = await import('node:https');
+ const { EventEmitter } = await import('node:events');
+ const original = https.request;
+ let observed; let written = '';
+ https.request = (url, options, receive) => {
+  observed = options;
+  const req = new EventEmitter();
+  req.setTimeout = () => {};
+  req.write = chunk => { written += chunk; };
+  req.end = () => queueMicrotask(() => {
+   const res = new EventEmitter(); res.statusCode = 200; res.headers = {};
+   receive(res); res.emit('data', Buffer.from('{}')); res.emit('end');
+  });
+  return req;
+ };
+ try {
+  const body = JSON.stringify({ username: 'test@example.com', password: 'test-ä' });
+  const result = await built.nativeFetch('https://sso.garmin.com/mobile/api/login', { method: 'POST', body });
+  assert.equal(written, body);
+  assert.equal(Number(observed.headers['content-length']), Buffer.byteLength(body));
+  assert.equal(observed.headers['accept-encoding'], 'identity');
+  assert.deepEqual(await result.json(), {});
+ } finally { https.request = original; }
 });

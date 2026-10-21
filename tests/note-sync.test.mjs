@@ -52,7 +52,9 @@ test('a protected-note conflict does not prevent other weeks from being created'
  const { plugin, plan, files } = fixture();
  await syncNotes(plugin, plan);
  const log = files.get('Sports/Log.md');
- log.content = log.content.replace('No training log entries', 'My own generated-section edit');
+ const beforeEdit = log.content;
+ log.content = log.content.replace('No log entries', 'My own generated-section edit');
+ assert.notEqual(log.content, beforeEdit);
  const edited = log.content;
  plan.weekPlans.push({ ...plan.weekPlans[0], week: 2, start: '2027-01-04' });
  const issues = await syncNotes(plugin, plan);
@@ -216,4 +218,19 @@ test('Garmin adds recorded history and weekly notes while preserving manual sess
  assert.ok(week.content.endsWith('Personal reflections'));
  assert.ok(week.content.includes('Garmin is disconnected.'));
  assert.equal(JSON.stringify(plan), original);
+});
+
+test('weekly notes use the workbook schedule and ignore legacy plugin-local recurring activities', async () => {
+ const { plugin, plan, files } = fixture();
+ plugin.data.showRegularActivities = true;
+ plugin.data.events = [{ id: 'old', title: 'Legacy local activity', sport: 'running', weekday: 1, time: '09:00', minutes: 30, startDate: '2026-01-01', endDate: '' }];
+ plan.weeklySchedule = [{ id: 'xlsx', title: 'Workbook swim', weekday: 1, time: '20:00', minutes: 60, recordedBy: 'Tracker', notes: '' }];
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ const weekly = files.get('Sports/Weeks/2026-12-28.md').content;
+ assert.ok(weekly.includes('Workbook swim'));
+ assert.ok(!weekly.includes('Legacy local activity'));
+ plugin.data.showRegularActivities = false;
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.ok(!files.get('Sports/Weeks/2026-12-28.md').content.includes('Workbook swim'));
+ assert.ok(files.get('Sports/Strategy.md').content.includes('Workbook swim'));
 });

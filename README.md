@@ -5,7 +5,7 @@ An Obsidian plugin developed by [Trainvent](https://github.com/trainvent).
 ## Status
 
 The TypeScript prototype supports optional strategy/tracking XLSX import, a weekly dashboard,
-weekly recurring activities, manual/interval sync, and protected Markdown generation.
+workbook weekly schedules, manual/interval sync, and protected Markdown generation.
 An opt-in Garmin connection is implemented and awaits live account verification.
 Cloud workbook sources remain planned in [STRATEGY.md](STRATEGY.md).
 Obsidian 1.11.4 or later is required. Local workbook reading and template creation
@@ -22,7 +22,7 @@ and Markdown remain available. Mobile runtime behavior is not yet verified.
 4. Open the workbook with your spreadsheet editor to change plans or record results.
    Save it at the configured local path, then sync again. The workbook stays outside
    the vault; only notes and imported dashboard data belong to Obsidian.
-5. Select **Add recurring activity** to schedule a weekly sport. Select **Open weekly
+5. Edit recurring activities in the workbook **Recurring** tab. Select **Open weekly
    note** to create or refresh that week's note.
 
 **Settings → Sports Plugin** offers an absolute workbook path (or `~/Sports/...`), notes folder, startup sync,
@@ -32,8 +32,8 @@ Scheduling runs inside Obsidian; closed apps and mobile suspension stop or delay
 
 Generated notes default to `Sports/Strategy.md` and `Sports/Weeks/YYYY-MM-DD.md`
 inside the user's vault. Sync refreshes the strategy and previously generated weekly
-notes. Adding/removing a recurring activity is reflected immediately in the dashboard;
-reopen its weekly note or sync to refresh the Markdown overview.
+notes. Edit recurring activities in the XLSX, then sync to refresh the dashboard
+and weekly notes.
 
 Local sources use desktop filesystem access, so local paths are device-specific.
 A previous vault-relative setting must be replaced with an absolute external path.
@@ -243,11 +243,11 @@ The release workflow builds the plugin and creates a draft release containing
 
 ## Privacy
 
-The prototype runs locally and makes no external service calls. With local-file
+The prototype runs locally. External requests are disabled unless you connect Garmin. With local-file
 sync enabled on desktop, it reads the one workbook path you configure outside the
 vault. It does not scan other folders or modify the source workbook. Template
 creation is an explicit action and refuses to overwrite existing files. Imported plan data,
-recurring activities, sync preferences, and generated-block baselines are stored in local
+sync preferences, and generated-block baselines are stored in local
 plugin settings; these may travel with the vault if your sync tool includes plugin settings.
 Generated notes are ordinary vault files. Source workbooks and newly created
 templates stay at the configured external local path.
@@ -259,9 +259,10 @@ output are excluded from version control.
 Based on the [Obsidian sample plugin](https://github.com/obsidianmd/obsidian-sample-plugin).
 The original copyright notice and 0-BSD license are retained in [LICENSE](LICENSE).
 
-Regular weekly activities stay in the Strategy sheet and strategy note for reference.
+Regular weekly activities are managed in the workbook Recurring tab and imported
+into the strategy note.
 **Show regular activities** defaults to off in Sports settings. Enable it to include
-workbook weekly activities and recurring activities in the dashboard and weekly
+workbook weekly activities in the dashboard and weekly
 notes. Changing it refreshes generated notes from cached data. The log and plans notes
 contain only explicit Training log rows; dated sessions entered there remain
 visible regardless of this setting.
@@ -275,7 +276,7 @@ not recreated. Reloading the plugin alone does not reset saved note baselines.
 
 For a full fresh start, use **Clear cached data**, then **Sync now**. This clears
 the imported plan (including cached history), note baselines, and the last error.
-Workbook settings and recurring activities are kept; note files are not deleted.
+Workbook settings are kept; note files are not deleted.
 On the next sync, existing target notes are backed up in the notes folder's
 `Backups/<timestamp>/` directory before generated sections are rebuilt. Commentary
 outside generated markers is preserved. Invalid markers and notes managed by the
@@ -320,3 +321,11 @@ with a warning. **Disconnect** clears the saved tokens and stops Garmin requests
 cached activities remain available. **Clear cached data** removes the imported
 activity cache while keeping connection settings. Generated notes and reflections
 keep their existing edit protection.
+
+
+The Log note combines manual entries and Garmin records in one daily table:
+**Date**, **Manual plan**, **Manual results**, **Garmin activities**, **Manual notes**.
+Today and earlier dates appear newest first, including dates with only Garmin data.
+Multiple sessions and activities stay together in their date's row. Manual status,
+actual minutes and result fields remain independent from recorded Garmin measurements.
+Upcoming manual sessions stay in Plans.

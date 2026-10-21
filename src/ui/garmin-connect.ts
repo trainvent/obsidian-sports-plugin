@@ -1,3 +1,4 @@
+import { garminSignInError } from '../garmin/errors';
 import { Modal, Notice, Setting } from 'obsidian';
 import type { GarminClient, Tokens, TokenStore } from 'garminconnect-js';
 import type SportsPlugin from '../main';
@@ -30,6 +31,7 @@ export class GarminConnectModal extends Modal {
    if (!this.app.secretStorage) { error.setText('Update Obsidian to 1.11.4 or later to connect Garmin.'); return; }
    const password = passwordInput.value; passwordInput.value = '';
    this.busy = true; button.setDisabled(true); error.setText('Signing in…');
+   let saving = false;
    try {
     const store: TokenStore = {
      load: () => Promise.resolve(this.tokens),
@@ -40,8 +42,8 @@ export class GarminConnectModal extends Modal {
     const result = await this.client.login(email, password);
     if (!this.active) return;
     if (result.state === 'mfa_required') { this.mfa = result.mfaState; this.verification(); }
-    else await this.connected();
-   } catch { if (this.active) error.setText('Sign-in failed. Check your details, or wait before trying again if Garmin is limiting sign-ins.'); }
+    else { saving = true; await this.connected(); }
+   } catch (cause) { if (this.active) error.setText(garminSignInError(cause, saving)); }
    finally { this.busy = false; button.setDisabled(false); }
   }));
  }
@@ -56,8 +58,9 @@ export class GarminConnectModal extends Modal {
    const code = codeInput.value.trim(); codeInput.value = '';
    if (!code) { error.setText('Enter the verification code.'); return; }
    this.busy = true; button.setDisabled(true); error.setText('Verifying…');
-   try { await this.client.resumeLogin(this.mfa, code); if (this.active) await this.connected(); }
-   catch { if (this.active) error.setText('Verification failed. Try the code again, or close this dialog and reconnect.'); }
+   let saving = false;
+   try { await this.client.resumeLogin(this.mfa, code); if (this.active) { saving = true; await this.connected(); } }
+   catch (cause) { if (this.active) error.setText(garminSignInError(cause, saving)); }
    finally { this.busy = false; button.setDisabled(false); }
   }));
  }

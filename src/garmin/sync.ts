@@ -6,7 +6,7 @@ import { EMPTY_GARMIN_CACHE } from './types';
 import { validDate } from '../workbook/daily-log';
 
 /** A failed or throttled refresh preserves the last complete snapshot. */
-export async function syncGarmin(plugin: SportsPlugin, force = false): Promise<void> {
+export async function syncGarmin(plugin: SportsPlugin, force = false, createClient = newGarminClient): Promise<void> {
  if (!plugin.data.garminEnabled || !Platform.isDesktop) return;
  const previous = plugin.data.garminCache ?? EMPTY_GARMIN_CACHE;
  if (!force && Date.now() - Date.parse(previous.lastAttempt) < 60 * 60_000) return;
@@ -18,7 +18,7 @@ export async function syncGarmin(plugin: SportsPlugin, force = false): Promise<v
   const end = garminToday(timezone);
   const start = validDate(plugin.data.garminHistoryStart, 'Garmin history start');
   if (start > end) throw new Error('Invalid history range.');
-  const client = await newGarminClient(plugin.app, plugin.data.garminSecretId);
+  const client = await createClient(plugin.app, plugin.data.garminSecretId);
   if (!await client.loadTokens()) throw new Error('Garmin sign-in required.');
   const { Garmin } = await import('garminconnect-js');
   const rows = await new Garmin(client).getActivitiesByDate(start, end);

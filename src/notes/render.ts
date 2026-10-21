@@ -1,5 +1,5 @@
-import type { TrainingPlan, RecurringEvent } from '../model/types';
-import { eventsOn, scheduleOn } from '../model/calendar';
+import type { TrainingPlan } from '../model/types';
+import { scheduleOn } from '../model/calendar';
 import { groupedGoals } from './goals';
 import { weeklyStrategy } from './plan';
 import { cell } from './blocks';
@@ -11,13 +11,13 @@ export function strategyMarkdown(plan: TrainingPlan): string {
  const schedule = (plan.weeklySchedule ?? []).map(item => `| ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][item.weekday]} | ${cell(item.time)} | ${cell(item.title)} | ${cell(item.minutes)} | ${cell(item.recordedBy)} | ${cell(item.notes)} |`).join('\n');
  return `## ${cell(plan.name)}\n\n${goals}\n\n${parts}\n\n### Weekly schedule — no manual results\n\n| Day | Time | Activity | Minutes | Recorded by | Notes |\n| --- | --- | --- | --- | --- | --- |\n${schedule || "No regular activities entered yet."}${arsenal ? `\n\n### Exercise arsenal\n\n| Group | Exercise |\n| --- | --- |\n${arsenal}` : ''}`;
 }
-export function weekMarkdown(plan: TrainingPlan | null, events: RecurringEvent[], dates: string[], showRegularActivities = false): string {
+export function weekMarkdown(plan: TrainingPlan | null, dates: string[], showRegularActivities = false): string {
  const rows = dates.flatMap(date => {
   const sessions = (plan?.sessions ?? []).filter(session => session.date === date).map(session => {
    const part = plan?.parts.find(part => part.id === session.partId && part.version === session.partVersion);
    return `| ${date} | ${cell(session.title)} | ${cell(part?.title ?? session.sport)} | ${cell(session.plannedMinutes)} | ${cell(session.actualMinutes)} | ${cell(session.status)} | ${cell(session.result)} | ${cell(session.prescription ?? '')} | ${cell(session.notes)} |`;
   });
-  return [...sessions, ...(showRegularActivities ? scheduleOn(plan, date) : []).map(item => `| ${date} | ${cell(item.time)} ${cell(item.title)} | Weekly schedule | ${cell(item.minutes)} | — | Planned | — | ${cell(item.recordedBy)} | ${cell(item.notes)} |`), ...(showRegularActivities ? eventsOn(events, date) : []).map(event => `| ${date} | ${cell(event.time)} ${cell(event.title)} | ${cell(event.sport)} | ${event.minutes} | — | Scheduled | — | — | — |`)];
+  return [...sessions, ...(showRegularActivities ? scheduleOn(plan, date) : []).map(item => `| ${date} | ${cell(item.time)} ${cell(item.title)} | Weekly schedule | ${cell(item.minutes)} | — | Planned | — | ${cell(item.recordedBy)} | ${cell(item.notes)} |`)];
  });
  return `${weeklyStrategy(plan, dates[0] ?? '')}## Training overview\n\n| Date | Session | Part / sport | Planned min | Actual min | Status | Result | Plan | Notes |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nTimes follow the source schedule. Manual completion is recorded separately from tracker activities.`;
 }

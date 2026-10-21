@@ -17,15 +17,14 @@ export interface TrainingPlan {
  weekPlans?: WeekPlan[];
  parts: TrainingPart[]; sessions: Session[]; importedAt: string;
 }
-export interface RecurringEvent { id: string; title: string; sport: string; weekday: number; time: string; minutes: number; startDate: string; endDate: string }
 export interface SportsData {
  garminEnabled: boolean; garminSecretId: string; garminHistoryStart: string; garminCache?: GarminCache;
  workbookPath: string; strategySheet: string; trackingSheet: string; notesFolder: string; syncMinutes: number;
- showRegularActivities: boolean; syncOnStartup: boolean; plan: TrainingPlan | null; events: RecurringEvent[];
+ showRegularActivities: boolean; syncOnStartup: boolean; plan: TrainingPlan | null;
  resetNoteBaselines: boolean; generatedBlocks: Record<string, string>; lastError: string;
 }
 export const DEFAULT_DATA: SportsData = {
  garminEnabled: false, garminSecretId: '', garminHistoryStart: '',
  workbookPath: '~/Sports/Training.xlsx', strategySheet: 'Strategy', trackingSheet: 'Log', notesFolder: 'Sports', syncMinutes: 10, syncOnStartup: true, showRegularActivities: false,
- plan: null, events: [], resetNoteBaselines: false, generatedBlocks: {}, lastError: '',
+ plan: null, resetNoteBaselines: false, generatedBlocks: {}, lastError: '',
 };

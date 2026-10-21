@@ -1,3 +1,4 @@
+import { combinedLogMarkdown } from './combined-log';
 import { garminMarkdown } from '../garmin/render';
 import type SportsPlugin from '../main';
 import type { TrainingPlan } from '../model/types';
@@ -23,8 +24,8 @@ export async function syncNotes(plugin: SportsPlugin, plan: TrainingPlan, recrea
  const tasks = [
   { path: 'Plans.md', id: 'plan', body: `${planMarkdown(plan, folder, ordered)}\n\n${datedLogMarkdown(plan, true)}`, initial: '# Plans\n\n## Reflections\n' },
   ...(plugin.data.strategySheet ? [{ path: 'Strategy.md', id: 'strategy', body: strategyMarkdown(plan), initial: '# Training strategy\n\n## Commentary\n' }] : []),
-  ...((plugin.data.trackingSheet || plugin.data.garminCache) ? [{ path: 'Log.md', id: 'training-log', body: `${noteLink(folder, 'Plans', 'Plans')}\n\n${datedLogMarkdown(plan, false)}${garminMarkdown(plugin.data.garminCache)}`, initial: '# Log\n\n## Reflections\n' }] : []),
-  ...ordered.map(date => ({ path: `Weeks/${date}.md`, id: `week:${date}`, body: `${noteLink(folder, 'Plans', 'Plans')} · ${noteLink(folder, 'Log', 'Log')}\n\n${weekMarkdown(plan, plugin.data.events, weekDates(new Date(`${date}T12:00:00`)), plugin.data.showRegularActivities)}${garminMarkdown(plugin.data.garminCache, weekDates(new Date(`${date}T12:00:00`)))}`, initial: `# Week of ${date}\n\n## Weekly review\n\n### What improved\n\n### Recovery and comfort\n\n### Repeat or progress\n\n### What to adjust\n` })),
+  ...((plugin.data.trackingSheet || plugin.data.garminCache) ? [{ path: 'Log.md', id: 'training-log', body: `${noteLink(folder, 'Plans', 'Plans')}\n\n${combinedLogMarkdown(plan, plugin.data.garminCache)}`, initial: '# Log\n\n## Reflections\n' }] : []),
+  ...ordered.map(date => ({ path: `Weeks/${date}.md`, id: `week:${date}`, body: `${noteLink(folder, 'Plans', 'Plans')} · ${noteLink(folder, 'Log', 'Log')}\n\n${weekMarkdown(plan, weekDates(new Date(`${date}T12:00:00`)), plugin.data.showRegularActivities)}${garminMarkdown(plugin.data.garminCache, weekDates(new Date(`${date}T12:00:00`)))}`, initial: `# Week of ${date}\n\n## Weekly review\n\n### What improved\n\n### Recovery and comfort\n\n### Repeat or progress\n\n### What to adjust\n` })),
  ];
  const issues: string[] = [...migrationIssues];
  try { await ensureSheetGuide(plugin); }

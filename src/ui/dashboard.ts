@@ -2,7 +2,7 @@ import { activityDetails } from '../garmin/activities';
 import { ItemView, WorkspaceLeaf, Setting } from 'obsidian';
 import { SPORTS_ICON_ID } from './icon';
 import type SportsPlugin from '../main';
-import { eventsOn, weekDates, scheduleOn } from '../model/calendar';
+import { weekDates, scheduleOn } from '../model/calendar';
 export const SPORTS_VIEW = 'sports-dashboard';
 export class SportsDashboard extends ItemView {
  private anchor = new Date();
@@ -16,8 +16,7 @@ export class SportsDashboard extends ItemView {
   root.createEl('h1', { text: 'Sports' });
   new Setting(root).setName('Training overview')
    .addButton(button => button.setButtonText(this.plugin.syncing ? 'Syncing…' : 'Sync now').setDisabled(this.plugin.syncing).onClick(() => this.plugin.sync(true)))
-   .addButton(button => button.setButtonText('Open training log').onClick(() => this.plugin.openTrainingLog()))
-   .addButton(button => button.setButtonText('Add recurring activity').onClick(() => this.plugin.addRecurring()));
+   .addButton(button => button.setButtonText('Open training log').onClick(() => this.plugin.openTrainingLog()));
   root.createEl('p', { text: this.plugin.data.plan ? `${this.plugin.data.plan.name} · Last imported ${new Date(this.plugin.data.plan.importedAt).toLocaleString()}` : 'Set a local workbook path and its sheets in Settings → Sports Plugin to get started.' });
   if (this.plugin.data.lastError) root.createEl('p', { text: this.plugin.data.lastError, cls: 'sports-error' });
   root.createEl('p', { text: (this.plugin.data.strategySheet || this.plugin.data.trackingSheet) && this.plugin.data.syncMinutes ? `Automatic workbook sync every ${this.plugin.data.syncMinutes} minutes while Obsidian is running.` : 'Automatic sync is off. Use Sync now to import changes.' });
@@ -32,10 +31,9 @@ export class SportsDashboard extends ItemView {
   for (const date of dates) {
    const section = root.createDiv({ cls: 'sports-day' }); section.createEl('h3', { text: date });
    const sessions = this.plugin.data.plan?.sessions.filter(session => session.date === date) ?? [];
-   const events = this.plugin.data.showRegularActivities ? eventsOn(this.plugin.data.events, date) : [];
    const scheduled = this.plugin.data.showRegularActivities ? scheduleOn(this.plugin.data.plan, date) : [];
    const activities = cache?.activities.filter(activity => activity.date === date) ?? [];
-   if (!activities.length && !sessions.length && !events.length && !scheduled.length) section.createEl('p', { text: 'No sessions planned.' });
+   if (!activities.length && !sessions.length && !scheduled.length) section.createEl('p', { text: 'No sessions planned.' });
    for (const activity of activities) {
     section.createEl('a', { text: activity.name, href: `https://connect.garmin.com/modern/activity/${activity.id}` });
     section.createEl('p', { text: `Recorded by Garmin · ${activityDetails(activity)}` });
@@ -53,11 +51,6 @@ export class SportsDashboard extends ItemView {
     section.createEl('p', { text: `${item.time} ${item.title} · ${item.minutes ?? '—'} min · ${item.recordedBy} · Planned, no manual results` });
     if (item.notes) section.createEl('p', { text: item.notes });
    }
-   for (const event of events) section.createEl('p', { text: `${event.time} ${event.title} · ${event.sport} · ${event.minutes} min · Recurring` });
-  }
-  if (this.plugin.data.events.length) {
-   root.createEl('h2', { text: 'Recurring activities' });
-   for (const event of this.plugin.data.events) new Setting(root).setName(event.title).setDesc(`${event.sport} · ${event.time}`).addButton(button => button.setButtonText('Remove').onClick(async () => { this.plugin.data.events = this.plugin.data.events.filter(item => item.id !== event.id); await this.plugin.save(); this.plugin.refreshViews(); }));
   }
  }
 }
