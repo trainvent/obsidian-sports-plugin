@@ -1,3 +1,4 @@
+import { downloadWorkbook } from './workbook/download';
 import { syncCoachOnlyPlans } from './notes/coach-plans';
 import { combinedLogMarkdown } from './notes/combined-log';
 import { Plugin, Notice, addIcon, Platform } from 'obsidian';
@@ -6,7 +7,6 @@ import { weekDates } from './model/calendar';
 import { SPORTS_ICON_ID, SPORTS_ICON_SVG } from './ui/icon';
 import { SportsSettingTab } from './settings';
 import { SPORTS_VIEW, SportsDashboard } from './ui/dashboard';
-import { createLocalTemplate } from './workbook/local-file';
 import { ensureSheetGuide } from './notes/sheet-guide';
 import { templateWorkbook } from './workbook/template-file';
 import { syncSources } from './garmin/orchestrate';
@@ -33,7 +33,7 @@ export default class SportsPlugin extends Plugin {
   this.registerView(SPORTS_VIEW, leaf => new SportsDashboard(leaf, this));
   this.addRibbonIcon(SPORTS_ICON_ID, 'Open dashboard', () => { void this.openDashboard(); });
   this.addCommand({ id: 'open-dashboard', name: 'Open dashboard', callback: () => this.openDashboard() });
-  this.addCommand({ id: 'create-example', name: 'Create example workbook', callback: () => this.createExample() });
+  this.addCommand({ id: 'create-example', name: 'Download example workbook', callback: () => this.createExample() });
   this.addCommand({ id: 'clear-cache', name: 'Clear cached data', callback: () => this.clearCachedData() });
   this.addCommand({ id: 'recreate-notes', name: 'Recreate missing notes', callback: () => this.refreshNotes(true, true) });
   this.addCommand({ id: 'refresh-notes', name: 'Generate notes from imported data', callback: () => this.refreshNotes() });
@@ -52,14 +52,14 @@ export default class SportsPlugin extends Plugin {
  onunload(): void { this.garminDialog?.close(); if (this.timer !== undefined) window.clearInterval(this.timer); }
  async createExample(): Promise<void> {
   try {
-   const path = this.data.workbookPath || DEFAULT_DATA.workbookPath;
-   await createLocalTemplate(path, templateWorkbook());
    await ensureSheetGuide(this);
-   this.data.workbookPath = path; this.data.strategySheet = 'Strategy'; this.data.trackingSheet = 'Daily'; this.data.scheduleSheet = 'Recurring'; await this.save();
-   new Notice('Workbook created, starting next week. The sheet guide is in your vault notes folder. Existing guides are preserved.');
+   const revoke = downloadWorkbook(templateWorkbook());
+   this.register(revoke);
+   const timer = window.setTimeout(revoke, 60_000);
+   this.register(() => window.clearTimeout(timer));
+   new Notice('Template download started. Upload it to your cloud storage, then paste its share link in settings. The workbook guide is in your vault.');
   } catch (error) {
-   const message = error instanceof Error && 'code' in error && error.code === 'EEXIST' ? 'A workbook already exists there. Choose a new path to create a template; existing workbooks are never overwritten.' : error instanceof Error ? error.message : 'Could not create the example workbook.';
-   new Notice(message);
+   new Notice(error instanceof Error ? error.message : 'Could not download the example workbook.');
   }
  }
  async save(): Promise<void> { await this.saveData(this.data); }

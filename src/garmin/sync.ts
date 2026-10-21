@@ -1,3 +1,4 @@
+import { Garmin } from 'garminconnect-js';
 import { syncCoach } from './coach';
 import { Platform } from 'obsidian';
 import type SportsPlugin from '../main';
@@ -22,7 +23,6 @@ export async function syncGarmin(plugin: SportsPlugin, force = false, createClie
   if (start > end) throw new Error('Invalid history range.');
   const client = await createClient(plugin.app, plugin.data.garminSecretId);
   if (!await client.loadTokens()) throw new Error('Garmin sign-in required.');
-  const { Garmin } = await import('garminconnect-js');
   const rows = await new Garmin(client).getActivitiesByDate(start, end);
   const activities = normalizeGarmin(rows, timezone, start, end);
   plugin.data.garminCache = { activities, lastAttempt: attempt, lastSuccess: new Date().toISOString(), start, end, error: '' };

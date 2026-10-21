@@ -1,5 +1,6 @@
+import { GarminClient } from 'garminconnect-js';
 import { Platform, type App } from 'obsidian';
-import type { GarminClient, MfaState, Tokens, TokenStore } from 'garminconnect-js';
+import type { MfaState, Tokens, TokenStore } from 'garminconnect-js';
 
 import { createDesktopFetch } from './desktop-http';
 
@@ -19,8 +20,7 @@ export function tokenStore(app: App, id: string): TokenStore {
 }
 export async function newGarminClient(app: App, id: string, store?: TokenStore, fetchImpl: typeof fetch = nativeFetch): Promise<GarminClient> {
  if (!Platform.isDesktop) throw new Error('Garmin connection currently requires Obsidian desktop.');
- // The Node-based client is bundled but initialized only after this desktop guard.
- const { GarminClient } = await import('garminconnect-js');
+ // Client construction stays behind the desktop guard.
  return new GarminClient({ tokenStore: store ?? tokenStore(app, id), fetchImpl, timeoutMs: 20_000, retries: 0 });
 }
 export type { MfaState };

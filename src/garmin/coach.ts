@@ -1,3 +1,4 @@
+import { Garmin } from 'garminconnect-js';
 import { Platform } from 'obsidian';
 import type SportsPlugin from '../main';
 import { newGarminClient } from './client';
@@ -62,7 +63,6 @@ export async function syncCoach(plugin: SportsPlugin, force = false, createClien
   const end = endDate.toISOString().slice(0, 10);
   const client = await createClient(plugin.app, plugin.data.garminSecretId);
   if (!await client.loadTokens()) throw new Error('Sign-in required.');
-  const { Garmin } = await import('garminconnect-js');
   const source = await new Garmin(client).getScheduledWorkoutSummaries(start, end);
   const workouts = normalizeCoach(source, start, end);
   plugin.data.garminCoachCache = { workouts, start, end, lastAttempt: attempt, lastSuccess: new Date().toISOString(), error: '' };

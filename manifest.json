@@ -1,7 +1,7 @@
 {
 	"id": "sports",
 	"name": "Sports",
-	"version": "0.2.2",
+	"version": "0.3.0",
 	"minAppVersion": "1.11.4",
 	"description": "Synchronize your training from spreadsheets and turn it into calendars, workout logs, and goal notes, with optional Garmin Connect support.",
 	"author": "Trainvent",

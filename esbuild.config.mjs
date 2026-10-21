@@ -19,7 +19,14 @@ const context = await esbuild.context({
 		js: banner,
 	},
 	entryPoints: ['src/main.ts'],
-	bundle: true,
+ bundle: true,
+ metafile: true,
+ plugins: [{ name: 'drop-unused-sdk-filesystem-imports', setup(build) {
+  // garminconnect-js also exports a FileTokenStore. We use only our Obsidian
+  // secret-storage implementation. An unused Node import has no initialization
+  // work to retain; referenced filesystem functions would still be emitted.
+  build.onResolve({ filter: /^(?:node:)?fs(?:\/promises)?$/ }, args => ({ path: args.path, external: true, sideEffects: false }));
+ } }],
 	loader: { '.xlsx': 'binary', '.svg': 'text', '.md': 'text' },
 	external: [
 		'node:*',
@@ -48,7 +55,10 @@ const context = await esbuild.context({
 });
 
 if (prod) {
-	await context.rebuild();
+ const result = await context.rebuild();
+ const filesystemImports = Object.values(result.metafile.outputs).flatMap(output => output.imports)
+  .filter(item => /^(?:node:)?fs(?:\/|$)/.test(item.path));
+ if (filesystemImports.length) throw new Error('Runtime filesystem access is forbidden in the cloud-only plugin.');
 	process.exit(0);
 } else {
 	await context.watch();

@@ -28,6 +28,6 @@ export interface SportsData {
 export const DEFAULT_DATA: SportsData = {
  showGarminCoachPlans: false,
  garminEnabled: false, garminSecretId: '', garminHistoryStart: '',
- workbookPath: '~/Sports/Training.xlsx', strategySheet: 'Strategy', trackingSheet: 'Daily', scheduleSheet: 'Recurring', notesFolder: 'Sports', syncMinutes: 10, syncOnStartup: true, showRegularActivities: false,
+ workbookPath: '', strategySheet: 'Strategy', trackingSheet: 'Daily', scheduleSheet: 'Recurring', notesFolder: 'Sports', syncMinutes: 10, syncOnStartup: true, showRegularActivities: false,
  plan: null, resetNoteBaselines: false, generatedBlocks: {}, lastError: '',
 };

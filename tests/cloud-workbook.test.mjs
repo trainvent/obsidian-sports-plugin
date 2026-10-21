@@ -6,12 +6,12 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 const temp = mkdtempSync(`${tmpdir()}/sports-cloud-tests-`);
 process.on('exit', () => rmSync(temp, { recursive: true, force: true }));
-const result = await build({ entryPoints: ['src/workbook/cloud.ts'], bundle: true, format: 'cjs', platform: 'node', write: false, plugins: [{ name: 'platform', setup(builder) {
+const result = await build({ stdin: { contents: "export { cloudWorkbookUrl, readCloudWorkbook } from './src/workbook/cloud'; export { readWorkbookSource } from './src/workbook/source'; export { downloadWorkbook } from './src/workbook/download';", resolveDir: process.cwd() }, bundle: true, format: 'cjs', platform: 'node', write: false, plugins: [{ name: 'platform', setup(builder) {
  builder.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'obsidian', namespace: 'stub' }));
  builder.onLoad({ filter: /.*/, namespace: 'stub' }, () => ({ contents: 'export const Platform = { isDesktop: true };' }));
 } }] });
 writeFileSync(`${temp}/cloud.cjs`, result.outputFiles[0].text);
-const { cloudWorkbookUrl, readCloudWorkbook } = createRequire(import.meta.url)(`${temp}/cloud.cjs`);
+const { cloudWorkbookUrl, readCloudWorkbook, readWorkbookSource, downloadWorkbook } = createRequire(import.meta.url)(`${temp}/cloud.cjs`);
 const file = readFileSync('templates/Training-example.xlsx');
 const bytes = file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength);
 const ok = { status: 200, contentType: 'application/octet-stream', bytes };
@@ -41,4 +41,37 @@ test('cloud rejects login pages, folders, failed shares, insecure redirects and 
   { status: 302, location: 'https://other.example/a.xlsx' },
   { status: 302, location: '/loop' },
  ]) await assert.rejects(readCloudWorkbook('https://cloud.example/s/token', async () => reply));
+});
+
+
+test('cloud-only source rejects local paths before any request', async () => {
+ for (const path of ['/home/user/Training.xlsx', '~/Sports/Training.xlsx', 'C:\\Training.xlsx', 'Training.xlsx', 'file:///tmp/Training.xlsx', '', 'http://cloud.example/file.xlsx']) {
+  await assert.rejects(readWorkbookSource(path), /Local file paths are no longer supported/);
+ }
+});
+
+
+test('template download uses a browser blob and disposes the link without selecting a path', async () => {
+ const create = URL.createObjectURL; const revoke = URL.revokeObjectURL;
+ let blob; let revoked; const calls = [];
+ URL.createObjectURL = value => { blob = value; return 'blob:template'; };
+ URL.revokeObjectURL = value => { revoked = value; };
+ try {
+  const doc = { body: { createEl(tag, options) {
+   assert.equal(tag, 'a'); assert.deepEqual(options.attr, { href: 'blob:template', download: 'Training.xlsx' });
+   return { click: () => calls.push('download'), remove: () => calls.push('remove') };
+  } } };
+  const dispose = downloadWorkbook(bytes, doc);
+  assert.deepEqual(calls, ['download', 'remove']);
+  assert.deepEqual(new Uint8Array(await blob.arrayBuffer()), new Uint8Array(bytes));
+  dispose(); assert.equal(revoked, 'blob:template');
+ } finally { URL.createObjectURL = create; URL.revokeObjectURL = revoke; }
+});
+test('production bundle contains no runtime filesystem access', async () => {
+ const output = await build({ entryPoints: ['src/main.ts'], bundle: true, write: false, metafile: true, platform: 'node', format: 'cjs', loader: { '.xlsx': 'binary', '.md': 'text', '.svg': 'text' }, external: ['obsidian'], plugins: [{ name: 'unused-sdk-imports', setup(builder) {
+  builder.onResolve({ filter: /^(?:node:)?fs(?:\/promises)?$/ }, args => ({ path: args.path, external: true, sideEffects: false }));
+ } }] });
+ const imports = Object.values(output.metafile.outputs).flatMap(file => file.imports);
+ assert.deepEqual(imports.filter(item => /^(?:node:)?fs(?:\/|$)/.test(item.path)), []);
+ assert.doesNotMatch(output.outputFiles[0].text, /FileTokenStore|require\(["'](?:node:)?fs(?:\/promises)?["']\)/);
 });

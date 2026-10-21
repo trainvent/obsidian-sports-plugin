@@ -9,6 +9,7 @@ export async function syncWorkbook(plugin: SportsPlugin): Promise<void> {
  plugin.syncing = true; plugin.refreshViews();
  try {
   if (!plugin.data.strategySheet && !plugin.data.trackingSheet && !plugin.data.scheduleSheet) { new Notice('Workbook sync is disabled. Select a strategy, tracking, or weekly schedule sheet in settings to enable it.'); return; }
+  if (!plugin.data.workbookPath.trim()) return;
   const next = await parseWorkbook(await readWorkbookSource(plugin.data.workbookPath), { strategySheet: plugin.data.strategySheet, trackingSheet: plugin.data.trackingSheet, scheduleSheet: plugin.data.scheduleSheet, previous: plugin.data.plan });
   const previous = plugin.data.plan;
   if (previous && previous.id !== next.id && previous.id !== 'sports-tracking-only') throw new Error('This workbook has a different plan ID. Multiple-plan switching is not supported yet.');

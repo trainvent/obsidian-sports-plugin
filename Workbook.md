@@ -1,7 +1,7 @@
 # Adapting the Sports workbook
 
 This guide lives in `Guide/Workbook.md` under the configured Sports notes folder
-in your vault. Existing guide edits are preserved on template creation and sync.
+in your vault. Existing guide edits are preserved on template download and sync.
 
 Give this guide and a copy of `templates/Training-example.xlsx` to your chatbot.
 The example is a fixed starting point, not a personalized recommendation. Adapt

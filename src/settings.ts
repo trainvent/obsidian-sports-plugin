@@ -2,7 +2,6 @@ import { garminSettingRows } from './ui/garmin-settings';
 import type { SportsSettingGroup, SportsSettingRow } from './ui/setting-definitions';
 import { App, PluginSettingTab, Setting, Platform } from 'obsidian';
 import type SportsPlugin from './main';
-import { DEFAULT_DATA } from './model/types';
 
 export class SportsSettingTab extends PluginSettingTab {
  private refreshGarminControls: (() => void) | undefined;
@@ -26,9 +25,9 @@ export class SportsSettingTab extends PluginSettingTab {
   } });
   return [
    group('Workbook', [
-    { name: 'Source', desc: 'Local workbook path or downloadable HTTPS link. Nextcloud file shares are supported.', render: setting => {
+    { name: 'Cloud workbook link', desc: 'HTTPS download link to your XLSX. Nextcloud file shares are supported.', render: setting => {
      setting.settingEl.addClass('sports-source-setting');
-     setting.addText(input => input.setPlaceholder(DEFAULT_DATA.workbookPath).setValue(plugin.data.workbookPath).onChange(async value => {
+     setting.addText(input => input.setPlaceholder('HTTPS workbook share link').setValue(plugin.data.workbookPath).onChange(async value => {
       plugin.data.workbookPath = value.trim(); await plugin.save();
      }));
      const help = setting.descEl.createEl('details', { cls: 'sports-source-help' });
@@ -38,8 +37,8 @@ export class SportsSettingTab extends PluginSettingTab {
     sheet('Strategy sheet', 'Goals and training parts. Blank to disable.', 'strategySheet', 'Strategy'),
     sheet('Tracking sheet', 'Daily plans and results. Blank to disable.', 'trackingSheet', 'Daily'),
     sheet('Weekly schedule sheet', 'Recurring activities. Blank to disable.', 'scheduleSheet', 'Recurring'),
-    { name: 'Example workbook', desc: 'Starts next week. Requires a local path; existing files stay safe.', render: setting => {
-     setting.addButton(button => button.setButtonText('Create workbook').setDisabled(!Platform.isDesktop || /^https?:\/\//i.test(plugin.data.workbookPath)).onClick(() => plugin.createExample()));
+    { name: 'Example workbook', desc: 'Download a template starting next week, then upload it to your cloud storage.', render: setting => {
+     setting.addButton(button => button.setButtonText('Download template').onClick(() => plugin.createExample()));
     } },
    ]),
    group('Garmin', garminItems),

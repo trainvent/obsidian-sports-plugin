@@ -87,7 +87,7 @@ test('searchable settings enumerate every row without rendering or accessing sto
  assert.deepEqual(definitions.map(group => group.heading), ['Workbook','Garmin','Notes','Sync','Help','Advanced · recovery']);
  assert.deepEqual(definitions.find(group => group.heading === 'Garmin').items.map(row => row.name), ['Connection','Import from','Show Garmin Coach plans']);
  const rows = definitions.flatMap(group => group.items);
- for (const name of ['Source','Tracking sheet','Sync interval','Recreate missing notes','Notes folder']) assert.ok(rows.some(row => row.name === name));
+ for (const name of ['Cloud workbook link','Tracking sheet','Sync interval','Recreate missing notes','Notes folder']) assert.ok(rows.some(row => row.name === name));
  let change;
  rows.find(row => row.name === 'Strategy sheet').render({ addText(callback) { const input = { setPlaceholder() { return this; }, setValue(value) { assert.equal(value, 'Strategy'); return this; }, onChange(callback) { change = callback; return this; } }; callback(input); return this; } });
  await change(' My strategy ');
