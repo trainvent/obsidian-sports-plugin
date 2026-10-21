@@ -2,17 +2,23 @@
 
 An Obsidian plugin developed by [Trainvent](https://github.com/trainvent).
 
-## Status
+## Alpha release
 
-The TypeScript prototype supports optional strategy/tracking XLSX import, a weekly dashboard,
-workbook weekly schedules, manual/interval sync, and protected Markdown generation.
-An opt-in Garmin connection is implemented and awaits live account verification.
-Cloud workbook sources remain planned in [STRATEGY.md](STRATEGY.md).
-Obsidian 1.11.4 or later is required. Local workbook reading and template creation
-require desktop. Those actions show an explanation on mobile; cached dashboards
-and Markdown remain available. Mobile runtime behavior is not yet verified.
+Plan training in spreadsheets and follow it in Obsidian: recurring schedules,
+a combined calendar, workout logs, and individual goal notes. Read a local XLSX
+or a downloadable cloud link, with optional Garmin activity and Coach imports.
 
-## Try the prototype
+Version 0.1.0 is an early alpha. Obsidian 1.11.4 or later is required. Workbook
+sync and Garmin connections currently require desktop; mobile is not yet verified.
+Garmin uses unofficial endpoints and Coach integration still needs live account
+verification. Keep a backup of your workbook and vault when trying the alpha.
+
+Download `main.js`, `manifest.json`, and `styles.css` from the GitHub release.
+Place them in `<vault>/.obsidian/plugins/sports-plugin/`, reload Obsidian, and
+enable **Sports** under **Settings → Community plugins**. The alpha is not yet
+listed in Obsidian's community directory.
+
+## Get started
 
 1. Build the plugin, reload Obsidian, and enable **Sports**.
 2. Run **Sports: Create example workbook** from the command palette. This

@@ -1,7 +1,7 @@
 {
 	"name": "obsidian-sports-plugin",
-	"version": "1.0.0",
-	"description": "Sports plugin for Obsidian, developed by Trainvent.",
+	"version": "0.1.0",
+	"description": "Plan training in spreadsheets and turn it into calendars, workout logs, and goal notes, with optional Garmin sync.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
