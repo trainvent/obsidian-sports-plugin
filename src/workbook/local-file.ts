@@ -1,14 +1,14 @@
+import { homedir } from 'node:os';
+import * as paths from 'node:path';
+import { open, mkdir } from 'node:fs/promises';
 import { Platform } from 'obsidian';
 
-// Obsidian loads plugins as CommonJS. Browser import() cannot resolve Node built-ins.
-// Keep these requires inside desktop-guarded functions so mobile can load the plugin.
+// Desktop-only plugin; sync reads only the explicitly configured workbook.
 const MAX_BYTES = 5 * 1024 * 1024;
 
 /** Access only the desktop workbook path explicitly configured by the user. */
 export async function workbookLocation(input: string): Promise<string> {
  if (!Platform.isDesktop) throw new Error('Local workbooks outside the vault require Obsidian desktop. Cached notes remain available.');
- const { homedir } = require('os') as typeof import('node:os');
- const paths = require('path') as typeof import('node:path');
  let path = input.trim();
  if (/^[a-z][a-z\d+.-]*:\/\//i.test(path)) throw new Error('Template creation needs a local .xlsx path. Cloud links are read-only.');
  if (path.startsWith('~/') || path.startsWith('~\\')) path = paths.join(homedir(), path.slice(2));
@@ -20,7 +20,6 @@ export async function workbookLocation(input: string): Promise<string> {
 export async function readLocalWorkbook(input: string): Promise<ArrayBuffer> {
  if (!Platform.isDesktop) throw new Error('Local workbook sync requires Obsidian desktop.');
  const path = await workbookLocation(input);
- const { open } = (require('fs') as typeof import('node:fs')).promises;
  const handle = await open(path, 'r');
  try {
   const before = await handle.stat();
@@ -44,8 +43,6 @@ export async function readLocalWorkbook(input: string): Promise<ArrayBuffer> {
 export async function createLocalTemplate(input: string, bytes: ArrayBuffer): Promise<void> {
  if (!Platform.isDesktop) throw new Error('Local template creation requires Obsidian desktop.');
  const path = await workbookLocation(input);
- const { mkdir, open } = (require('fs') as typeof import('node:fs')).promises;
- const paths = require('path') as typeof import('node:path');
  await mkdir(paths.dirname(path), { recursive: true });
  const handle = await open(path, 'wx');
  try { await handle.writeFile(new Uint8Array(bytes)); }

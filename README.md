@@ -8,7 +8,7 @@ Plan training in spreadsheets and follow it in Obsidian: recurring schedules,
 a combined calendar, workout logs, and individual goal notes. Read a local XLSX
 or a downloadable cloud link, with optional Garmin activity and Coach imports.
 
-Version 0.2.1 is an early alpha. Obsidian 1.11.4 or later is required. Sports is desktop-only because workbook and Garmin connections use Node.js APIs.
+Version 0.2.2 is an early alpha. Obsidian 1.11.4 or later is required. Sports is desktop-only because workbook and Garmin connections use Node.js APIs.
 Garmin uses unofficial endpoints and Coach integration still needs live account
 verification. Keep a backup of your workbook and vault when trying the alpha.
 
@@ -251,7 +251,9 @@ The release workflow builds the plugin and creates a draft release containing
 
 The prototype runs locally. External requests are disabled unless you configure a cloud workbook link or connect Garmin. With local-file
 sync enabled on desktop, it reads the one workbook path you configure outside the
-vault. It does not scan other folders or modify the source workbook. Template
+vault. Direct filesystem access is required to read that external XLSX and, only
+when requested, create an example workbook. It does not scan other folders or
+modify the source workbook. Template
 creation is an explicit action and refuses to overwrite existing files. Imported plan data,
 sync preferences, and generated-block baselines are stored in local
 plugin settings; these may travel with the vault if your sync tool includes plugin settings.
@@ -417,3 +419,6 @@ Version 0.2.1 uses `sports`. Disable the old plugin, install the new release in
 into that folder while Obsidian is closed if you want to retain settings and
 sync baselines. Keep the old folder as a backup until the new plugin works, and
 enable only the new copy. Generated notes and source workbooks stay in place.
+
+Settings use the searchable declarative API on Obsidian 1.13 or later, with the
+same controls rendered through the legacy API on Obsidian 1.11.4–1.12.

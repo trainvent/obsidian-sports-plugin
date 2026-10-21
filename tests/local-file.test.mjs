@@ -9,7 +9,7 @@ import { createRequire } from 'node:module';
 const temp = await mkdtemp(join(tmpdir(), 'sports-local-file-'));
 const platform = { isDesktop: true };
 global.__sportsTestPlatform = platform;
-const result = await build({ entryPoints: ['src/workbook/local-file.ts'], bundle: true, platform: 'browser', format: 'cjs', external: ['os', 'path', 'fs'], metafile: true, write: false, plugins: [{ name: 'obsidian-platform-stub', setup(builder) {
+const result = await build({ entryPoints: ['src/workbook/local-file.ts'], bundle: true, platform: 'browser', format: 'cjs', external: ['node:*'], metafile: true, write: false, plugins: [{ name: 'obsidian-platform-stub', setup(builder) {
  builder.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'obsidian', namespace: 'test-platform' }));
  builder.onLoad({ filter: /.*/, namespace: 'test-platform' }, () => ({ contents: 'export const Platform = globalThis.__sportsTestPlatform;' }));
 } }] });
@@ -19,8 +19,8 @@ const { workbookLocation, readLocalWorkbook, createLocalTemplate } = createRequi
 
 test('desktop source bundle uses CommonJS instead of browser dynamic imports', () => {
  const imports = Object.values(result.metafile.outputs).flatMap(output => output.imports);
- assert.ok(imports.some(item => item.path === 'os' && item.kind === 'require-call'));
- assert.ok(imports.some(item => item.path === 'fs' && item.kind === 'require-call'));
+ assert.ok(imports.some(item => item.path === 'node:os' && item.kind === 'require-call'));
+ assert.ok(imports.some(item => item.path === 'node:fs/promises' && item.kind === 'require-call'));
  assert.ok(!imports.some(item => item.kind === 'dynamic-import'));
 });
 

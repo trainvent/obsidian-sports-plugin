@@ -1,3 +1,5 @@
+import * as https from 'node:https';
+import { Buffer } from 'node:buffer';
 import { Platform } from 'obsidian';
 const MAX_BYTES = 5 * 1024 * 1024;
 
@@ -17,8 +19,6 @@ export type WorkbookDownload = (url: URL) => Promise<Download>;
 /** Separate unauthenticated transport: no browser cookies or Garmin credentials. */
 const download: WorkbookDownload = async url => {
  if (!Platform.isDesktop) throw new Error('Cloud workbook sync currently requires Obsidian desktop.');
- const https = require('https') as typeof import('node:https');
- const { Buffer } = require('buffer') as typeof import('node:buffer');
  return new Promise((resolve, reject) => {
   const req = https.get(url, { headers: { accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'accept-encoding': 'identity' } }, res => {
    if (Number(res.headers['content-length']) > MAX_BYTES) { res.destroy(); reject(new Error('Cloud workbook exceeds the limit of 5 MB.')); return; }

@@ -6,11 +6,12 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 const temp = mkdtempSync(`${tmpdir()}/sports-settings-tests-`);
 process.on('exit', () => rmSync(temp, { recursive: true, force: true }));
-const result = await build({ entryPoints: ['src/ui/garmin-settings.ts'], bundle: true, format: 'cjs', platform: 'node', write: false, plugins: [{ name: 'settings-stub', setup(builder) {
+const result = await build({ stdin: { contents: "export { garminSettings } from './src/ui/garmin-settings'; export { SportsSettingTab } from './src/settings';", resolveDir: process.cwd() }, bundle: true, format: 'cjs', platform: 'node', write: false, plugins: [{ name: 'settings-stub', setup(builder) {
  builder.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'obsidian', namespace: 'test' }));
  builder.onLoad({ filter: /.*/, namespace: 'test' }, () => ({ contents: `
  export const Platform = { isDesktop: true };
  export class Notice {}
+ export class PluginSettingTab { constructor() { this.containerEl = {}; } }
  class Button {
   setButtonText(value) { this.label = value; return this; }
   setDisabled(value) { this.disabled = value; return this; }
@@ -39,7 +40,7 @@ const result = await build({ entryPoints: ['src/ui/garmin-settings.ts'], bundle:
  ` }));
 } }] });
 writeFileSync(`${temp}/settings.cjs`, result.outputFiles[0].text);
-const { garminSettings } = createRequire(import.meta.url)(`${temp}/settings.cjs`);
+const { garminSettings, SportsSettingTab } = createRequire(import.meta.url)(`${temp}/settings.cjs`);
 
 test('open Garmin settings update after sign-in and sync without rebuilding controls or replacing focused input', () => {
  const container = { settings: [], createEl() { throw new Error('Status must stay inside the connection setting'); } };
@@ -74,4 +75,22 @@ test('Coach toggle saves and refreshes notes, fetching only when enabled and con
  calls.length = 0;
  await toggle.change(false);
  assert.deepEqual(calls, ['save', 'notes']);
+});
+
+
+test('searchable settings enumerate every row without rendering or accessing storage', async () => {
+ const calls = [];
+ const plugin = { data: { strategySheet: 'Strategy', showRegularActivities: false }, save: async () => calls.push('save'), scheduleSync: () => calls.push('schedule'), refreshViews: () => calls.push('views'), refreshNotes: async () => calls.push('notes') };
+ const tab = new SportsSettingTab({}, plugin);
+ const definitions = tab.getSettingDefinitions();
+ assert.deepEqual(calls, []);
+ assert.deepEqual(definitions.map(group => group.heading), ['Workbook','Garmin','Notes','Sync','Help','Advanced · recovery']);
+ assert.deepEqual(definitions.find(group => group.heading === 'Garmin').items.map(row => row.name), ['Connection','Import from','Show Garmin Coach plans']);
+ const rows = definitions.flatMap(group => group.items);
+ for (const name of ['Source','Tracking sheet','Sync interval','Recreate missing notes','Notes folder']) assert.ok(rows.some(row => row.name === name));
+ let change;
+ rows.find(row => row.name === 'Strategy sheet').render({ addText(callback) { const input = { setPlaceholder() { return this; }, setValue(value) { assert.equal(value, 'Strategy'); return this; }, onChange(callback) { change = callback; return this; } }; callback(input); return this; } });
+ await change(' My strategy ');
+ assert.equal(plugin.data.strategySheet, 'My strategy');
+ assert.deepEqual(calls, ['save','schedule']);
 });

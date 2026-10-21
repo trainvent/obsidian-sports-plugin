@@ -1,3 +1,5 @@
+import * as https from 'node:https';
+import { Buffer } from 'node:buffer';
 import { Platform } from 'obsidian';
 
 interface HttpResult { status: number; headers: Record<string, string | string[]>; arrayBuffer: ArrayBuffer }
@@ -10,8 +12,6 @@ function allowed(url: URL): boolean {
 /** Native HTTPS retains Set-Cookie and redirect Location, unlike requestUrl. */
 const request: HttpRequest = async (url, init) => {
  if (!Platform.isDesktop) throw new Error('Garmin requires desktop.');
- const https = require('https') as typeof import('node:https');
- const { Buffer } = require('buffer') as typeof import('node:buffer');
  const headers: Record<string, string> = {};
  new Headers(init.headers).forEach((value, name) => { headers[name] = value; });
  headers['accept-encoding'] = 'identity';
