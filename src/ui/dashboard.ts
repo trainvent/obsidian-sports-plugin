@@ -1,3 +1,4 @@
+import { activityDetails } from '../garmin/activities';
 import { ItemView, WorkspaceLeaf, Setting } from 'obsidian';
 import { SPORTS_ICON_ID } from './icon';
 import type SportsPlugin from '../main';
@@ -14,7 +15,7 @@ export class SportsDashboard extends ItemView {
   const root = this.contentEl; root.empty(); root.addClass('sports-dashboard');
   root.createEl('h1', { text: 'Sports' });
   new Setting(root).setName('Training overview')
-   .addButton(button => button.setButtonText(this.plugin.syncing ? 'Syncing…' : 'Sync now').setDisabled(this.plugin.syncing).onClick(() => this.plugin.sync()))
+   .addButton(button => button.setButtonText(this.plugin.syncing ? 'Syncing…' : 'Sync now').setDisabled(this.plugin.syncing).onClick(() => this.plugin.sync(true)))
    .addButton(button => button.setButtonText('Open training log').onClick(() => this.plugin.openTrainingLog()))
    .addButton(button => button.setButtonText('Add recurring activity').onClick(() => this.plugin.addRecurring()));
   root.createEl('p', { text: this.plugin.data.plan ? `${this.plugin.data.plan.name} · Last imported ${new Date(this.plugin.data.plan.importedAt).toLocaleString()}` : 'Set a local workbook path and its sheets in Settings → Sports Plugin to get started.' });
@@ -25,13 +26,20 @@ export class SportsDashboard extends ItemView {
    .addButton(button => button.setButtonText('Today').onClick(() => { this.anchor = new Date(); this.render(); }))
    .addButton(button => button.setButtonText('Next').onClick(() => { this.anchor.setDate(this.anchor.getDate() + 7); this.render(); }))
    .addButton(button => button.setButtonText('Open weekly note').onClick(() => this.plugin.openWeekly(this.anchor)));
+  const cache = this.plugin.data.garminCache;
+  if (cache) root.createEl('p', { text: `${cache.lastSuccess ? `Garmin last synced ${new Date(cache.lastSuccess).toLocaleString()}` : 'Garmin has not synced yet.'}${cache.error ? ` · ${cache.error}` : ''}` });
   const dates = weekDates(this.anchor);
   for (const date of dates) {
    const section = root.createDiv({ cls: 'sports-day' }); section.createEl('h3', { text: date });
    const sessions = this.plugin.data.plan?.sessions.filter(session => session.date === date) ?? [];
    const events = this.plugin.data.showRegularActivities ? eventsOn(this.plugin.data.events, date) : [];
    const scheduled = this.plugin.data.showRegularActivities ? scheduleOn(this.plugin.data.plan, date) : [];
-   if (!sessions.length && !events.length && !scheduled.length) section.createEl('p', { text: 'No sessions planned.' });
+   const activities = cache?.activities.filter(activity => activity.date === date) ?? [];
+   if (!activities.length && !sessions.length && !events.length && !scheduled.length) section.createEl('p', { text: 'No sessions planned.' });
+   for (const activity of activities) {
+    section.createEl('a', { text: activity.name, href: `https://connect.garmin.com/modern/activity/${activity.id}` });
+    section.createEl('p', { text: `Recorded by Garmin · ${activityDetails(activity)}` });
+   }
    for (const session of sessions) {
     section.createEl('strong', { text: session.title });
     const part = this.plugin.data.plan?.parts.find(part => part.id === session.partId && part.version === session.partVersion);

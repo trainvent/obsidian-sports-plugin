@@ -199,3 +199,21 @@ test('sheet guide lives in the configured vault Guide folder and preserves edits
  assert.equal(guide.content, 'My adapted guide');
  assert.ok(!files.has('Training/Sports/SHEET_GUIDE.md'));
 });
+
+test('Garmin adds recorded history and weekly notes while preserving manual sessions and commentary', async () => {
+ const { plugin, plan, files } = fixture();
+ const activity = { id: '123', date: '2026-10-20', time: '20:00', name: 'Pool swim', type: 'lap_swimming', duration: 3600, distance: 2000, average_hr: 130 };
+ plugin.data.garminCache = { activities: [activity], lastSuccess: '2026-10-21T10:00:00Z', lastAttempt: '', start: '2026-10-01', end: '2026-10-21', error: '' };
+ const original = JSON.stringify(plan);
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.ok(files.get('Sports/Log.md').content.includes('Pool swim'));
+ const week = files.get('Sports/Weeks/2026-10-19.md');
+ assert.ok(week.content.includes('Pool swim'));
+ assert.ok(!files.get('Sports/Weeks/2026-12-28.md').content.includes('Pool swim'));
+ week.content += '\nPersonal reflections';
+ plugin.data.garminCache.error = 'Garmin is disconnected.';
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.ok(week.content.endsWith('Personal reflections'));
+ assert.ok(week.content.includes('Garmin is disconnected.'));
+ assert.equal(JSON.stringify(plan), original);
+});

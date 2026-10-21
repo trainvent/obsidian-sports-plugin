@@ -1,3 +1,4 @@
+import type { GarminCache } from '../garmin/types';
 export type GoalCategory = 'milestone' | 'maintenance';
 export interface Goal { id: string; title: string; benchmark: string; baseline?: string; test?: string; category?: GoalCategory }
 export interface TrainingPart { id: string; version: string; title: string; prescription: string; goalIds: string[] }
@@ -18,11 +19,13 @@ export interface TrainingPlan {
 }
 export interface RecurringEvent { id: string; title: string; sport: string; weekday: number; time: string; minutes: number; startDate: string; endDate: string }
 export interface SportsData {
+ garminEnabled: boolean; garminSecretId: string; garminHistoryStart: string; garminCache?: GarminCache;
  workbookPath: string; strategySheet: string; trackingSheet: string; notesFolder: string; syncMinutes: number;
  showRegularActivities: boolean; syncOnStartup: boolean; plan: TrainingPlan | null; events: RecurringEvent[];
  resetNoteBaselines: boolean; generatedBlocks: Record<string, string>; lastError: string;
 }
 export const DEFAULT_DATA: SportsData = {
+ garminEnabled: false, garminSecretId: '', garminHistoryStart: '',
  workbookPath: '~/Sports/Training.xlsx', strategySheet: 'Strategy', trackingSheet: 'Log', notesFolder: 'Sports', syncMinutes: 10, syncOnStartup: true, showRegularActivities: false,
  plan: null, events: [], resetNoteBaselines: false, generatedBlocks: {}, lastError: '',
 };

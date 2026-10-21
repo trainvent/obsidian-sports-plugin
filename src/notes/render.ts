@@ -19,7 +19,7 @@ export function weekMarkdown(plan: TrainingPlan | null, events: RecurringEvent[]
   });
   return [...sessions, ...(showRegularActivities ? scheduleOn(plan, date) : []).map(item => `| ${date} | ${cell(item.time)} ${cell(item.title)} | Weekly schedule | ${cell(item.minutes)} | — | Planned | — | ${cell(item.recordedBy)} | ${cell(item.notes)} |`), ...(showRegularActivities ? eventsOn(events, date) : []).map(event => `| ${date} | ${cell(event.time)} ${cell(event.title)} | ${cell(event.sport)} | ${event.minutes} | — | Scheduled | — | — | — |`)];
  });
- return `${weeklyStrategy(plan, dates[0] ?? '')}## Training overview\n\n| Date | Session | Part / sport | Planned min | Actual min | Status | Result | Plan | Notes |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nTimes follow the source schedule. Tracker connections are not available in this prototype.`;
+ return `${weeklyStrategy(plan, dates[0] ?? '')}## Training overview\n\n| Date | Session | Part / sport | Planned min | Actual min | Status | Result | Plan | Notes |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nTimes follow the source schedule. Manual completion is recorded separately from tracker activities.`;
 }
 
 /** Show the complete imported second-sheet schedule, including dates outside this week. */

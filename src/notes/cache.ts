@@ -5,6 +5,7 @@ import type { SportsData } from '../model/types';
 /** Explicit reset; retain configuration, recurring activities, and vault files. */
 export function clearImportCache(data: SportsData): void {
  data.plan = null;
+ data.garminCache = undefined;
  data.generatedBlocks = {};
  data.lastError = '';
  data.resetNoteBaselines = true;

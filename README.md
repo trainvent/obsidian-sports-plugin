@@ -4,10 +4,11 @@ An Obsidian plugin developed by [Trainvent](https://github.com/trainvent).
 
 ## Status
 
-An offline TypeScript prototype is implemented: optional strategy/tracking XLSX import, a weekly dashboard,
+The TypeScript prototype supports optional strategy/tracking XLSX import, a weekly dashboard,
 weekly recurring activities, manual/interval sync, and protected Markdown generation.
-Cloud sources and tracker integrations are planned in [STRATEGY.md](STRATEGY.md).
-Obsidian 1.7.2 or later is required. Local workbook reading and template creation
+An opt-in Garmin connection is implemented and awaits live account verification.
+Cloud workbook sources remain planned in [STRATEGY.md](STRATEGY.md).
+Obsidian 1.11.4 or later is required. Local workbook reading and template creation
 require desktop. Those actions show an explanation on mobile; cached dashboards
 and Markdown remain available. Mobile runtime behavior is not yet verified.
 
@@ -184,7 +185,7 @@ Use a text time such as `18:00` and optional positive minutes.
 
 These activities appear each week in the dashboard and Markdown without manual
 result fields in the daily log. `Recorded by` can be Garmin, another tracker, or
-No manual log. This records intent only; tracker integration is still pending and
+No manual log. This records intent only; Garmin activities are imported separately and
 scheduled activities are never automatically marked completed.
 
 ## Markdown ownership and safety
@@ -280,3 +281,42 @@ On the next sync, existing target notes are backed up in the notes folder's
 outside generated markers is preserved. Invalid markers and notes managed by the
 original Fitness scripts still require attention. Resetting the cache does not
 recover training results that were never saved in the workbook.
+
+
+## Garmin activity sync
+
+On desktop, select **Settings → Sports Plugin → Connect Garmin**. Sign in with your
+Garmin email and password, then enter the verification code if requested. No Python,
+terminal commands or separate installation are required. This connection is experimental
+until sign-in, MFA and token refresh have been checked with a live account.
+
+Connecting explicitly enables network access to Garmin and starts an activity import.
+Passwords and verification codes are held only in the sign-in dialog and are never
+saved. Session tokens are saved through Obsidian's secret storage, separately from
+plugin settings and generated notes. Obsidian 1.11.4 or later is required.
+
+The bundled [garminconnect-js](https://github.com/DynamicsNinja/garminconnect-js)
+client uses unofficial Garmin Connect endpoints. It also downloads public OAuth
+application keys from `https://thegarth.s3.amazonaws.com/oauth_consumer.json`; no
+credentials or activity data are sent to that host. This is JSON data, not remote
+executable code. Garmin can change these endpoints or limit sign-ins. This feature
+currently supports Garmin accounts on garmin.com, not garmin.cn.
+
+Set **Garmin history start** to the first date to import. The initial default is 90
+days ago. While Obsidian runs, automatic sync checks Garmin at most once an hour,
+using the configured sync timer. **Sync now** requests an immediate refresh.
+Garmin refreshes independently when workbook import fails. With both workbook sheet
+mappings blank, it can also run without a workbook.
+
+Only activity ID, local date/time, name, type, duration, distance and average heart
+rate are cached in the vault's plugin data and shown in **Log**, weekly notes and the
+dashboard. No GPS routes or complete account responses are retained. Activities use
+Garmin's local start time; GMT-only records use the plan's timezone, or your local
+timezone without a plan. Garmin records never mark manual sessions complete.
+
+Each successful refresh replaces the selected date range, so activity edits and
+deletions do not create duplicates. On failure the previous snapshot remains visible
+with a warning. **Disconnect** clears the saved tokens and stops Garmin requests;
+cached activities remain available. **Clear cached data** removes the imported
+activity cache while keeping connection settings. Generated notes and reflections
+keep their existing edit protection.

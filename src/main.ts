@@ -8,7 +8,9 @@ import { RecurringModal } from './ui/recurring';
 import { createLocalTemplate } from './workbook/local-file';
 import { ensureSheetGuide } from './notes/sheet-guide';
 import { templateWorkbook } from './workbook/template-file';
-import { syncWorkbook } from './workbook/sync';
+import { syncSources } from './garmin/orchestrate';
+import { GarminConnectModal } from './ui/garmin-connect';
+import { garminMarkdown } from './garmin/render';
 import { noteLink } from './notes/plan';
 import { clearImportCache } from './notes/cache';
 import { migrateNoteNames } from './notes/migrate';
@@ -21,6 +23,7 @@ export default class SportsPlugin extends Plugin {
  syncing = false;
  private timer: number | undefined;
  private noteBusy = false;
+ private garminDialog: GarminConnectModal | undefined;
  async onload(): Promise<void> {
   this.data = Object.assign({}, DEFAULT_DATA, await this.loadData() as Partial<SportsData>);
   addIcon(SPORTS_ICON_ID, SPORTS_ICON_SVG);
@@ -31,7 +34,8 @@ export default class SportsPlugin extends Plugin {
   this.addCommand({ id: 'clear-sports-cache', name: 'Clear cached data', callback: () => this.clearCachedData() });
   this.addCommand({ id: 'recreate-sports-notes', name: 'Recreate missing notes', callback: () => this.refreshNotes(true, true) });
   this.addCommand({ id: 'refresh-sports-notes', name: 'Generate notes from imported data', callback: () => this.refreshNotes() });
-  this.addCommand({ id: 'sync-sports', name: 'Sync now', callback: () => this.sync() });
+  this.addCommand({ id: 'connect-sports-garmin', name: 'Connect Garmin', callback: () => this.connectGarmin() });
+  this.addCommand({ id: 'sync-sports', name: 'Sync now', callback: () => this.sync(true) });
   this.addCommand({ id: 'open-sports-week', name: 'Create or open weekly note', callback: () => this.openWeekly() });
   this.addCommand({ id: 'open-sports-log', name: 'Open training log', callback: () => this.openTrainingLog() });
   this.addCommand({ id: 'add-sports-recurring', name: 'Add recurring activity', callback: () => this.addRecurring() });
@@ -42,7 +46,7 @@ export default class SportsPlugin extends Plugin {
    else if (this.data.plan) void this.refreshNotes(false);
   });
  }
- onunload(): void { if (this.timer !== undefined) window.clearInterval(this.timer); }
+ onunload(): void { this.garminDialog?.close(); if (this.timer !== undefined) window.clearInterval(this.timer); }
  async createExample(): Promise<void> {
   try {
    const path = this.data.workbookPath || DEFAULT_DATA.workbookPath;
@@ -58,10 +62,11 @@ export default class SportsPlugin extends Plugin {
  async save(): Promise<void> { await this.saveData(this.data); }
  async refreshNotes(notify = true, recreateMissing = false): Promise<void> {
   if (this.syncing || this.noteBusy) return;
-  if (!this.data.plan) { if (notify) new Notice('Sync a workbook before generating notes.'); return; }
+  if (!this.data.plan && !this.data.garminCache) { if (notify) new Notice('Sync a workbook or Garmin before generating notes.'); return; }
   this.noteBusy = true;
   try {
-   const issues = await syncNotes(this, this.data.plan, recreateMissing);
+   const issues = this.data.plan ? await syncNotes(this, this.data.plan, recreateMissing) : [];
+   if (!this.data.plan) await updateNote(this, 'Log.md', 'training-log', garminMarkdown(this.data.garminCache), '# Log\n\n## Reflections\n', recreateMissing);
    if (issues.length || recreateMissing) { this.data.lastError = issues[0] || ''; await this.save(); }
    if (notify || issues.length) new Notice(issues[0] || 'Sports notes generated in the notes folder.');
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not generate notes.'); }
@@ -77,11 +82,16 @@ export default class SportsPlugin extends Plugin {
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not clear cached data.'); }
   finally { this.noteBusy = false; }
  }
- async sync(): Promise<void> { if (!this.noteBusy) await syncWorkbook(this); }
+ connectGarmin(): void {
+  if (!Platform.isDesktop || this.syncing || this.garminDialog) return;
+  this.garminDialog = new GarminConnectModal(this, () => { this.garminDialog = undefined; this.scheduleSync(); });
+  this.garminDialog.open();
+ }
+ async sync(forceGarmin = false): Promise<void> { if (!this.noteBusy && !this.garminDialog) await syncSources(this, forceGarmin); }
  scheduleSync(): void {
   if (this.timer !== undefined) window.clearInterval(this.timer);
   this.timer = undefined;
-  if (Platform.isDesktop && (this.data.strategySheet || this.data.trackingSheet) && Number.isFinite(this.data.syncMinutes) && this.data.syncMinutes >= 5) this.timer = this.registerInterval(window.setInterval(() => { void this.sync(); }, this.data.syncMinutes * 60_000));
+  if (Platform.isDesktop && (this.data.strategySheet || this.data.trackingSheet || this.data.garminEnabled) && Number.isFinite(this.data.syncMinutes) && this.data.syncMinutes >= 5) this.timer = this.registerInterval(window.setInterval(() => { void this.sync(); }, this.data.syncMinutes * 60_000));
   this.refreshViews();
  }
  refreshViews(): void {
@@ -101,7 +111,7 @@ export default class SportsPlugin extends Plugin {
   try {
    const issues = await migrateNoteNames(this);
    if (issues.length) throw new Error(issues[0]);
-   const file = await updateNote(this, 'Log.md', 'training-log', `${noteLink(this.data.notesFolder, 'Plans', 'Plans')}\n\n${datedLogMarkdown(this.data.plan, false)}`, '# Log\n\n## Commentary\n');
+   const file = await updateNote(this, 'Log.md', 'training-log', `${noteLink(this.data.notesFolder, 'Plans', 'Plans')}\n\n${datedLogMarkdown(this.data.plan, false)}${garminMarkdown(this.data.garminCache)}`, '# Log\n\n## Commentary\n');
    await this.app.workspace.getLeaf(false).openFile(file);
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not update the training log.'); }
   finally { this.noteBusy = false; }
@@ -112,7 +122,7 @@ export default class SportsPlugin extends Plugin {
   this.noteBusy = true;
   try {
    const dates = weekDates(anchor);
-   const file = await updateNote(this, `Weeks/${dates[0]}.md`, `week:${dates[0]}`, `${noteLink(this.data.notesFolder, 'Plans', 'Plans')} · ${noteLink(this.data.notesFolder, 'Log', 'Log')}\n\n${weekMarkdown(this.data.plan, this.data.events, dates, this.data.showRegularActivities)}`, `# Week of ${dates[0]}\n\n## Reflections\n\n### What improved\n\n### Recovery and comfort\n\n### What to adjust\n\n### Next week's focus\n`);
+   const file = await updateNote(this, `Weeks/${dates[0]}.md`, `week:${dates[0]}`, `${noteLink(this.data.notesFolder, 'Plans', 'Plans')} · ${noteLink(this.data.notesFolder, 'Log', 'Log')}\n\n${weekMarkdown(this.data.plan, this.data.events, dates, this.data.showRegularActivities) + garminMarkdown(this.data.garminCache, dates)}`, `# Week of ${dates[0]}\n\n## Reflections\n\n### What improved\n\n### Recovery and comfort\n\n### What to adjust\n\n### Next week's focus\n`);
    await this.app.workspace.getLeaf(false).openFile(file);
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not update the weekly note.'); }
   finally { this.noteBusy = false; }
