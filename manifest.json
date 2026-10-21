@@ -6,6 +6,6 @@
 	"description": "Plan training in spreadsheets and turn it into calendars, workout logs, and goal notes, with optional Garmin sync.",
 	"author": "Trainvent",
 	"authorUrl": "https://github.com/trainvent",
-	"isDesktopOnly": false,
+	"isDesktopOnly": true,
 	"fundingUrl": "https://github.com/sponsors/trainvent"
 }
