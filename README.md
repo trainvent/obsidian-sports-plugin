@@ -401,3 +401,8 @@ Downloads are limited to 5 MB and 30 seconds; redirects stay on the same HTTPS
 server. Invalid links or download failures preserve the last imported plan and
 notes. Existing local paths continue to work. Template creation requires a local
 path; upload the resulting XLSX to Nextcloud yourself. Desktop only for now.
+
+## Support development
+
+[❤️ Sponsor Trainvent](https://github.com/sponsors/trainvent) to support continued development.
+For help, use [support](https://next.trainvent.com/de/software-support/) or [report an issue](https://github.com/trainvent/obsidian-sports-plugin/issues).
