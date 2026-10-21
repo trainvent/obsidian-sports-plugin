@@ -10,6 +10,7 @@ export async function workbookLocation(input: string): Promise<string> {
  const { homedir } = require('os') as typeof import('node:os');
  const paths = require('path') as typeof import('node:path');
  let path = input.trim();
+ if (/^[a-z][a-z\d+.-]*:\/\//i.test(path)) throw new Error('Template creation needs a local .xlsx path. Cloud links are read-only.');
  if (path.startsWith('~/') || path.startsWith('~\\')) path = paths.join(homedir(), path.slice(2));
  if (!paths.isAbsolute(path)) throw new Error('Choose an absolute workbook path or one beginning with ~/. Vault-relative paths are no longer used.');
  if (!path.toLowerCase().endsWith('.xlsx')) throw new Error('Choose a file ending in .xlsx.');

@@ -52,7 +52,7 @@ test('two-sheet workbook resolves goals and parts without inventing actual resul
 
 function mappedWorkbook({ strategyName = 'My goals', trackingName = 'My sessions', removeStrategy = false, removeTracking = false, extra = false } = {}) {
  const files = unzipSync(new Uint8Array(workbook()));
- let info = strFromU8(files['xl/workbook.xml']).replace('name="Strategy"', `name="${strategyName}"`).replace('name="Training log"', `name="${trackingName}"`);
+ let info = strFromU8(files['xl/workbook.xml']).replace('name="Strategy"', `name="${strategyName}"`).replace('name="Daily"', `name="${trackingName}"`);
  if (removeStrategy) info = info.replace(/<sheet name="[^"]*" sheetId="1"[^>]*\/>/, '');
  if (removeTracking) info = info.replace(/<sheet name="[^"]*" sheetId="2"[^>]*\/>/, '');
  if (extra) {
@@ -90,7 +90,7 @@ test('offered daily template imports dates and separate results without inventin
  const saved = readFileSync('templates/Sports-template.xlsx');
  const buffer = saved.buffer.slice(saved.byteOffset, saved.byteOffset + saved.byteLength);
  const original = new Uint8Array(buffer).slice();
- const plan = await parseWorkbook(buffer);
+ const plan = await parseWorkbook(buffer, { strategySheet: 'Strategy', trackingSheet: 'Training log' });
  assert.equal(plan.goals.length, 3);
  assert.equal(plan.parts.length, 4);
  const core = plan.parts.find(part => part.id === 'Core');
@@ -148,7 +148,7 @@ test('strategy weekly schedule creates planned activities without daily result r
  assert.equal(plan.sessions.length, 1);
  assert.equal(plan.weeklySchedule[0].recordedBy, 'Garmin');
  assert.equal(plan.weeklySchedule[0].minutes, 60);
- const explicit = await parseWorkbook(zipSync(files).buffer, { strategySheet: 'Strategy', trackingSheet: 'Training log', scheduleSheet: 'Strategy' });
+ const explicit = await parseWorkbook(zipSync(files).buffer, { strategySheet: 'Strategy', trackingSheet: 'Daily', scheduleSheet: 'Strategy' });
  assert.deepEqual(explicit.weeklySchedule, plan.weeklySchedule);
  const markdown = weekMarkdown(plan, ['2026-10-19'], true);
  assert.ok(markdown.includes('Swim course'));
@@ -203,7 +203,7 @@ test('explicit weekly plans create future weeks and show strategy without claimi
 
 test('12-week workbook imports all planned sessions, typed dates, and blank results', async () => {
  const bytes = readFileSync('templates/Sports-12-week.xlsx');
- const plan = await parseWorkbook(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+ const plan = await parseWorkbook(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), { strategySheet: 'Strategy', trackingSheet: 'Training log' });
  assert.deepEqual(plan.weeklySchedule.map(item => [item.weekday, item.time, item.title, item.minutes]), [[2, '20:00', 'Swimming', null], [0, '10:30', 'Running', null]]);
  assert.equal(scheduleOn(plan, '2026-10-20')[0].title, 'Swimming');
  assert.equal(scheduleOn(plan, '2027-04-04')[0].title, 'Running');
@@ -270,7 +270,7 @@ test('new workbooks start next Monday, with cached dates rebased across year and
  const original = source.slice();
  for (const [now, tomorrow] of [[new Date(2026,9,20,23,59), '2026-10-26'], [new Date(2026,11,31,23,59), '2027-01-04'], [new Date(2026,2,28,23,59), '2026-03-30'], [new Date(2026,9,25,23,59), '2026-10-26'], [new Date(2026,9,26,12), '2026-11-02']]) {
   const bytes = startTemplateNextMonday(source, now);
-  const plan = await parseWorkbook(bytes);
+  const plan = await parseWorkbook(bytes, { strategySheet: 'Strategy', trackingSheet: 'Training log' });
   assert.equal(plan.weekPlans[0].start, tomorrow);
   assert.equal(plan.sessions[0].date, tomorrow);
   assert.ok(plan.sessions.every(session => session.date >= tomorrow));
@@ -293,7 +293,7 @@ test('an already-current generated section recovers a stale baseline without ove
 
 test('goal categories separate new skills from maintenance and core supports all three milestones', async () => {
  const source = new Uint8Array(readFileSync('templates/Sports-12-week.xlsx'));
- const plan = await parseWorkbook(source.buffer.slice(source.byteOffset, source.byteOffset + source.byteLength));
+ const plan = await parseWorkbook(source.buffer.slice(source.byteOffset, source.byteOffset + source.byteLength), { strategySheet: 'Strategy', trackingSheet: 'Training log' });
  const milestones = plan.goals.filter(goal => goal.category === 'milestone');
  assert.deepEqual(milestones.map(goal => goal.id), ['muscle-up', 'hspu', 'pistol']);
  assert.equal(plan.goals.find(goal => goal.id === 'running').category, 'maintenance');
@@ -312,10 +312,10 @@ test('goal categories separate new skills from maintenance and core supports all
  const invalid = xml.replace('milestone', 'unknown-category');
  assert.notEqual(invalid, xml);
  files['xl/worksheets/sheet1.xml'] = strToU8(invalid);
- await assert.rejects(parseWorkbook(zipSync(files).buffer), /category must be/);
+ await assert.rejects(parseWorkbook(zipSync(files).buffer, { strategySheet: 'Strategy', trackingSheet: 'Training log' }), /category must be/);
 });
 
-test('new three-sheet example imports and rebases Log without changing Recurring', async () => {
+test('new three-sheet example imports and rebases Daily without changing Recurring', async () => {
  const source = new Uint8Array(readFileSync('templates/Training-example.xlsx'));
  const plan = await parseWorkbook(startTemplateNextMonday(source, new Date(2026, 11, 31, 12)));
  assert.equal(plan.sessions.length, 48);
@@ -353,7 +353,7 @@ test('weekly schedule sheet can be selected independently, renamed, disabled, or
  const custom = await parseWorkbook(zipSync(files).buffer, { ...mapping, scheduleSheet: 'Weekly rhythm' });
  assert.deepEqual(custom.weeklySchedule, scheduleOnly.weeklySchedule);
  const previous = { ...scheduleOnly, weeklySchedule: [{ ...scheduleOnly.weeklySchedule[0], title: 'Preserved cached schedule' }] };
- const disabled = await parseWorkbook(source, { strategySheet: 'Strategy', trackingSheet: 'Log', scheduleSheet: '', previous });
+ const disabled = await parseWorkbook(source, { strategySheet: 'Strategy', trackingSheet: 'Daily', scheduleSheet: '', previous });
  assert.deepEqual(disabled.weeklySchedule, previous.weeklySchedule);
  await assert.rejects(parseWorkbook(source, { ...mapping, scheduleSheet: 'Missing' }), /was not found/);
  await assert.rejects(parseWorkbook(source, { ...mapping, scheduleSheet: '' }), /at least one sheet/);

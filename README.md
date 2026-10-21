@@ -1,4 +1,4 @@
-# Obsidian Sports Plugin
+# Sports
 
 An Obsidian plugin developed by [Trainvent](https://github.com/trainvent).
 
@@ -14,18 +14,18 @@ and Markdown remain available. Mobile runtime behavior is not yet verified.
 
 ## Try the prototype
 
-1. Build the plugin, reload Obsidian, and enable **Sports Plugin**.
-2. Run **Sports Plugin: Create example workbook** from the command palette. This
+1. Build the plugin, reload Obsidian, and enable **Sports**.
+2. Run **Sports: Create example workbook** from the command palette. This
    creates a fictional workbook at the configured local path, defaulting to
    `~/Sports/Training.xlsx` in your home folder, independent of the system language. Existing files are never overwritten.
-3. Run **Sports Plugin: Open dashboard**, then select **Sync now**.
+3. Run **Sports: Open dashboard**, then select **Sync now**.
 4. Open the workbook with your spreadsheet editor to change plans or record results.
    Save it at the configured local path, then sync again. The workbook stays outside
    the vault; only notes and imported dashboard data belong to Obsidian.
 5. Edit recurring activities in the workbook **Recurring** tab. Select **Open weekly
    note** to create or refresh that week's note.
 
-**Settings → Sports Plugin** offers an absolute workbook path (or `~/Sports/...`), notes folder, startup sync,
+**Settings → Sports** offers a workbook source (a cloud link, absolute path, or `~/Sports/...`), notes folder, startup sync,
 and intervals of five, ten, or fifteen minutes, or one hour. Startup sync is on
 and the interval is ten minutes by default. Select **Manual only** to disable periodic sync.
 Scheduling runs inside Obsidian; closed apps and mobile suspension stop or delay it. No external scheduler or Python installation is required.
@@ -45,16 +45,16 @@ template. Cloud sources will later provide an alternative for mobile devices.
 
 Use the [example workbook](templates/Training-example.xlsx), or select **Create workbook**
 in Sports settings to create it at a new local path. It uses **Strategy**, **Recurring**,
-and **Log** tabs. The fixed example contains 12 weekly plans and 48 manual sessions;
-actual results are blank. Template creation and note sync save `Guide/SHEET_GUIDE.md` inside the configured
-vault notes folder (by default `Sports/Guide/SHEET_GUIDE.md`), preserving an existing guide. No customization flow is required. Give the workbook and
-[SHEET_GUIDE.md](SHEET_GUIDE.md) to your own chatbot to adapt it safely.
+and **Daily** tabs. The fixed example contains 12 weekly plans and 48 manual sessions;
+actual results are blank. Template creation and note sync save `Guide/Workbook.md` inside the configured
+vault notes folder (by default `Sports/Guide/Workbook.md`), preserving an existing guide. No customization flow is required. Give the workbook and
+[Workbook.md](Workbook.md) to your own chatbot to adapt it safely.
 
 Column colors have consistent roles: pale blue for identifiers, amber for planning
 inputs, green for recorded training, and gray for formulas. The guide explains the
 exact headers, ID links, exercise-name delimiters, formula caches and history rules.
 Plugin-created copies start next Monday and use the local timezone. Existing files
-are never overwritten. Select Strategy, Log, and Recurring as the strategy, tracking, and weekly schedule
+are never overwritten. Select Strategy, Daily, and Recurring as the strategy, tracking, and weekly schedule
 sheet mappings. Each sheet can be imported independently or disabled by leaving
 its mapping blank. The older templates and formats remain supported.
 
@@ -216,7 +216,7 @@ npm run dev
 ```
 
 The development build watches `src/` and writes `main.js` in this folder.
-Reload Obsidian after changes and enable **Sports Plugin** under
+Reload Obsidian after changes and enable **Sports** under
 **Settings → Community plugins**.
 
 ```sh
@@ -244,7 +244,7 @@ The release workflow builds the plugin and creates a draft release containing
 
 ## Privacy
 
-The prototype runs locally. External requests are disabled unless you connect Garmin. With local-file
+The prototype runs locally. External requests are disabled unless you configure a cloud workbook link or connect Garmin. With local-file
 sync enabled on desktop, it reads the one workbook path you configure outside the
 vault. It does not scan other folders or modify the source workbook. Template
 creation is an explicit action and refuses to overwrite existing files. Imported plan data,
@@ -268,7 +268,7 @@ notes. Changing it refreshes generated notes from cached data. The log and plans
 contain only explicit Training log rows; dated sessions entered there remain
 visible regardless of this setting.
 
-If you delete generated notes to start again, use **Settings → Sports Plugin →
+If you delete generated notes to start again, use **Settings → Sports →
 Recreate missing notes** (or the command with that name). It rebuilds missing notes
 from the last successfully imported workbook, keeps existing files protected, and
 clears the missing-note error after success. Sync the new workbook first if you
@@ -287,7 +287,7 @@ recover training results that were never saved in the workbook.
 
 ## Garmin activity sync
 
-On desktop, select **Settings → Sports Plugin → Connect Garmin**. Sign in with your
+On desktop, select **Settings → Sports → Connect Garmin**. Sign in with your
 Garmin email and password, then enter the verification code if requested. No Python,
 terminal commands or separate installation are required. This connection is experimental
 until sign-in, MFA and token refresh have been checked with a live account.
@@ -379,3 +379,19 @@ Recurring training comes from the workbook weekly schedule and appears for the n
 28 days, plus any later imported daily or Coach plan dates. This calendar column
 is independent of the weekly-note regular-activity visibility setting.
 Write personal calendar reviews below the generated section; sync preserves them.
+
+## Read-only cloud workbooks
+
+In **Workbook source**, paste a Nextcloud share link to the XLSX file itself,
+for example `https://cloud.example/s/SHARE_TOKEN`. The plugin adds `/download`
+automatically. Direct HTTPS file-download links also work. For this first version,
+the share must allow downloads without a password or account login; folder shares,
+Nextcloud Office editor URLs and password-protected shares are not supported.
+
+Configuring a cloud link enables read-only downloads from that server during manual
+and configured automatic sync. No workbook content is uploaded or edited. The link
+is saved in ordinary plugin settings and grants access to anyone who has it.
+Downloads are limited to 5 MB and 30 seconds; redirects stay on the same HTTPS
+server. Invalid links or download failures preserve the last imported plan and
+notes. Existing local paths continue to work. Template creation requires a local
+path; upload the resulting XLSX to Nextcloud yourself. Desktop only for now.

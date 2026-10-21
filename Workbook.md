@@ -1,6 +1,6 @@
 # Adapting the Sports workbook
 
-This guide lives in `Guide/SHEET_GUIDE.md` under the configured Sports notes folder
+This guide lives in `Guide/Workbook.md` under the configured Sports notes folder
 in your vault. Existing guide edits are preserved on template creation and sync.
 
 Give this guide and a copy of `templates/Training-example.xlsx` to your chatbot.
@@ -25,15 +25,15 @@ start-date anchor; dependent dates are gray.
 ## Keep the workbook contract
 
 - Save as `.xlsx`, under 5 MB. Do not add macros or external workbook links.
-- Keep the tabs **Strategy**, **Recurring**, **Log**. In Sports settings select
-  **Strategy** as the strategy sheet and **Log** as the tracking sheet.
+- Keep the tabs **Strategy**, **Recurring**, **Daily**. In Sports settings select
+  **Strategy** as the strategy sheet and **Daily** as the tracking sheet.
   Select **Recurring** as the weekly schedule sheet. Each mapping accepts an exact
   tab name; leave a mapping blank to disable that import. Older workbooks with **Training log** remain supported.
 - Keep section names alone in column A. Put their exact headers on the next row.
   A section name alone in column A begins the next table. Do not insert blank
   rows inside a Strategy table; they end that table.
 - Do not put decorative titles, legends or commentary inside the data tables.
-  Extra Log columns must follow the supported names below.
+  Extra Daily columns must follow the supported names below.
 - Keep identifiers unique and nonempty. Use simple IDs such as `pull-strength`.
   Preserve references when changing IDs in a new, unrecorded plan.
 - Use real dates formatted `yyyy-mm-dd`, or explicit `YYYY-MM-DD` text. Use
@@ -84,11 +84,11 @@ sources. **Both sources work for every goal, regardless of its category.**
   Custom goals should use explicit type keys to avoid guessing from goal prose.
 - A running aspiration can have `Running result` and `running`; a swimming
   maintenance goal can have `Swimming result` and `swimming`. Adding a manual
-  mapping also requires adding that exact result column to Log.
+  mapping also requires adding that exact result column to Daily.
 - The template includes swimming as a maintenance goal. Its starting routine is
   reported background, not a recorded performance or a change to Recurring.
 
-**Parts:** `part_id` and `version` together identify a training block. Log `Block`
+**Parts:** `part_id` and `version` together identify a training block. Daily `Block`
 values refer to these IDs. In `goal_ids`, separate goal IDs with commas, for example
 `muscle-up, pistol`. Each must exist in Goals. A legacy `PartGoals` table with
 `part_id`, `version`, `goal_id` is also supported.
@@ -96,10 +96,10 @@ values refer to these IDs. In `goal_ids`, separate goal IDs with commas, for exa
 **Week plans:** use unique positive week numbers and unique Monday Start dates.
 Preserve the formulas linking Start to `$E$3`. `Minutes` is the manual training
 budget; recurring tracker activities are separate. `A` and `B` contain the weekly
-block prescriptions and feed Log Plan formulas. Changing block names or adding
-other block columns requires adapting the Log formulas as well. The plugin
+block prescriptions and feed Daily Plan formulas. Changing block names or adding
+other block columns requires adapting the Daily formulas as well. The plugin
 currently imports A and B as weekly prescriptions. Keep a full description in
-Parts and Log Plan for any other blocks.
+Parts and Daily Plan for any other blocks.
 
 **Exercise arsenal:** one exercise per row, unique across the arsenal. Repeat the
 group on each row, or leave Group blank to inherit the preceding group. Start
@@ -133,7 +133,7 @@ the strategy note; enable **Show regular activities** for the dashboard and week
 notes. Keep the weekly schedule in Recurring only. For legacy workbooks with a `Weekly schedule` section in Strategy, select
 **Strategy** as the weekly schedule sheet as well. Only the selected schedule is imported.
 
-## Log
+## Daily
 
 Keep these headers exactly, once each, on the first nonempty row:
 
@@ -162,7 +162,7 @@ Keep these headers exactly, once each, on the first nonempty row:
 Never shift the start date, change session identity, or rewrite completed training
 when adapting future weeks. Preserve completed rows, dates, IDs, results and part
 versions. If a part has completed history, preserve that part definition and add a
-new version for future sessions. Keep the old version and select versions in Log.
+new version for future sessions. Keep the old version and select versions in Daily.
 The plugin rejects changes to linked part definitions and dates it can recognize
 as completed history, and retains missing completed sessions. Stable explicit
 Session IDs make those checks more reliable.
@@ -174,7 +174,7 @@ sections against accidental edits; change plans in the workbook instead.
 
 1. Read this guide. Ask for the user's goals, availability and known baselines.
 2. Adapt a copy of the example; preserve headers, sections, IDs and formulas.
-3. Update goal links, arsenal names, weekly prescriptions and Log consistently.
+3. Update goal links, arsenal names, weekly prescriptions and Daily consistently.
 4. Preserve recorded history; leave future actuals and results blank.
 5. Recalculate and save the XLSX. Check for formula errors, broken references,
    duplicate IDs, unknown blocks/goals and commas or colons in arsenal names.

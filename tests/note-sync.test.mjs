@@ -193,13 +193,13 @@ test('sheet guide lives in the configured vault Guide folder and preserves edits
  const { plugin, plan, files } = fixture();
  plugin.data.notesFolder = 'Training/Sports';
  assert.deepEqual(await syncNotes(plugin, plan), []);
- const guide = files.get('Training/Sports/Guide/SHEET_GUIDE.md');
+ const guide = files.get('Training/Sports/Guide/Workbook.md');
  assert.ok(guide instanceof TFile);
  assert.ok(guide.content.includes('Exercise arsenal'));
  guide.content = 'My adapted guide';
  assert.deepEqual(await syncNotes(plugin, plan), []);
  assert.equal(guide.content, 'My adapted guide');
- assert.ok(!files.has('Training/Sports/SHEET_GUIDE.md'));
+ assert.ok(!files.has('Training/Sports/Workbook.md'));
 });
 
 test('Garmin adds recorded history and weekly notes while preserving manual sessions and commentary', async () => {
@@ -398,7 +398,7 @@ test('all generated notes omit redundant titles and migrate legacy headings whil
   assert.match(files.get(path).content, /Personal review stays/);
  }
  assert.match(files.get('Sports/Goals/running.md').content, /^---\ntags: \[sports\/goal\]\ngoal_id: "running"\n---/);
- assert.doesNotMatch(files.get('Sports/Guide/SHEET_GUIDE.md').content, /^# /m);
+ assert.doesNotMatch(files.get('Sports/Guide/Workbook.md').content, /^# /m);
  assert.match(files.get('Sports/Plans.md').content, /sports:end plan -->\n\n## Reflections/);
 });
 
@@ -419,4 +419,17 @@ test('Garmin-only historical weeks recover missing baselines for refresh-time-on
  plugin.data.garminCache.lastSuccess = '2026-10-21T13:30:25.824Z';
  assert.ok((await syncNotes(plugin, plan)).some(issue => issue.startsWith('Weeks/2026-07-20.md:')));
  assert.equal(note.content, edited);
+});
+
+test('legacy sheet guide is renamed to Workbook without losing edits or overwriting a destination', async () => {
+ const { plugin, plan, files } = fixture();
+ const legacy = new TFile('Sports/Guide/SHEET_GUIDE.md'); legacy.content = 'My edited workbook guide';
+ files.set(legacy.path, legacy);
+ await syncNotes(plugin, plan);
+ assert.equal(files.has('Sports/Guide/SHEET_GUIDE.md'), false);
+ assert.equal(files.get('Sports/Guide/Workbook.md').content, 'My edited workbook guide');
+ const other = new TFile('Sports/Guide/SHEET_GUIDE.md'); other.content = 'Keep both'; files.set(other.path, other);
+ await syncNotes(plugin, plan);
+ assert.equal(files.get(other.path).content, 'Keep both');
+ assert.equal(files.get('Sports/Guide/Workbook.md').content, 'My edited workbook guide');
 });

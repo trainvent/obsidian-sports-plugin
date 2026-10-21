@@ -17,7 +17,7 @@ export class SportsDashboard extends ItemView {
   new Setting(root).setName('Training overview')
    .addButton(button => button.setButtonText(this.plugin.syncing ? 'Syncing…' : 'Sync now').setDisabled(this.plugin.syncing).onClick(() => this.plugin.sync(true)))
    .addButton(button => button.setButtonText('Open training log').onClick(() => this.plugin.openTrainingLog()));
-  root.createEl('p', { text: this.plugin.data.plan ? `${this.plugin.data.plan.name} · Last imported ${new Date(this.plugin.data.plan.importedAt).toLocaleString()}` : 'Set a local workbook path and its sheets in Settings → Sports Plugin to get started.' });
+  root.createEl('p', { text: this.plugin.data.plan ? `${this.plugin.data.plan.name} · Last imported ${new Date(this.plugin.data.plan.importedAt).toLocaleString()}` : 'Set a workbook source and its sheets in Settings → Sports to get started.' });
   if (this.plugin.data.lastError) root.createEl('p', { text: this.plugin.data.lastError, cls: 'sports-error' });
   root.createEl('p', { text: (this.plugin.data.strategySheet || this.plugin.data.trackingSheet || this.plugin.data.scheduleSheet) && this.plugin.data.syncMinutes ? `Automatic workbook sync every ${this.plugin.data.syncMinutes} minutes while Obsidian is running.` : 'Automatic sync is off. Use Sync now to import changes.' });
   new Setting(root).setName('Week')

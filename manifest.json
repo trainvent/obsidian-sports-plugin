@@ -1,6 +1,6 @@
 {
 	"id": "sports-plugin",
-	"name": "Sports Plugin",
+	"name": "Sports",
 	"version": "1.0.0",
 	"minAppVersion": "1.11.4",
 	"description": "Sports plugin for Obsidian, developed by Trainvent.",

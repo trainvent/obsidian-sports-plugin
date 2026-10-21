@@ -22,6 +22,7 @@ export default defineConfig(
 			parserOptions: {
 				projectService: {
 					allowDefaultProject: ['eslint.config.mts', 'manifest.json', 'tests/*.mjs'],
+     maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 16,
 				},
 				tsconfigRootDir: import.meta.dirname,
 				extraFileExtensions: ['.json'],
@@ -29,9 +30,9 @@ export default defineConfig(
 		},
 	},
 	...obsidianmd.configs.recommended,
- { rules: { 'obsidianmd/ui/sentence-case': ['warn', { brands: ['Garmin Coach', 'Garmin', 'Obsidian', 'Markdown'], ignoreWords: ['YYYY-MM-DD'], ignoreRegex: ['^YYYY-MM-DD$'] }] } },
+ { rules: { 'obsidianmd/ui/sentence-case': ['warn', { brands: ['Nextcloud', 'Garmin Coach', 'Garmin', 'Obsidian', 'Markdown'], ignoreWords: ['YYYY-MM-DD'], ignoreRegex: ['^YYYY-MM-DD$'] }] } },
  // Obsidian desktop plugins load built-ins through CommonJS, after a desktop guard.
  { files: ['src/workbook/local-file.ts'], languageOptions: { globals: { require: 'readonly' } }, rules: { '@typescript-eslint/no-require-imports': ['error', { allow: ['^(os|path|fs)$'] }] } },
- { files: ['src/garmin/desktop-http.ts'], languageOptions: { globals: { require: 'readonly' } }, rules: { '@typescript-eslint/no-require-imports': ['error', { allow: ['^(https|buffer)$'] }] } },
+ { files: ['src/garmin/desktop-http.ts', 'src/workbook/cloud.ts'], languageOptions: { globals: { require: 'readonly' } }, rules: { '@typescript-eslint/no-require-imports': ['error', { allow: ['^(https|buffer)$'] }] } },
  { files: ['tests/*.mjs'], languageOptions: { globals: globals.node }, rules: { 'obsidianmd/no-nodejs-modules': 'off', 'obsidianmd/no-global-this': 'off' } },
 );

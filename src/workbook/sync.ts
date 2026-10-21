@@ -1,6 +1,6 @@
 import { Notice } from 'obsidian';
 import type SportsPlugin from '../main';
-import { readLocalWorkbook } from './local-file';
+import { readWorkbookSource } from './source';
 import { parseWorkbook } from './parse';
 import { syncNotes } from '../notes/sync';
 
@@ -9,7 +9,7 @@ export async function syncWorkbook(plugin: SportsPlugin): Promise<void> {
  plugin.syncing = true; plugin.refreshViews();
  try {
   if (!plugin.data.strategySheet && !plugin.data.trackingSheet && !plugin.data.scheduleSheet) { new Notice('Workbook sync is disabled. Select a strategy, tracking, or weekly schedule sheet in settings to enable it.'); return; }
-  const next = await parseWorkbook(await readLocalWorkbook(plugin.data.workbookPath), { strategySheet: plugin.data.strategySheet, trackingSheet: plugin.data.trackingSheet, scheduleSheet: plugin.data.scheduleSheet, previous: plugin.data.plan });
+  const next = await parseWorkbook(await readWorkbookSource(plugin.data.workbookPath), { strategySheet: plugin.data.strategySheet, trackingSheet: plugin.data.trackingSheet, scheduleSheet: plugin.data.scheduleSheet, previous: plugin.data.plan });
   const previous = plugin.data.plan;
   if (previous && previous.id !== next.id && previous.id !== 'sports-tracking-only') throw new Error('This workbook has a different plan ID. Multiple-plan switching is not supported yet.');
   for (const session of previous?.sessions ?? []) {

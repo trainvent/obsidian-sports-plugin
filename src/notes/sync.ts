@@ -34,7 +34,7 @@ export async function syncNotes(plugin: SportsPlugin, plan: TrainingPlan, recrea
  ];
  const issues: string[] = [...migrationIssues];
  try { await ensureSheetGuide(plugin); }
- catch (error) { issues.push(`Guide/SHEET_GUIDE.md: ${error instanceof Error ? error.message : 'Guide creation failed.'}`); }
+ catch (error) { issues.push(`Guide/Workbook.md: ${error instanceof Error ? error.message : 'Guide creation failed.'}`); }
  for (const task of tasks) {
   if (migrationIssues.some(issue => issue.startsWith(`${task.path}:`))) continue;
   try { await updateNote(plugin, task.path, task.id, task.body, task.initial, recreateMissing); }

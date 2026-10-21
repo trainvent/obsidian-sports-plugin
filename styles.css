@@ -7,3 +7,43 @@
 .sports-dashboard .sports-day h3 { margin-top: 0; }
 .sports-dashboard .sports-error { color: var(--text-error); }
 .sports-dashboard details p { white-space: pre-wrap; }
+
+/* Scoped settings layout; native controls retain theme and keyboard behavior. */
+.sports-settings .setting-item-heading { margin-top: 28px; }
+.sports-settings .setting-item-heading:first-child { margin-top: 0; }
+.sports-settings-group {
+ border: 1px solid var(--background-modifier-border);
+ border-radius: var(--radius-l);
+ padding: 0 16px;
+ margin-bottom: 8px;
+}
+.sports-settings-group > .setting-item {
+ background: transparent;
+ border-radius: 0;
+ margin: 0;
+ padding: 16px 0;
+}
+.sports-settings-group > .setting-item:last-child { border-bottom: 0; }
+.sports-settings .sports-source-setting {
+ flex-direction: column;
+ align-items: stretch;
+ gap: 12px;
+ padding-bottom: 10px;
+}
+.sports-source-setting .setting-item-info { margin: 0; }
+.sports-source-setting .setting-item-control { width: 100%; }
+.sports-source-setting input[type="text"] {
+ width: 100%;
+ min-width: 0;
+ font-family: var(--font-monospace);
+}
+.sports-source-help { padding: 0 0 14px; font-size: var(--font-ui-small); color: var(--text-muted); }
+.sports-source-help summary, .sports-advanced summary { cursor: pointer; }
+.sports-source-help p { margin: 8px 0 0; }
+.sports-garmin-status { margin-top: 8px; color: var(--text-normal); font-size: var(--font-ui-small); }
+.sports-advanced { margin-top: 28px; border-top: 1px solid var(--background-modifier-border); padding-top: 16px; }
+.sports-advanced > summary { color: var(--text-muted); font-size: var(--font-ui-small); }
+@media (max-width: 600px) {
+ .sports-settings-group { padding: 0 12px; }
+ .sports-settings .setting-item-control { flex-wrap: wrap; }
+}

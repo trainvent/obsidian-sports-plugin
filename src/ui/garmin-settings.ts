@@ -6,7 +6,7 @@ import { tokenStore } from '../garmin/client';
 export function garminSettings(container: HTMLElement, plugin: SportsPlugin): () => void {
  let connect: ButtonComponent; let disconnect: ButtonComponent; let history: TextComponent;
  let disconnecting = false; let coach: ToggleComponent;
- new Setting(container).setName('Garmin').setDesc('Connect your account to import recorded activities. Desktop only. Passwords are never saved. Activity refresh runs at most hourly; sync now refreshes immediately.')
+ const connection = new Setting(container).setName('Connection').setDesc('Import activities from your Garmin account. Passwords are never saved.')
   .addButton(button => { connect = button; button.onClick(() => plugin.connectGarmin()); })
   .addButton(button => {
    disconnect = button; button.setButtonText('Disconnect').onClick(async () => {
@@ -22,19 +22,19 @@ export function garminSettings(container: HTMLElement, plugin: SportsPlugin): ()
     finally { disconnecting = false; refresh(); }
    });
   });
- new Setting(container).setName('Garmin history start').setDesc('First activity date to import, in YYYY-MM-DD format. Defaults to 90 days ago when connecting. A successful sync replaces the imported range, reflecting activity edits and deletions.').addText(input => {
+ const status = connection.descEl.createDiv({ cls: 'sports-garmin-status', attr: { role: 'status', 'aria-live': 'polite' } });
+ new Setting(container).setName('Import from').setDesc('First activity date. Defaults to 90 days ago.').addText(input => {
   history = input; input.setPlaceholder('YYYY-MM-DD').setValue(plugin.data.garminHistoryStart).onChange(async value => {
    plugin.data.garminHistoryStart = value.trim(); await plugin.save();
   });
  });
- new Setting(container).setName('Show Garmin Coach plans').setDesc('Include published Garmin Coach workouts for the next 28 days, starting today in the plans note. Off by default. Garmin may change upcoming sessions.').addToggle(toggle => {
+ new Setting(container).setName('Show Garmin Coach plans').setDesc('Upcoming workouts in the plans and calendar notes.').addToggle(toggle => {
   coach = toggle; toggle.setValue(plugin.data.showGarminCoachPlans ?? false).onChange(async value => {
    plugin.data.showGarminCoachPlans = value;
    await plugin.save(); await plugin.refreshNotes(false);
    if (value && plugin.data.garminEnabled) await plugin.sync(true);
   });
  });
- const status = container.createEl('p');
  function refresh(): void {
   const busy = plugin.syncing || plugin.garminConnecting || disconnecting;
   connect.setButtonText(plugin.data.garminEnabled ? 'Reconnect Garmin' : 'Connect Garmin').setDisabled(!Platform.isDesktop || busy);
@@ -42,8 +42,8 @@ export function garminSettings(container: HTMLElement, plugin: SportsPlugin): ()
   if (history.inputEl.ownerDocument.activeElement !== history.inputEl) history.setValue(plugin.data.garminHistoryStart);
   coach.setValue(plugin.data.showGarminCoachPlans ?? false).setDisabled(busy);
   const cache = plugin.data.garminCache;
-  const connection = plugin.data.garminEnabled ? 'Connected to Garmin.' : 'Garmin is disconnected.';
-  status.setText(`${connection}${cache ? ` ${cache.activities.length} activities imported. ${cache.lastSuccess ? `Last synced ${new Date(cache.lastSuccess).toLocaleString()}.` : 'No successful sync yet.'}${cache.error ? ` ${cache.error}` : ''}` : ''}${plugin.syncing && plugin.data.garminEnabled ? ' Syncing…' : ''}${plugin.data.showGarminCoachPlans && plugin.data.garminCoachCache?.error ? ` ${plugin.data.garminCoachCache.error}` : ''}`);
+  const connection = plugin.garminConnecting ? 'Connecting…' : disconnecting ? 'Disconnecting…' : plugin.data.garminEnabled ? 'Connected.' : 'Not connected.';
+  status.setText(`${connection}${cache ? ` ${cache.activities.length} activities. ${cache.lastSuccess ? `Updated ${new Date(cache.lastSuccess).toLocaleString()}.` : 'No successful sync yet.'}${cache.error ? ` ${cache.error}` : ''}` : ''}${plugin.syncing && plugin.data.garminEnabled ? ' Syncing…' : ''}${plugin.data.showGarminCoachPlans && plugin.data.garminCoachCache?.error ? ` ${plugin.data.garminCoachCache.error}` : ''}`);
  }
  refresh();
  return refresh;

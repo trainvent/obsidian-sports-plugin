@@ -58,7 +58,7 @@ export interface WorkbookMapping {
  scheduleSheet?: string;
  previous?: TrainingPlan | null;
 }
-export const DEFAULT_MAPPING: WorkbookMapping = { strategySheet: 'Strategy', trackingSheet: 'Log' };
+export const DEFAULT_MAPPING: WorkbookMapping = { strategySheet: 'Strategy', trackingSheet: 'Daily' };
 export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMapping = DEFAULT_MAPPING): Promise<TrainingPlan> {
  if (!mapping.strategySheet && !mapping.trackingSheet && !mapping.scheduleSheet) throw new Error('Select at least one sheet to sync a workbook.');
  if (mapping.trackingSheet && [mapping.strategySheet, mapping.scheduleSheet].includes(mapping.trackingSheet)) throw new Error('Choose different sheets for tracking and the other imports.');
@@ -71,9 +71,7 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
   return sheet.data;
  };
  const strategy = mapping.strategySheet ? tables(selected(mapping.strategySheet)) : null;
- // Keep the old default usable without rewriting saved user mappings.
- const tracking = mapping.trackingSheet === 'Log' && !sheets.some(sheet => sheet.sheet === 'Log') && sheets.some(sheet => sheet.sheet === 'Training log') ? 'Training log' : mapping.trackingSheet;
- const log = tracking ? selected(tracking) : null;
+ const log = mapping.trackingSheet ? selected(mapping.trackingSheet) : null;
  const previous = mapping.previous;
  let id = previous?.id ?? 'sports-tracking-only';
  let name = previous?.name ?? 'Training log';
