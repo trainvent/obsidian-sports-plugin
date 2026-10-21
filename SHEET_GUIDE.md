@@ -27,10 +27,10 @@ start-date anchor; dependent dates are gray.
 - Save as `.xlsx`, under 5 MB. Do not add macros or external workbook links.
 - Keep the tabs **Strategy**, **Recurring**, **Log**. In Sports settings select
   **Strategy** as the strategy sheet and **Log** as the tracking sheet.
-  **Recurring** is read automatically when strategy import is enabled. Its name
-  is fixed. Older workbooks with **Training log** remain supported.
+  Select **Recurring** as the weekly schedule sheet. Each mapping accepts an exact
+  tab name; leave a mapping blank to disable that import. Older workbooks with **Training log** remain supported.
 - Keep section names alone in column A. Put their exact headers on the next row.
-  Separate Strategy sections with a completely empty row. Do not insert blank
+  A section name alone in column A begins the next table. Do not insert blank
   rows inside a Strategy table; they end that table.
 - Do not put decorative titles, legends or commentary inside the data tables.
   Extra Log columns must follow the supported names below.
@@ -49,7 +49,7 @@ Keep the following sections and headers:
 | Section | Headers |
 | --- | --- |
 | Plan | `schema_version`, `plan_id`, `plan_name`, `timezone`, `start_date` |
-| Goals | `goal_id`, `title`, `benchmark`, `baseline`, `test`, `category` |
+| Goals | `goal_id`, `title`, `benchmark`, `baseline`, `test`, `category`, `result_column`, `garmin_types` |
 | Parts | `part_id`, `version`, `title`, `prescription`, `goal_ids` |
 | Week plans | `Week`, `Start`, `Phase`, `Focus`, `Targets`, `Advance when`, `Minutes`, `A`, `B` |
 | Exercise arsenal | `Group`, `Exercise` |
@@ -63,6 +63,30 @@ the user's local calendar and use the user's local timezone.
 **Goals:** use `milestone` for skills to achieve or `maintenance` for abilities to
 maintain. Baselines and results must reflect actual information; do not invent
 measurements or achievements.
+
+Each goal creates a note at `Goals/<goal_id>.md` under the configured Sports notes
+folder. Keep the ID stable so reviews stay attached when renaming a goal. The
+review area is outside the generated section and is preserved on every sync.
+
+The optional `result_column` and `garmin_types` fields control two independent
+sources. **Both sources work for every goal, regardless of its category.**
+
+- `result_column`: the exact tracking-sheet column name, such as `HSPU result`.
+  It must end with ` result`. Only nonempty entries in that column are copied to
+  the goal note, with date, session status and shared session notes. Without an
+  explicit mapping, the plugin matches the goal ID/title and the example's
+  muscle-up, HSPU and pistol aliases when there is one unambiguous match.
+- `garmin_types`: comma-separated stable Garmin activity type keys. `running`
+  matches running, track/trail/indoor/treadmill running and supported run variants.
+  `swimming` matches pool and open-water swimming. Other keys match exactly.
+  Activity names such as German `Laufen` do not determine the match. Without an
+  explicit mapping, goals named/identified as running or swimming are detected.
+  Custom goals should use explicit type keys to avoid guessing from goal prose.
+- A running aspiration can have `Running result` and `running`; a swimming
+  maintenance goal can have `Swimming result` and `swimming`. Adding a manual
+  mapping also requires adding that exact result column to Log.
+- The template includes swimming as a maintenance goal. Its starting routine is
+  reported background, not a recorded performance or a change to Recurring.
 
 **Parts:** `part_id` and `version` together identify a training block. Log `Block`
 values refer to these IDs. In `goal_ids`, separate goal IDs with commas, for example
@@ -106,8 +130,8 @@ can be derived from valid start/end times during import.
 
 Recurring activities are planned events, not completed sessions. They appear in
 the strategy note; enable **Show regular activities** for the dashboard and weekly
-notes. Keep the weekly schedule in Recurring only. Legacy workbooks may keep a
-`Weekly schedule` section in Strategy, but importing both is rejected.
+notes. Keep the weekly schedule in Recurring only. For legacy workbooks with a `Weekly schedule` section in Strategy, select
+**Strategy** as the weekly schedule sheet as well. Only the selected schedule is imported.
 
 ## Log
 

@@ -16,6 +16,11 @@ const result = await build({ entryPoints: ['src/ui/garmin-settings.ts'], bundle:
   setDisabled(value) { this.disabled = value; return this; }
   onClick(callback) { this.click = callback; return this; }
  }
+ class Toggle {
+ setValue(value) { this.value = value; return this; }
+ setDisabled(value) { this.disabled = value; return this; }
+ onChange(callback) { this.change = callback; return this; }
+ }
  class Text {
   inputEl = { ownerDocument: { activeElement: null } };
   setPlaceholder() { return this; }
@@ -28,6 +33,7 @@ const result = await build({ entryPoints: ['src/ui/garmin-settings.ts'], bundle:
   setName(value) { this.name = value; return this; }
   setDesc() { return this; }
   addButton(callback) { const control = new Button(); this.buttons.push(control); callback(control); return this; }
+  addToggle(callback) { this.toggle = new Toggle(); callback(this.toggle); return this; }
   addText(callback) { this.text = new Text(); callback(this.text); return this; }
  }
  ` }));
@@ -51,5 +57,20 @@ test('open Garmin settings update after sign-in and sync without rebuilding cont
  history.inputEl.ownerDocument.activeElement = history.inputEl; history.value = 'unfinished edit';
  plugin.syncing = false; refresh(); assert.equal(connect.disabled, false); assert.equal(history.value, 'unfinished edit');
  plugin.data.garminEnabled = false; refresh(); assert.equal(connect.label, 'Connect Garmin'); assert.equal(disconnect.disabled, true);
- assert.equal(container.settings.length, 2);
+ assert.equal(container.settings.length, 3);
+});
+
+test('Coach toggle saves and refreshes notes, fetching only when enabled and connected', async () => {
+ const container = { settings: [], createEl() { return { setText() {} }; } };
+ const calls = [];
+ const plugin = { data: { garminEnabled: true, garminHistoryStart: '' }, save: async () => calls.push('save'), refreshNotes: async () => calls.push('notes'), sync: async force => calls.push(force) };
+ garminSettings(container, plugin);
+ const toggle = container.settings[2].toggle;
+ assert.equal(toggle.value, false);
+ await toggle.change(true);
+ assert.equal(plugin.data.showGarminCoachPlans, true);
+ assert.deepEqual(calls, ['save', 'notes', true]);
+ calls.length = 0;
+ await toggle.change(false);
+ assert.deepEqual(calls, ['save', 'notes']);
 });

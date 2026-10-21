@@ -54,12 +54,14 @@ function table(source: Map<string, RecordRow[]>, name: string): RecordRow[] {
 export interface WorkbookMapping {
  strategySheet: string;
  trackingSheet: string;
+ /** Omitted only for compatibility with legacy callers using automatic discovery. */
+ scheduleSheet?: string;
  previous?: TrainingPlan | null;
 }
 export const DEFAULT_MAPPING: WorkbookMapping = { strategySheet: 'Strategy', trackingSheet: 'Log' };
 export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMapping = DEFAULT_MAPPING): Promise<TrainingPlan> {
- if (!mapping.strategySheet && !mapping.trackingSheet) throw new Error('Select at least one sheet to sync a workbook.');
- if (mapping.strategySheet && mapping.strategySheet === mapping.trackingSheet) throw new Error('Choose different sheets for strategy and tracking.');
+ if (!mapping.strategySheet && !mapping.trackingSheet && !mapping.scheduleSheet) throw new Error('Select at least one sheet to sync a workbook.');
+ if (mapping.trackingSheet && [mapping.strategySheet, mapping.scheduleSheet].includes(mapping.trackingSheet)) throw new Error('Choose different sheets for tracking and the other imports.');
  if (buffer.byteLength > 5 * 1024 * 1024) throw new Error('Workbook exceeds the prototype limit of 5 MB.');
  checkWorkbookArchive(buffer);
  const sheets = await readXlsxFile(new Blob([buffer]));
@@ -93,7 +95,11 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
  goals = table(strategy, 'Goals').map(row => {
   const category = row.category || 'milestone';
   if (category !== 'milestone' && category !== 'maintenance') throw new Error('Goals: category must be milestone or maintenance.');
-  return { id: required(row, 'goal_id', 'Goals'), title: required(row, 'title', 'Goals'), benchmark: row.benchmark ?? '', baseline: row.baseline ?? '', test: row.test ?? '', category };
+  const resultColumn = row.result_column || undefined;
+  if (resultColumn && !resultColumn.endsWith(' result')) throw new Error('Goals: result_column must name an exact column ending in " result".');
+  const garminTypes = row.garmin_types?.trim() ? [...new Set(row.garmin_types.split(',').map(value => value.trim()))] : undefined;
+  if (garminTypes?.some(value => !/^[a-z][a-z0-9_]*$/.test(value))) throw new Error('Goals: garmin_types must contain comma-separated Garmin type keys.');
+  return { id: required(row, 'goal_id', 'Goals'), title: required(row, 'title', 'Goals'), benchmark: row.benchmark ?? '', baseline: row.baseline ?? '', test: row.test ?? '', category, resultColumn, garminTypes };
  });
  parts = table(strategy, 'Parts').map(row => ({ id: required(row, 'part_id', 'Parts'), version: required(row, 'version', 'Parts'), title: required(row, 'title', 'Parts'), prescription: required(row, 'prescription', 'Parts'), goalIds: [] }));
  unique(goals.map(goal => goal.id), 'Goals');
@@ -112,9 +118,6 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
   if (!part.goalIds.includes(row.goal_id!)) part.goalIds.push(row.goal_id!);
  }
  weekPlans = parseWeekPlans(strategy.get('Week plans') ?? []);
- const recurring = sheets.find(sheet => sheet.sheet === 'Recurring');
- if (recurring && strategy.has('Weekly schedule')) throw new Error('Keep Weekly schedule in Strategy or Recurring, not both.');
- weeklySchedule = parseWeeklySchedule(recurring ? table(tables(recurring.data, true), 'Weekly schedule') : strategy.get('Weekly schedule') ?? []);
  let group = '';
  exerciseArsenal = (strategy.get('Exercise arsenal') ?? []).map(row => {
   group = row.Group || group;
@@ -125,7 +128,19 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
  unique(exerciseArsenal.map(item => item.exercise), 'Exercise arsenal');
  if (strategy.get('Exercises')?.length) throw new Error('Exercise-level tables are not supported in this prototype. Use the part prescription field.');
  }
+ if (mapping.scheduleSheet) {
+  weeklySchedule = parseWeeklySchedule(table(tables(selected(mapping.scheduleSheet), true), 'Weekly schedule'));
+ } else if (mapping.scheduleSheet === undefined && strategy) {
+  // Legacy API callers retain the previous two-sheet/automatic behavior.
+  const recurring = sheets.find(sheet => sheet.sheet === 'Recurring');
+  if (recurring && strategy.has('Weekly schedule')) throw new Error('Keep Weekly schedule in Strategy or Recurring, not both.');
+  weeklySchedule = parseWeeklySchedule(recurring ? table(tables(recurring.data, true), 'Weekly schedule') : strategy.get('Weekly schedule') ?? []);
+ }
  const daily = log ? dailyLog(log, parts, Boolean(strategy)) : null;
+ if (daily !== null && log) {
+  const headers = log.find(row => row.some(value => text(value)))?.map(text) ?? [];
+  for (const goal of goals) if (goal.resultColumn && !headers.includes(goal.resultColumn)) throw new Error(`Goals: result_column "${goal.resultColumn}" was not found in the tracking sheet.`);
+ }
  const sessions: Session[] = daily ?? (log ? table(tables(log), 'Sessions').map((row, index) => {
   const context = `Sessions row ${index + 1}`;
   const date = required(row, 'date', context);

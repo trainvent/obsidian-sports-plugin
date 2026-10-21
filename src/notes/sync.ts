@@ -1,3 +1,6 @@
+import { calendarMarkdown } from './calendar';
+import { coachPlansMarkdown } from './coach-plans';
+import { goalNoteTask } from './goal-notes';
 import { combinedLogMarkdown } from './combined-log';
 import { garminMarkdown } from '../garmin/render';
 import type SportsPlugin from '../main';
@@ -22,8 +25,10 @@ export async function syncNotes(plugin: SportsPlugin, plan: TrainingPlan, recrea
  }
  const ordered = [...weeks].sort();
  const tasks = [
-  { path: 'Plans.md', id: 'plan', body: `${planMarkdown(plan, folder, ordered)}\n\n${datedLogMarkdown(plan, true)}`, initial: '# Plans\n\n## Reflections\n' },
-  ...(plugin.data.strategySheet ? [{ path: 'Strategy.md', id: 'strategy', body: strategyMarkdown(plan), initial: '# Training strategy\n\n## Commentary\n' }] : []),
+  { path: 'Calendar.md', id: 'calendar', body: `${noteLink(folder, 'Plans', 'Plans')} · ${noteLink(folder, 'Log', 'Log')}\n\n${calendarMarkdown(plan, plugin.data.showGarminCoachPlans, plugin.data.garminCoachCache)}`, initial: '# Calendar\n\n## Reflections\n' },
+  ...plan.goals.map(goal => goalNoteTask(goal, plan, plugin.data.garminCache, folder)),
+  { path: 'Plans.md', id: 'plan', body: `${planMarkdown(plan, folder, ordered)}\n\n${datedLogMarkdown(plan, true)}${coachPlansMarkdown(plugin.data.showGarminCoachPlans, plugin.data.garminCoachCache, plan.timezone)}`, initial: '# Plans\n\n## Reflections\n' },
+  ...((plugin.data.strategySheet || plugin.data.scheduleSheet) ? [{ path: 'Strategy.md', id: 'strategy', body: strategyMarkdown(plan, folder), initial: '# Training strategy\n\n## Commentary\n' }] : []),
   ...((plugin.data.trackingSheet || plugin.data.garminCache) ? [{ path: 'Log.md', id: 'training-log', body: `${noteLink(folder, 'Plans', 'Plans')}\n\n${combinedLogMarkdown(plan, plugin.data.garminCache)}`, initial: '# Log\n\n## Reflections\n' }] : []),
   ...ordered.map(date => ({ path: `Weeks/${date}.md`, id: `week:${date}`, body: `${noteLink(folder, 'Plans', 'Plans')} · ${noteLink(folder, 'Log', 'Log')}\n\n${weekMarkdown(plan, weekDates(new Date(`${date}T12:00:00`)), plugin.data.showRegularActivities)}${garminMarkdown(plugin.data.garminCache, weekDates(new Date(`${date}T12:00:00`)))}`, initial: `# Week of ${date}\n\n## Weekly review\n\n### What improved\n\n### Recovery and comfort\n\n### Repeat or progress\n\n### What to adjust\n` })),
  ];

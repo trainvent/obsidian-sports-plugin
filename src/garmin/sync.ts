@@ -1,3 +1,4 @@
+import { syncCoach } from './coach';
 import { Platform } from 'obsidian';
 import type SportsPlugin from '../main';
 import { newGarminClient } from './client';
@@ -8,6 +9,7 @@ import { validDate } from '../workbook/daily-log';
 /** A failed or throttled refresh preserves the last complete snapshot. */
 export async function syncGarmin(plugin: SportsPlugin, force = false, createClient = newGarminClient): Promise<void> {
  if (!plugin.data.garminEnabled || !Platform.isDesktop) return;
+ await syncCoach(plugin, force, createClient);
  const previous = plugin.data.garminCache ?? EMPTY_GARMIN_CACHE;
  if (!force && Date.now() - Date.parse(previous.lastAttempt) < 60 * 60_000) return;
  const attempt = new Date().toISOString();

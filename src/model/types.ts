@@ -1,6 +1,7 @@
+import type { CoachCache } from '../garmin/coach';
 import type { GarminCache } from '../garmin/types';
 export type GoalCategory = 'milestone' | 'maintenance';
-export interface Goal { id: string; title: string; benchmark: string; baseline?: string; test?: string; category?: GoalCategory }
+export interface Goal { id: string; title: string; benchmark: string; baseline?: string; test?: string; category?: GoalCategory; resultColumn?: string; garminTypes?: string[] }
 export interface TrainingPart { id: string; version: string; title: string; prescription: string; goalIds: string[] }
 export interface Session {
  id: string; date: string; sport: string; title: string;
@@ -18,13 +19,15 @@ export interface TrainingPlan {
  parts: TrainingPart[]; sessions: Session[]; importedAt: string;
 }
 export interface SportsData {
+ showGarminCoachPlans: boolean; garminCoachCache?: CoachCache;
  garminEnabled: boolean; garminSecretId: string; garminHistoryStart: string; garminCache?: GarminCache;
- workbookPath: string; strategySheet: string; trackingSheet: string; notesFolder: string; syncMinutes: number;
+ workbookPath: string; strategySheet: string; trackingSheet: string; scheduleSheet: string; notesFolder: string; syncMinutes: number;
  showRegularActivities: boolean; syncOnStartup: boolean; plan: TrainingPlan | null;
  resetNoteBaselines: boolean; generatedBlocks: Record<string, string>; lastError: string;
 }
 export const DEFAULT_DATA: SportsData = {
+ showGarminCoachPlans: false,
  garminEnabled: false, garminSecretId: '', garminHistoryStart: '',
- workbookPath: '~/Sports/Training.xlsx', strategySheet: 'Strategy', trackingSheet: 'Log', notesFolder: 'Sports', syncMinutes: 10, syncOnStartup: true, showRegularActivities: false,
+ workbookPath: '~/Sports/Training.xlsx', strategySheet: 'Strategy', trackingSheet: 'Log', scheduleSheet: 'Recurring', notesFolder: 'Sports', syncMinutes: 10, syncOnStartup: true, showRegularActivities: false,
  plan: null, resetNoteBaselines: false, generatedBlocks: {}, lastError: '',
 };

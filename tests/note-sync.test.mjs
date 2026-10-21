@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url';
 const temp = mkdtempSync(`${tmpdir()}/sports-note-tests-`);
 process.on('exit', () => rmSync(temp, { recursive: true, force: true }));
 const output = await build({
- stdin: { contents: "export { syncNotes } from './src/notes/sync'; export { clearImportCache } from './src/notes/cache';", resolveDir: process.cwd(), loader: 'ts' }, bundle: true, format: 'esm', platform: 'browser', write: false, loader: { '.md': 'text' },
+ stdin: { contents: "export { calendarMarkdown } from './src/notes/calendar'; export { syncCoachOnlyPlans } from './src/notes/coach-plans'; export { syncNotes } from './src/notes/sync'; export { clearImportCache } from './src/notes/cache';", resolveDir: process.cwd(), loader: 'ts' }, bundle: true, format: 'esm', platform: 'browser', write: false, loader: { '.md': 'text' },
  plugins: [{ name: 'obsidian-test-vault', setup(builder) {
   builder.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'obsidian', namespace: 'test' }));
   builder.onLoad({ filter: /.*/, namespace: 'test' }, () => ({ contents: 'export class TFile { constructor(path) { this.path = path; } } export const normalizePath = path => path;' }));
@@ -16,7 +16,7 @@ const output = await build({
 });
 writeFileSync(`${temp}/sync.mjs`, output.outputFiles[0].text + '\nexport { TFile };');
 // eslint-disable-next-line no-unsanitized/method -- Imports our own esbuild output from a private temporary directory.
-const { syncNotes, clearImportCache, TFile } = await import(pathToFileURL(`${temp}/sync.mjs`).href);
+const { calendarMarkdown, syncCoachOnlyPlans, syncNotes, clearImportCache, TFile } = await import(pathToFileURL(`${temp}/sync.mjs`).href);
 
 function fixture() {
  const files = new Map();
@@ -233,4 +233,84 @@ test('weekly notes use the workbook schedule and ignore legacy plugin-local recu
  assert.deepEqual(await syncNotes(plugin, plan), []);
  assert.ok(!files.get('Sports/Weeks/2026-12-28.md').content.includes('Workbook swim'));
  assert.ok(files.get('Sports/Strategy.md').content.includes('Workbook swim'));
+});
+
+test('goal files sync both sources, keep reviews on updates, and isolate generated-section conflicts', async () => {
+ const { plugin, plan, files } = fixture();
+ plan.goals = [{ id: 'running', title: 'Running', category: 'milestone', benchmark: 'Faster 5 km' }, { id: 'hspu', title: 'Handstand push-up', category: 'maintenance', benchmark: 'Maintain control' }];
+ plan.sessions = [{ id: 's1', date: '2026-10-21', title: 'Practice', status: 'planned', notes: 'Session notes', partId: '', partVersion: '', plannedMinutes: null, actualMinutes: null, result: '', results: { 'Running result': 'Good cadence', 'HSPU result': 'Three reps' } }];
+ plugin.data.garminCache = { activities: [{ id: '123', date: '2026-10-21', time: '09:00', name: 'Laufen', type: 'running', duration: 1800, distance: 5000, average_hr: 140 }], lastSuccess: '', error: '', start: '', end: '' };
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ const running = files.get('Sports/Goals/running.md');
+ const hspu = files.get('Sports/Goals/hspu.md');
+ assert.ok(running.content.includes('Good cadence') && running.content.includes('[Laufen]'));
+ assert.ok(hspu.content.includes('Three reps'));
+ assert.ok(!hspu.content.includes('Good cadence') && !hspu.content.includes('[Laufen]'));
+ assert.ok(files.get('Sports/Plans.md').content.includes('Sports/Goals/running'));
+ assert.ok(files.get('Sports/Strategy.md').content.includes('[[Sports/Goals/running|Running]]'));
+ running.content += '\nMy later review: keep this.\n';
+ plan.sessions[0].results['Running result'] = 'Improved cadence';
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.ok(running.content.includes('Improved cadence'));
+ assert.ok(running.content.endsWith('My later review: keep this.\n'));
+ hspu.content = hspu.content.replace('Three reps', 'Edited generated entry');
+ const preserved = hspu.content;
+ plan.sessions[0].results['Running result'] = 'Next run';
+ const issues = await syncNotes(plugin, plan);
+ assert.ok(issues.some(issue => issue.startsWith('Goals/hspu.md:')));
+ assert.equal(hspu.content, preserved);
+ assert.ok(running.content.includes('Next run'));
+ assert.equal(plan.sessions[0].status, 'planned');
+});
+
+test('optional Coach schedule shares Plans with workbook content and preserves reflections when disabled', async () => {
+ const { plugin, plan, files } = fixture();
+ plugin.data.showGarminCoachPlans = true;
+ plugin.data.garminCoachCache = { workouts: [{ id: 'coach', date: '2099-01-01', name: 'Coach easy run', sport: 'running', plan: 'Race plan', description: 'Easy', duration: 1800, distance: null }], start: '2099-01-01', end: '2099-01-28', lastSuccess: '2026-10-21', error: '' };
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ const note = files.get('Sports/Plans.md');
+ assert.match(note.content, /Coach easy run/); assert.match(note.content, /2026-12-28/);
+ note.content += '\nMy personal review\n';
+ plugin.data.showGarminCoachPlans = false;
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.doesNotMatch(note.content, /Coach easy run/);
+ assert.match(note.content, /My personal review/); assert.match(note.content, /2026-12-28/);
+});
+
+test('calendar combines same-day sources, multiple workouts, source-only dates and respects Coach visibility', () => {
+ const { plan } = fixture();
+ plan.sessions = [
+  { date: '2026-10-21', title: 'Strength | A', plannedMinutes: 30, prescription: 'Pull-ups', notes: '' },
+  { date: '2026-10-21', title: 'Mobility', plannedMinutes: null, notes: '' },
+  { date: '2026-10-23', title: 'Leg day', plannedMinutes: 20 },
+  { date: '2026-10-20', title: 'Past session', plannedMinutes: 20 },
+ ];
+ const cache = { lastSuccess: '2026-10-21', start: '2026-10-21', end: '2026-11-17', error: 'Cached schedule warning', workouts: [
+  { date: '2026-10-21', name: 'Easy run', plan: 'Coach', sport: 'running', duration: 1800, distance: 5000, description: 'Easy' },
+  { date: '2026-10-21', name: 'Second run', plan: 'Coach', sport: 'running', duration: null, distance: null, description: '' },
+  { date: '2026-10-22', name: 'Rest day', plan: 'Coach', sport: '', duration: null, distance: null, description: '' },
+ ] };
+ const now = new Date('2026-10-21T12:00:00Z');
+ const body = calendarMarkdown(plan, true, cache, now);
+ assert.equal(body.split('\n').filter(line => line.startsWith('| 2026-10-21 |')).length, 1);
+ assert.match(body, /Strength &#124; A.*Mobility.*Easy run.*Second run/);
+ assert.match(body, /2026-10-22.*Rest day/); assert.match(body, /2026-10-23.*Leg day/);
+ assert.match(body, /Cached schedule warning/); assert.doesNotMatch(body, /Past session/);
+ assert.doesNotMatch(calendarMarkdown(plan, false, cache, now), /Easy run|2026-10-22|Cached schedule warning/);
+});
+test('calendar sync preserves reviews, protects generated edits and supports Coach without a workbook', async () => {
+ const { plugin, plan, files } = fixture();
+ await syncNotes(plugin, plan);
+ const calendar = files.get('Sports/Calendar.md');
+ assert.ok(calendar); calendar.content += '\nPersonal calendar review\n';
+ await syncNotes(plugin, plan); assert.match(calendar.content, /Personal calendar review/);
+ calendar.content = calendar.content.replace('Multiple workouts', 'My edited workouts');
+ const edited = calendar.content;
+ plugin.data.showGarminCoachPlans = true;
+ assert.ok((await syncNotes(plugin, plan)).some(issue => issue.startsWith('Calendar.md:')));
+ assert.equal(calendar.content, edited);
+ const standalone = fixture(); standalone.plugin.data.showGarminCoachPlans = true;
+ await syncCoachOnlyPlans(standalone.plugin);
+ assert.ok(standalone.files.has('Sports/Calendar.md'));
+ assert.match(standalone.files.get('Sports/Plans.md').content, /Calendar/);
 });

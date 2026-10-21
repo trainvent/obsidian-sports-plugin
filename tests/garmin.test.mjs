@@ -10,11 +10,11 @@ const platform = { isDesktop: true };
 const state = { platform, request: async () => { throw new Error('Unexpected network request'); } };
 globalThis.__sportsGarminTest = state;
 const output = await build({
- stdin: { contents: "export { garminSignInError } from './src/garmin/errors'; export { createDesktopFetch } from './src/garmin/desktop-http'; export { parseActivities } from './src/garmin/activities'; export { normalizeGarmin } from './src/garmin/normalize'; export { garminMarkdown } from './src/garmin/render'; export { tokenStore, nativeFetch, newGarminClient } from './src/garmin/client'; export { syncGarmin } from './src/garmin/sync';", resolveDir: process.cwd(), loader: 'ts' },
+ stdin: { contents: "export { garminSignInError } from './src/garmin/errors'; export { createDesktopFetch } from './src/garmin/desktop-http'; export { parseActivities } from './src/garmin/activities'; export { normalizeGarmin } from './src/garmin/normalize'; export { garminMarkdown } from './src/garmin/render'; export { tokenStore, nativeFetch, newGarminClient } from './src/garmin/client'; export { normalizeCoach, syncCoach } from './src/garmin/coach'; export { coachPlansMarkdown } from './src/notes/coach-plans'; export { syncGarmin } from './src/garmin/sync';", resolveDir: process.cwd(), loader: 'ts' },
  bundle: true, format: 'cjs', platform: 'node', write: false,
  plugins: [{ name: 'stub-obsidian', setup(builder) {
   builder.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'obsidian', namespace: 'test' }));
-  builder.onLoad({ filter: /.*/, namespace: 'test' }, () => ({ contents: 'export const Platform = globalThis.__sportsGarminTest.platform; export const requestUrl = (...args) => globalThis.__sportsGarminTest.request(...args);' }));
+  builder.onLoad({ filter: /.*/, namespace: 'test' }, () => ({ contents: 'export const normalizePath = value => value; export class TFile {} export const Platform = globalThis.__sportsGarminTest.platform; export const requestUrl = (...args) => globalThis.__sportsGarminTest.request(...args);' }));
  } }],
 });
 writeFileSync(`${temp}/garmin.cjs`, output.outputFiles[0].text);
@@ -180,4 +180,37 @@ test('native HTTPS sends a complete credential body with an explicit byte length
   assert.equal(observed.headers['accept-encoding'], 'identity');
   assert.deepEqual(await result.json(), {});
  } finally { https.request = original; }
+});
+
+const coachRow = { fbtAdaptivePlanId: 12, workoutUuid: 'workout-1', scheduleDate: '2026-10-22', workoutName: 'Easy | run', workoutType: 'running', estimatedDurationInSecs: 1800, estimatedDistanceInMeters: 5000 };
+test('Coach summaries exclude ordinary, completed and out-of-range workouts and retain rest days', () => {
+ const rows = built.normalizeCoach([coachRow, coachRow, { ...coachRow, fbtAdaptivePlanId: null }, { ...coachRow, associatedActivityId: 9 }, { ...coachRow, scheduleDate: '2026-11-29' }, { ...coachRow, workoutUuid: null, isRestDay: true, workoutName: null }], '2026-10-21', '2026-11-17');
+ assert.equal(rows.length, 2);
+ assert.ok(rows.some(row => row.name === 'Rest day'));
+ assert.throws(() => built.normalizeCoach([{ ...coachRow, estimatedDurationInSecs: -1 }], '2026-10-21', '2026-11-17'));
+ const cache = { workouts: rows, start: '2026-10-21', end: '2026-11-17', lastSuccess: '2026-10-21', error: 'Cached warning' };
+ assert.equal(built.coachPlansMarkdown(false, cache), '');
+ const markdown = built.coachPlansMarkdown(true, cache, 'UTC', new Date('2026-10-21T12:00:00Z'));
+ assert.match(markdown, /Easy &#124; run/); assert.match(markdown, /30.0/); assert.match(markdown, /Cached warning/);
+ assert.doesNotMatch(built.coachPlansMarkdown(true, cache, 'UTC', new Date('2026-10-23T12:00:00Z')), /Easy/);
+});
+test('Coach opt-in, successful snapshot replacement, throttle and failure preserve independent activity data', async () => {
+ const plugin = fixture(); await tokenStore(plugin.app, plugin.data.garminSecretId).save(tokens);
+ let requests = 0;
+ state.request = async input => { requests++; assert.match(input.url, /graphql/); return response({ data: { workoutScheduleSummariesScalar: [] } }); };
+ await built.syncCoach(plugin, true, newGarminClient); assert.equal(requests, 0);
+ plugin.data.showGarminCoachPlans = true;
+ plugin.data.garminCoachCache = { workouts: [coachRow], lastAttempt: '', lastSuccess: 'old', error: '' };
+ plugin.data.garminCache = { activities: [activity] };
+ await built.syncCoach(plugin, true, newGarminClient);
+ assert.equal(requests, 1); assert.deepEqual(plugin.data.garminCoachCache.workouts, []);
+ assert.equal(plugin.data.garminCoachCache.error, '');
+ await built.syncCoach(plugin, false, newGarminClient); assert.equal(requests, 1);
+ const previous = plugin.data.garminCoachCache;
+ state.request = async () => { throw new Error('private diagnostic'); };
+ await built.syncCoach(plugin, true, newGarminClient);
+ assert.equal(plugin.data.garminCoachCache.lastSuccess, previous.lastSuccess);
+ assert.match(plugin.data.garminCoachCache.error, /refresh failed/);
+ assert.doesNotMatch(plugin.data.garminCoachCache.error, /private diagnostic/);
+ assert.deepEqual(plugin.data.garminCache.activities, [activity]);
 });

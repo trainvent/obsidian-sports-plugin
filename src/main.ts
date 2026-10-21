@@ -1,3 +1,4 @@
+import { syncCoachOnlyPlans } from './notes/coach-plans';
 import { combinedLogMarkdown } from './notes/combined-log';
 import { Plugin, Notice, addIcon, Platform } from 'obsidian';
 import { DEFAULT_DATA, type SportsData } from './model/types';
@@ -54,7 +55,7 @@ export default class SportsPlugin extends Plugin {
    const path = this.data.workbookPath || DEFAULT_DATA.workbookPath;
    await createLocalTemplate(path, templateWorkbook());
    await ensureSheetGuide(this);
-   this.data.workbookPath = path; this.data.strategySheet = 'Strategy'; this.data.trackingSheet = 'Log'; await this.save();
+   this.data.workbookPath = path; this.data.strategySheet = 'Strategy'; this.data.trackingSheet = 'Log'; this.data.scheduleSheet = 'Recurring'; await this.save();
    new Notice('Workbook created, starting next week. The sheet guide is in your vault notes folder. Existing guides are preserved.');
   } catch (error) {
    const message = error instanceof Error && 'code' in error && error.code === 'EEXIST' ? 'A workbook already exists there. Choose a new path to create a template; existing workbooks are never overwritten.' : error instanceof Error ? error.message : 'Could not create the example workbook.';
@@ -64,11 +65,12 @@ export default class SportsPlugin extends Plugin {
  async save(): Promise<void> { await this.saveData(this.data); }
  async refreshNotes(notify = true, recreateMissing = false): Promise<void> {
   if (this.syncing || this.noteBusy) return;
-  if (!this.data.plan && !this.data.garminCache) { if (notify) new Notice('Sync a workbook or Garmin before generating notes.'); return; }
+  if (!this.data.plan && !this.data.garminCache && !this.data.garminCoachCache) { if (notify) new Notice('Sync a workbook or Garmin before generating notes.'); return; }
   this.noteBusy = true;
   try {
    const issues = this.data.plan ? await syncNotes(this, this.data.plan, recreateMissing) : [];
    if (!this.data.plan) await updateNote(this, 'Log.md', 'training-log', combinedLogMarkdown(null, this.data.garminCache), '# Log\n\n## Reflections\n', recreateMissing);
+   await syncCoachOnlyPlans(this, recreateMissing);
    if (issues.length || recreateMissing) { this.data.lastError = issues[0] || ''; await this.save(); }
    if (notify || issues.length) new Notice(issues[0] || 'Sports notes generated in the notes folder.');
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not generate notes.'); }
@@ -94,7 +96,7 @@ export default class SportsPlugin extends Plugin {
  scheduleSync(): void {
   if (this.timer !== undefined) window.clearInterval(this.timer);
   this.timer = undefined;
-  if (Platform.isDesktop && (this.data.strategySheet || this.data.trackingSheet || this.data.garminEnabled) && Number.isFinite(this.data.syncMinutes) && this.data.syncMinutes >= 5) this.timer = this.registerInterval(window.setInterval(() => { void this.sync(); }, this.data.syncMinutes * 60_000));
+  if (Platform.isDesktop && (this.data.strategySheet || this.data.trackingSheet || this.data.scheduleSheet || this.data.garminEnabled) && Number.isFinite(this.data.syncMinutes) && this.data.syncMinutes >= 5) this.timer = this.registerInterval(window.setInterval(() => { void this.sync(); }, this.data.syncMinutes * 60_000));
   this.refreshViews();
  }
  refreshViews(): void {

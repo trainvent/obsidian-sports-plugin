@@ -23,10 +23,10 @@ export function weeklyStrategy(plan: TrainingPlan | null, start: string): string
 }
 
 export function planMarkdown(plan: TrainingPlan, folder: string, weeks: string[]): string {
- const goals = groupedGoals(plan.goals, true);
+ const goals = groupedGoals(plan.goals, true, folder);
  const rows = weeks.map(start => {
   const week = plan.weekPlans?.find(week => week.start === start);
   return `| ${noteLink(folder, `Weeks/${start}`, start).replace('|', '\\|')} | ${week?.week ?? '—'} | ${cell(week?.phase ?? '') || '—'} | ${cell(week?.focus ?? '') || '—'} | ${cell(week?.targets ?? '') || '—'} |`;
  });
- return `${noteLink(folder, 'Log', 'Log')} · ${noteLink(folder, 'Strategy', 'Strategy and exercise guide')}\n\n## Starting point and goals\n\n${goals}\n\n## Weekly plan\n\n| Week starting | Program week | Phase | Focus | Targets |\n| --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nEdit plans and record results in the workbook. Write your reflections outside the generated sections. Each week is a proposal to review before progressing.`;
+ return `${noteLink(folder, 'Calendar', 'Calendar')} · ${noteLink(folder, 'Log', 'Log')} · ${noteLink(folder, 'Strategy', 'Strategy and exercise guide')}\n\n## Starting point and goals\n\n${goals}\n\n## Weekly plan\n\n| Week starting | Program week | Phase | Focus | Targets |\n| --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nEdit plans and record results in the workbook. Write your reflections outside the generated sections. Each week is a proposal to review before progressing.`;
 }

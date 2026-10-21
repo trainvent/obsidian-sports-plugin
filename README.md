@@ -54,8 +54,9 @@ Column colors have consistent roles: pale blue for identifiers, amber for planni
 inputs, green for recorded training, and gray for formulas. The guide explains the
 exact headers, ID links, exercise-name delimiters, formula caches and history rules.
 Plugin-created copies start next Monday and use the local timezone. Existing files
-are never overwritten. Select Strategy and Log as the sheet mappings; Recurring is
-read automatically with Strategy. The older templates and formats remain supported.
+are never overwritten. Select Strategy, Log, and Recurring as the strategy, tracking, and weekly schedule
+sheet mappings. Each sheet can be imported independently or disabled by leaving
+its mapping blank. The older templates and formats remain supported.
 
 In settings, choose the exact **Strategy sheet** and **Tracking sheet** tab names.
 Leave either blank to disable that import; both may be blank for calendar/notes-only
@@ -306,7 +307,7 @@ currently supports Garmin accounts on garmin.com, not garmin.cn.
 Set **Garmin history start** to the first date to import. The initial default is 90
 days ago. While Obsidian runs, automatic sync checks Garmin at most once an hour,
 using the configured sync timer. **Sync now** requests an immediate refresh.
-Garmin refreshes independently when workbook import fails. With both workbook sheet
+Garmin refreshes independently when workbook import fails. With all three workbook sheet
 mappings blank, it can also run without a workbook.
 
 Only activity ID, local date/time, name, type, duration, distance and average heart
@@ -329,3 +330,49 @@ Today and earlier dates appear newest first, including dates with only Garmin da
 Multiple sessions and activities stay together in their date's row. Manual status,
 actual minutes and result fields remain independent from recorded Garmin measurements.
 Upcoming manual sessions stay in Plans.
+
+
+## Goal notes
+
+Sync creates `Goals/<goal_id>.md` under the configured notes folder and links each
+goal from Plans and Strategy. Each note includes the baseline, target, dated XLSX
+entries, matching Garmin activities, and a separate review area that sync preserves.
+
+Both data sources are available to every goal. Aspiration/maintenance categories
+only describe the goal; they do not select a data source. The optional Goals fields
+`result_column` and `garmin_types` provide explicit mappings. Existing skill-column
+names and running/swimming goals are detected when no mapping is supplied.
+Garmin matching uses type keys rather than localized activity names such as Laufen.
+The updated template includes swimming as a maintenance goal and source mappings
+for all five example goals. Existing workbooks are never changed by sync; add a
+swimming Goals row to an existing workbook if you want its note as well.
+
+Goal filenames follow stable IDs so renaming a goal title keeps its review file.
+Removed goals' existing notes are retained. Editing generated sections still raises
+a conflict; write personal reviews below the generated block instead.
+
+### Optional Garmin Coach plans
+
+Enable **Show Garmin Coach plans** in the plugin settings to include published
+adaptive Coach workouts in `Plans.md`. This is off by default. When enabled, sync
+reads Garmin's scheduled-workout summaries for the next 28 days, starting today.
+It displays dates, workout names, sport, estimates, and published descriptions;
+it does not import full workout steps or change anything in Garmin.
+
+Coach schedules have a separate local cache and refresh status. Failed refreshes
+retain the previous schedule with a warning while activity imports can continue.
+Garmin may publish only a few sessions ahead and can change them after training;
+check Garmin Connect for the current workout prescription. Self-scheduled workouts
+and static training plans are excluded. Turning this setting off removes the
+section from generated plans and stops Coach schedule requests. Disconnecting
+Garmin stops all Garmin requests and retains cached summaries locally.
+
+### Combined plan calendar
+
+`Calendar.md` provides one chronological table for today and upcoming dates,
+with XLSX daily plans and optional Garmin Coach plans side by side. Multiple
+workouts share one date row. Open it through the **Calendar** link in `Plans.md`.
+The existing weekly and daily views remain available. Weekly strategy is not
+expanded into invented daily sessions. Coach visibility follows **Show Garmin
+Coach plans**; blank cells mean no imported prescription, not a rest day.
+Write personal calendar reviews below the generated section; sync preserves them.

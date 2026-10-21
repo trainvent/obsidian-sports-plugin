@@ -19,7 +19,7 @@ export class SportsDashboard extends ItemView {
    .addButton(button => button.setButtonText('Open training log').onClick(() => this.plugin.openTrainingLog()));
   root.createEl('p', { text: this.plugin.data.plan ? `${this.plugin.data.plan.name} · Last imported ${new Date(this.plugin.data.plan.importedAt).toLocaleString()}` : 'Set a local workbook path and its sheets in Settings → Sports Plugin to get started.' });
   if (this.plugin.data.lastError) root.createEl('p', { text: this.plugin.data.lastError, cls: 'sports-error' });
-  root.createEl('p', { text: (this.plugin.data.strategySheet || this.plugin.data.trackingSheet) && this.plugin.data.syncMinutes ? `Automatic workbook sync every ${this.plugin.data.syncMinutes} minutes while Obsidian is running.` : 'Automatic sync is off. Use Sync now to import changes.' });
+  root.createEl('p', { text: (this.plugin.data.strategySheet || this.plugin.data.trackingSheet || this.plugin.data.scheduleSheet) && this.plugin.data.syncMinutes ? `Automatic workbook sync every ${this.plugin.data.syncMinutes} minutes while Obsidian is running.` : 'Automatic sync is off. Use Sync now to import changes.' });
   new Setting(root).setName('Week')
    .addButton(button => button.setButtonText('Previous').onClick(() => { this.anchor.setDate(this.anchor.getDate() - 7); this.render(); }))
    .addButton(button => button.setButtonText('Today').onClick(() => { this.anchor = new Date(); this.render(); }))

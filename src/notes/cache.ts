@@ -6,6 +6,7 @@ import type { SportsData } from '../model/types';
 export function clearImportCache(data: SportsData): void {
  data.plan = null;
  data.garminCache = undefined;
+ data.garminCoachCache = undefined;
  data.generatedBlocks = {};
  data.lastError = '';
  data.resetNoteBaselines = true;

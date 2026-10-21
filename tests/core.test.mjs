@@ -148,6 +148,8 @@ test('strategy weekly schedule creates planned activities without daily result r
  assert.equal(plan.sessions.length, 1);
  assert.equal(plan.weeklySchedule[0].recordedBy, 'Garmin');
  assert.equal(plan.weeklySchedule[0].minutes, 60);
+ const explicit = await parseWorkbook(zipSync(files).buffer, { strategySheet: 'Strategy', trackingSheet: 'Training log', scheduleSheet: 'Strategy' });
+ assert.deepEqual(explicit.weeklySchedule, plan.weeklySchedule);
  const markdown = weekMarkdown(plan, ['2026-10-19'], true);
  assert.ok(markdown.includes('Swim course'));
  assert.ok(markdown.includes('Planned'));
@@ -333,4 +335,50 @@ test('new three-sheet example imports and rebases Log without changing Recurring
  assert.notEqual(invalid, strings);
  files['xl/sharedStrings.xml'] = strToU8(invalid);
  await assert.rejects(parseWorkbook(zipSync(files).buffer), /must not contain commas/);
+});
+
+test('weekly schedule sheet can be selected independently, renamed, disabled, or rejected when missing', async () => {
+ const saved = readFileSync('templates/Training-example.xlsx');
+ const source = saved.buffer.slice(saved.byteOffset, saved.byteOffset + saved.byteLength);
+ const mapping = { strategySheet: '', trackingSheet: '', scheduleSheet: 'Recurring' };
+ const scheduleOnly = await parseWorkbook(source, mapping);
+ assert.equal(scheduleOnly.weeklySchedule.length, 2);
+ assert.deepEqual(scheduleOnly.sessions, []);
+ assert.deepEqual(scheduleOnly.goals, []);
+ const files = unzipSync(new Uint8Array(source));
+ const workbookXml = strFromU8(files['xl/workbook.xml']);
+ const renamed = workbookXml.replace('name="Recurring"', 'name="Weekly rhythm"');
+ assert.notEqual(renamed, workbookXml);
+ files['xl/workbook.xml'] = strToU8(renamed);
+ const custom = await parseWorkbook(zipSync(files).buffer, { ...mapping, scheduleSheet: 'Weekly rhythm' });
+ assert.deepEqual(custom.weeklySchedule, scheduleOnly.weeklySchedule);
+ const previous = { ...scheduleOnly, weeklySchedule: [{ ...scheduleOnly.weeklySchedule[0], title: 'Preserved cached schedule' }] };
+ const disabled = await parseWorkbook(source, { strategySheet: 'Strategy', trackingSheet: 'Log', scheduleSheet: '', previous });
+ assert.deepEqual(disabled.weeklySchedule, previous.weeklySchedule);
+ await assert.rejects(parseWorkbook(source, { ...mapping, scheduleSheet: 'Missing' }), /was not found/);
+ await assert.rejects(parseWorkbook(source, { ...mapping, scheduleSheet: '' }), /at least one sheet/);
+ await assert.rejects(parseWorkbook(source, { ...mapping, trackingSheet: 'Recurring' }), /different sheets/);
+});
+
+test('example goals have independent source mappings, a swimming goal, and exact result-column validation', async () => {
+ const bytes = readFileSync('templates/Training-example.xlsx');
+ const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+ const plan = await parseWorkbook(buffer);
+ assert.equal(plan.goals.find(goal => goal.id === 'hspu').resultColumn, 'HSPU result');
+ assert.deepEqual(plan.goals.find(goal => goal.id === 'running').garminTypes, ['running']);
+ const swim = plan.goals.find(goal => goal.id === 'swimming');
+ assert.equal(swim.category, 'maintenance');
+ assert.deepEqual(swim.garminTypes, ['swimming']);
+ assert.equal(swim.resultColumn, undefined);
+ const files = unzipSync(new Uint8Array(buffer));
+ const strings = strFromU8(files['xl/sharedStrings.xml']);
+ const invalid = strings.replaceAll('HSPU result', 'Missing result');
+ assert.notEqual(strings, invalid);
+ // Change only Strategy's mapping, not the Log header that uses the original shared string.
+ const sheet = strFromU8(files['xl/worksheets/sheet1.xml']);
+ const mappingCell = sheet.match(/<((?:\w+:)?)c\b[^>]*\br="G8"[^>]*>[\s\S]*?<\/\1c>/);
+ assert.ok(mappingCell);
+ const prefix = mappingCell[1];
+ files['xl/worksheets/sheet1.xml'] = strToU8(sheet.replace(mappingCell[0], `<${prefix}c r="G8" t="inlineStr"><${prefix}is><${prefix}t>Missing result</${prefix}t></${prefix}is></${prefix}c>`));
+ await assert.rejects(parseWorkbook(zipSync(files).buffer), /result_column.*not found/);
 });

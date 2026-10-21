@@ -4,8 +4,8 @@ import { groupedGoals } from './goals';
 import { weeklyStrategy } from './plan';
 import { cell } from './blocks';
 
-export function strategyMarkdown(plan: TrainingPlan): string {
- const goals = groupedGoals(plan.goals);
+export function strategyMarkdown(plan: TrainingPlan, folder?: string): string {
+ const goals = groupedGoals(plan.goals, false, folder);
  const parts = plan.parts.map(part => `### ${cell(part.title)} (v${cell(part.version)})\n\n${part.prescription}\n\nSupports: ${part.goalIds.map(id => cell(plan.goals.find(goal => goal.id === id)?.title ?? id)).join(', ') || 'General training'}`).join('\n\n');
  const arsenal = (plan.exerciseArsenal ?? []).map(item => `| ${cell(item.group)} | ${cell(item.exercise)} |`).join('\n');
  const schedule = (plan.weeklySchedule ?? []).map(item => `| ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][item.weekday]} | ${cell(item.time)} | ${cell(item.title)} | ${cell(item.minutes)} | ${cell(item.recordedBy)} | ${cell(item.notes)} |`).join('\n');
