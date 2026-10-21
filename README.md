@@ -8,12 +8,12 @@ Plan training in spreadsheets and follow it in Obsidian: recurring schedules,
 a combined calendar, workout logs, and individual goal notes. Read a local XLSX
 or a downloadable cloud link, with optional Garmin activity and Coach imports.
 
-Version 0.2.0 is an early alpha. Obsidian 1.11.4 or later is required. Sports is desktop-only because workbook and Garmin connections use Node.js APIs.
+Version 0.2.1 is an early alpha. Obsidian 1.11.4 or later is required. Sports is desktop-only because workbook and Garmin connections use Node.js APIs.
 Garmin uses unofficial endpoints and Coach integration still needs live account
 verification. Keep a backup of your workbook and vault when trying the alpha.
 
 Download `main.js`, `manifest.json`, and `styles.css` from the GitHub release.
-Place them in `<vault>/.obsidian/plugins/sports-plugin/`, reload Obsidian, and
+Place them in `<vault>/.obsidian/plugins/sports/`, reload Obsidian, and
 enable **Sports** under **Settings → Community plugins**. The alpha is not yet
 listed in Obsidian's community directory.
 
@@ -235,8 +235,8 @@ GitHub Actions runs the build and lint checks on pushes and pull requests.
 ## Manual installation
 
 Copy `main.js`, `manifest.json`, and `styles.css` into
-`<vault>/.obsidian/plugins/obsidian-sports-plugin/`, then reload Obsidian.
-The existing manifest ID, `sports-plugin`, is preserved to retain plugin identity.
+`<vault>/.obsidian/plugins/sports/`, then reload Obsidian.
+The manifest ID is `sports`; the installed plugin folder must use this same name.
 
 ## Releases
 
@@ -408,3 +408,12 @@ path; upload the resulting XLSX to Nextcloud yourself. Desktop only for now.
 
 [❤️ Sponsor Trainvent](https://github.com/sponsors/trainvent) to support continued development.
 For help, use [support](https://next.trainvent.com/de/software-support/) or [report an issue](https://github.com/trainvent/obsidian-sports-plugin/issues).
+
+### Migrating from alpha 0.1.0 or 0.2.0
+
+The early alpha ID `sports-plugin` was invalid for the community directory.
+Version 0.2.1 uses `sports`. Disable the old plugin, install the new release in
+`<vault>/.obsidian/plugins/sports/`, and copy your old plugin folder's `data.json`
+into that folder while Obsidian is closed if you want to retain settings and
+sync baselines. Keep the old folder as a backup until the new plugin works, and
+enable only the new copy. Generated notes and source workbooks stay in place.
