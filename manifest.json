@@ -1,7 +1,7 @@
 {
 	"id": "sports-plugin",
 	"name": "Sports",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"minAppVersion": "1.11.4",
 	"description": "Plan training in spreadsheets and turn it into calendars, workout logs, and goal notes, with optional Garmin sync.",
 	"author": "Trainvent",

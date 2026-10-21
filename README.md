@@ -8,7 +8,7 @@ Plan training in spreadsheets and follow it in Obsidian: recurring schedules,
 a combined calendar, workout logs, and individual goal notes. Read a local XLSX
 or a downloadable cloud link, with optional Garmin activity and Coach imports.
 
-Version 0.1.0 is an early alpha. Obsidian 1.11.4 or later is required. Sports is desktop-only because workbook and Garmin connections use Node.js APIs.
+Version 0.2.0 is an early alpha. Obsidian 1.11.4 or later is required. Sports is desktop-only because workbook and Garmin connections use Node.js APIs.
 Garmin uses unofficial endpoints and Coach integration still needs live account
 verification. Keep a backup of your workbook and vault when trying the alpha.
 
