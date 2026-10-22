@@ -107,9 +107,9 @@ test('offered daily template imports dates and separate results without inventin
  assert.equal(plan.sessions[0].status, 'planned');
  assert.deepEqual(new Uint8Array(buffer), original);
 });
-function dailyWorkbook({ core = true, result = '3 x 5 assisted', duplicate = false } = {}) {
+function dailyWorkbook({ core = true, result = '3 x 5 assisted', duplicate = false, rows } = {}) {
  const files = unzipSync(new Uint8Array(workbook()));
- const data = [['Date','Block','Plan','Core done','Muscle-up result','HSPU result','Pistol result','Notes'],['2026-10-20','a','Skills and core',core,result,'','','Keep these notes']];
+ const data = rows ?? [['Date','Block','Plan','Core done','Muscle-up result','HSPU result','Pistol result','Notes'],['2026-10-20','a','Skills and core',core,result,'','','Keep these notes']];
  if (duplicate) data.push(data[1]);
  const xml = `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${data.map((row,r) => `<row r="${r+1}">${row.map((value,c) => typeof value === 'boolean' ? `<c r="${String.fromCharCode(65+c)}${r+1}" t="b"><v>${value ? 1 : 0}</v></c>` : `<c r="${String.fromCharCode(65+c)}${r+1}" t="inlineStr"><is><t>${value}</t></is></c>`).join('')}</row>`).join('')}</sheetData></worksheet>`;
  files['xl/worksheets/sheet2.xml'] = strToU8(xml);
@@ -371,9 +371,6 @@ test('example goals have independent source mappings, a swimming goal, and exact
  assert.deepEqual(swim.garminTypes, ['swimming']);
  assert.equal(swim.resultColumn, undefined);
  const files = unzipSync(new Uint8Array(buffer));
- const strings = strFromU8(files['xl/sharedStrings.xml']);
- const invalid = strings.replaceAll('HSPU result', 'Missing result');
- assert.notEqual(strings, invalid);
  // Change only Strategy's mapping, not the Log header that uses the original shared string.
  const sheet = strFromU8(files['xl/worksheets/sheet1.xml']);
  const mappingCell = sheet.match(/<((?:\w+:)?)c\b[^>]*\br="G8"[^>]*>[\s\S]*?<\/\1c>/);
@@ -381,4 +378,70 @@ test('example goals have independent source mappings, a swimming goal, and exact
  const prefix = mappingCell[1];
  files['xl/worksheets/sheet1.xml'] = strToU8(sheet.replace(mappingCell[0], `<${prefix}c r="G8" t="inlineStr"><${prefix}is><${prefix}t>Missing result</${prefix}t></${prefix}is></${prefix}c>`));
  await assert.rejects(parseWorkbook(zipSync(files).buffer), /result_column.*not found/);
+});
+
+test('daily iteration targets require explicit recording and preserve adjusted values', async () => {
+ const rows = [['Date', 'Block', 'Plan', 'A done', 'A 1 result', 'A 2 result'], ['2026-10-26', 'A', 'A) Pull-up: 2 x 5', false, 5, 5]];
+ let plan = await parseWorkbook(dailyWorkbook({ rows }), { strategySheet: '', trackingSheet: 'Daily' });
+ assert.equal(plan.sessions[0].status, 'planned');
+ assert.equal(plan.sessions[0].results['A 1 result'], '');
+ rows[1][3] = true;
+ rows[1][4] = 3;
+ plan = await parseWorkbook(dailyWorkbook({ rows }), { strategySheet: '', trackingSheet: 'Daily' });
+ assert.equal(plan.sessions[0].results['A 1 result'], '3');
+ assert.equal(plan.sessions[0].results['A 2 result'], '5');
+ assert.equal(plan.sessions[0].status, 'in-progress');
+});
+
+test('example labels daily skills and offers five unrecorded iteration targets', async () => {
+ const bytes = readFileSync('templates/Training-example.xlsx');
+ const plan = await parseWorkbook(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+ const first = plan.sessions[0];
+ assert.ok(first.prescription.includes('A) Scapular pull-up'));
+ assert.ok(first.prescription.includes('B) High pull'));
+ assert.ok(first.prescription.includes('C) Box pistol'));
+ assert.ok(!first.prescription.includes('Core: 30 sec work'));
+ for (const letter of 'ABC') {
+  assert.equal(first.checks[`${letter} done`], false);
+  for (let i = 1; i <= 5; i++) assert.equal(first.results[`${letter} ${i} result`], '');
+ }
+ assert.ok(Object.values(first.results).every(value => value.trim() === ''));
+});
+
+test('grouped Core rounds import only after recording and preserve zero and adjustments', async () => {
+ const rows = [['Daily training', '', '', 'Core', ''], ['Date', 'Block', 'Plan', 'Done', 'Rounds'], ['2026-10-26', 'A', 'Core: 5 rounds', false, 5]];
+ const parse = () => parseWorkbook(dailyWorkbook({ rows }), { strategySheet: '', trackingSheet: 'Daily' });
+ let session = (await parse()).sessions[0];
+ assert.equal(session.checks['Core done'], false);
+ assert.equal(session.results['Core rounds result'], '');
+ assert.equal(session.status, 'planned');
+ rows[2][3] = true;
+ rows[2][4] = 3;
+ session = (await parse()).sessions[0];
+ assert.equal(session.checks['Core done'], true);
+ assert.equal(session.results['Core rounds result'], '3');
+ rows[2][4] = 0;
+ assert.equal((await parse()).sessions[0].results['Core rounds result'], '0');
+ for (const invalid of [-1, 1.5, 'many']) {
+  rows[2][4] = invalid;
+  await assert.rejects(parse(), /Core rounds must be a nonnegative whole number/);
+ }
+});
+
+test('example iteration inputs use numbers and Excel times, and recorded times import as mm:ss', async () => {
+ const files = unzipSync(new Uint8Array(readFileSync('templates/Training-example.xlsx')));
+ let sheet = strFromU8(files['xl/worksheets/sheet3.xml']);
+ // Record the first handstand session without changing its timed targets.
+ const flag = /<((?:\w+:)?)c\b[^>]*\br="H5"[^>]*>[\s\S]*?<\/\1c>/;
+ const match = sheet.match(flag);
+ assert.ok(match);
+ const p = match[1];
+ sheet = sheet.replace(flag, `<${p}c r="H5" t="b"><${p}v>1</${p}v></${p}c>`);
+ files['xl/worksheets/sheet3.xml'] = strToU8(sheet);
+ const plan = await parseWorkbook(zipSync(files).buffer);
+ assert.equal(plan.sessions[2].results['A 1 result'], '00:20');
+ assert.equal(plan.sessions[2].results['A 2 result'], '00:20');
+ assert.equal(plan.sessions[0].results['A 1 result'], '');
+ // The previously verbose negative-rep cells are stored as numeric counts.
+ assert.match(sheet, /r="O21"[^>]*>\s*<(?:\w+:)?v>2<\/(?:\w+:)?v>/);
 });

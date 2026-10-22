@@ -136,7 +136,7 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
  }
  const daily = log ? dailyLog(log, parts, Boolean(strategy)) : null;
  if (daily !== null && log) {
-  const headers = log.find(row => row.some(value => text(value)))?.map(text) ?? [];
+  const headers = log.find(row => row.some(value => text(value) === 'Date') && row.some(value => text(value) === 'Plan'))?.map(text) ?? [];
   for (const goal of goals) if (goal.resultColumn && !headers.includes(goal.resultColumn)) throw new Error(`Goals: result_column "${goal.resultColumn}" was not found in the tracking sheet.`);
  }
  const sessions: Session[] = daily ?? (log ? table(tables(log), 'Sessions').map((row, index) => {

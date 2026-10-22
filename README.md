@@ -418,3 +418,20 @@ enable only the new copy. Generated notes and source workbooks stay in place.
 
 Settings use the searchable declarative API on Obsidian 1.13 or later, with the
 same controls rendered through the legacy API on Obsidian 1.11.4–1.12.
+
+Daily skill tracking in the example template labels the three exercises A, B, and C.
+Each has five iteration fields, with the prescribed reps, seconds, or per-leg target
+prefilled for the planned sets. Strategy records the template limits as `max_sets = 3` and `max_reps = 5`.
+Unused iteration fields stay blank. Select TRUE in the exercise's **done** field to
+record the prefilled values, or first adjust the fields for fewer/more reps or sets
+and then select TRUE. Prefilled values are ignored by import until the exercise is
+marked done. Session Status remains separate. The result columns at the right
+summarize recorded exercises for the existing goal notes.
+
+The grouped **Core** columns in Daily provide a TRUE/FALSE **Done** field and
+an editable **Rounds** field prefilled from the day's core prescription. Adjust
+rounds if needed, then select TRUE to record them. Unrecorded round targets do
+not become actual results; technique days without Core start with blank rounds.
+Iteration inputs contain only rep counts or durations formatted as `mm:ss`.
+Per-leg instructions, tempo, and rest details stay in Plan; cluster reps are
+entered as their total count, and test sets default to the prescribed cap.
