@@ -46,7 +46,8 @@ test('score import validates numbers and coverage, retains explicit zeros and le
  assert.equal(scoreFields({}, 'test'), undefined);
  const scores = scoreFields({ 'Planned intensity': '3', 'Effort rating': '5', 'Actual performance': '0', 'Actual effort': '0', 'Expected RPE': '5', 'Actual RPE': '7', 'Scored metrics': '1', 'Planned metrics': '3' }, 'test');
  assert.equal(scores.plannedIntensity, 3); assert.equal(scores.effortRating, 5); assert.equal(scores.actualPerformance, 0); assert.equal(scores.actualEffort, 0); assert.equal(scores.expectedPerformance, null);
- for (const entry of [{ 'Planned intensity': '0' }, { 'Planned intensity': '6' }, { 'Effort rating': '2.5' }, { 'Effort rating': '-1' }, { 'Expected RPE': '11' }, { 'Actual effort': '-1' }, { 'Scored metrics': '1.5' }, { 'Scored metrics': '4', 'Planned metrics': '3' }]) assert.throws(() => scoreFields(entry, 'test'));
+ for (const intensity of [0, 6, 10]) assert.equal(scoreFields({ 'Planned intensity': String(intensity) }, 'test').plannedIntensity, intensity);
+ for (const entry of [{ 'Planned intensity': '-1' }, { 'Planned intensity': '11' }, { 'Planned intensity': '2.5' }, { 'Effort rating': '0' }, { 'Effort rating': '6' }, { 'Effort rating': '2.5' }, { 'Effort rating': '-1' }, { 'Expected RPE': '11' }, { 'Actual effort': '-1' }, { 'Scored metrics': '1.5' }, { 'Scored metrics': '4', 'Planned metrics': '3' }]) assert.throws(() => scoreFields(entry, 'test'));
  const rows = [['Date', 'Block', 'Plan', 'Expected performance', 'Actual performance'], ['2026-10-26', '', 'Free text', 100, 0]];
  assert.equal(dailyLog(rows, [], false)[0].scores.actualPerformance, 0);
  assert.equal(dailyLog(rows, [], false)[0].status, 'in-progress');
@@ -54,12 +55,35 @@ test('score import validates numbers and coverage, retains explicit zeros and le
  assert.equal(dailyLog(long, [], false)[0].scores.actualPerformance, 90);
 });
 
+test('all done records exercise targets together while preserving individual controls and explicit session status', () => {
+ const rows = [['Date', 'Block', 'Plan', 'Status', 'A done', 'A 1 result', 'B done', 'B 1 result', 'Core done', 'Core rounds result', 'All done'], ['2026-10-26', '', 'Training', 'planned', false, 5, false, '00:20', false, 3, true]];
+ const parse = () => dailyLog(rows, [], false)[0];
+ let session = parse();
+ assert.deepEqual(session.checks, { 'A done': true, 'B done': true, 'Core done': true });
+ assert.equal(session.results['A 1 result'], '5');
+ assert.equal(session.results['B 1 result'], '00:20');
+ assert.equal(session.results['Core rounds result'], '3');
+ assert.equal(session.status, 'planned');
+ for (const value of [false, '']) {
+  rows[1][10] = value;
+  session = parse();
+  assert.equal(session.checks['A done'], false);
+  assert.equal(session.results['A 1 result'], '');
+ }
+ rows[1][4] = true;
+ assert.equal(parse().results['A 1 result'], '5');
+ assert.equal(parse().results['B 1 result'], '');
+ rows[1][10] = 'yes';
+ assert.throws(parse, /All done must be TRUE, FALSE, or blank/);
+});
+
 test('scoring workbook imports saved formulas, no invented actuals, and rebases linked Scoring dates', async () => {
  const bytes = new Uint8Array(readFileSync('templates/Training-example.xlsx'));
  const plan = await parseWorkbook(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
  assert.equal(plan.sessions[0].scores.expectedPerformance, 100);
  assert.equal(plan.sessions[0].scores.actualPerformance, null);
- assert.equal(plan.sessions[0].scores.plannedIntensity, null);
+ assert.equal(plan.sessions[0].scores.plannedIntensity, 5);
+ assert.ok(plan.sessions.every(session => Number.isInteger(session.scores.plannedIntensity) && session.scores.plannedIntensity >= 0 && session.scores.plannedIntensity <= 10));
  assert.equal(plan.sessions[0].scores.effortRating, null);
  assert.equal(plan.sessions[0].scores.plannedMetrics, 4);
  assert.equal(plan.sessions[0].scores.scoredMetrics, 0);
@@ -69,9 +93,10 @@ test('scoring workbook imports saved formulas, no invented actuals, and rebases 
  const log = strFromU8(files['xl/worksheets/sheet3.xml']);
  const cellValue = (xml, address) => xml.match(new RegExp(`<(?:(?:\\w+):)?c\\b(?![^>]*\\/>)[^>]*r="${address}"[^>]*>[\\s\\S]*?<\\/(?:(?:\\w+):)?c>`))?.[0].match(/<(?:\w+:)?v>([^<]+)<\/(?:\w+:)?v>/)?.[1];
  assert.equal(cellValue(scoring, 'A5'), cellValue(log, 'A3'));
+ assert.equal(cellValue(scoring, 'N5'), cellValue(log, 'A3'));
  // Import cached zero results from the selected Daily sheet; unrelated Scoring is not an importer role.
  let xml = log;
- for (const address of ['AI3']) xml = xml.replace(new RegExp(`<((?:\\w+:)?)c\\b[^>]*r="${address}"[^>]*>[\\s\\S]*?<\\/\\1c>`), (_, p) => `<${p}c r="${address}"><${p}v>0</${p}v></${p}c>`);
+ for (const address of ['AJ3']) xml = xml.replace(new RegExp(`<((?:\\w+:)?)c\\b[^>]*r="${address}"[^>]*>[\\s\\S]*?<\\/\\1c>`), (_, p) => `<${p}c r="${address}"><${p}v>0</${p}v></${p}c>`);
  files['xl/worksheets/sheet3.xml'] = strToU8(xml);
  const recorded = await parseWorkbook(zipSync(files).buffer);
  assert.equal(recorded.sessions[0].scores.actualPerformance, 0);
@@ -115,8 +140,11 @@ test('score charts break lines at missing measurements and retain recorded zero 
   render('Date\tPlanned intensity\tFelt effort (optional)\n2026-10-26\t3\t5', ratings);
   const ratingsSvg = ratings.children[0].children[1];
   const ratingPoints = ratingsSvg.children.filter(child => child.tag === 'circle');
-  assert.equal(ratingPoints[0].attributes.cy, '122.5');
-  assert.equal(ratingPoints[1].attributes.cy, '35');
+  assert.equal(ratingPoints[0].attributes.cy, '157.5');
+  assert.equal(ratingPoints[1].attributes.cy, '122.5');
+  const boundaries = new Element();
+  render('Date\tPlanned intensity\tFelt effort (optional)\n2026-10-26\t0\t—\n2026-10-27\t10\t—', boundaries);
+  assert.deepEqual(boundaries.children[0].children[1].children.filter(child => child.tag === 'circle').map(child => child.attributes.cy), ['210', '35']);
   const empty = new Element(); render('Date\tExpected\tActual\n2026-10-26\t—\t—', empty);
   assert.ok(empty.children[0].textContent.includes('No values recorded'));
   const invalid = new Element(); render('Date\tExpected\tActual\n<script>\t100\tNaN', invalid);

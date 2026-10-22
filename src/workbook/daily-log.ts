@@ -22,7 +22,7 @@ export function dailyLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bo
  const headers = dailyHeaders(rows, first);
  if (!headers.includes('Date') || !headers.includes('Block') || !headers.includes('Plan')) return null;
  if (headers.some(header => !header) || new Set(headers).size !== headers.length) throw new Error('Daily log: column headers must be nonempty and unique.');
- const structural: string[] = [...SCORE_COLUMNS, 'Date', 'Block', 'Plan', 'Notes', 'Session ID', 'Part version', 'Status', 'Sport', 'Planned minutes', 'Actual minutes', 'Title'];
+ const structural: string[] = [...SCORE_COLUMNS, 'All done', 'Date', 'Block', 'Plan', 'Notes', 'Session ID', 'Part version', 'Status', 'Sport', 'Planned minutes', 'Actual minutes', 'Title'];
  for (const header of headers) if (!structural.includes(header) && !header.endsWith(' result') && !header.endsWith(' done')) throw new Error(`Daily log: name custom result columns "${header} result" or completion columns "${header} done".`);
  return rows.slice(first + 1).flatMap((row, index) => {
   if (!row.some(value => cellText(value))) return [];
@@ -45,15 +45,19 @@ export function dailyLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bo
   const part = candidates.length === 1 ? candidates[0] : undefined;
   const checks: Record<string, boolean | null> = {};
   const results: Record<string, string> = {};
+  const allDoneValue = entry['All done']?.toLowerCase() ?? '';
+  if (allDoneValue && !['true', 'false'].includes(allDoneValue)) throw new Error(`${context}: All done must be TRUE, FALSE, or blank.`);
+  const allDone = allDoneValue === 'true';
   for (const header of headers) {
+   if (header === 'All done') continue;
    const value = entry[header] ?? '';
    if (header.endsWith(' done')) {
     if (value && !['true', 'false'].includes(value.toLowerCase())) throw new Error(`${context}: ${header} must be TRUE, FALSE, or blank.`);
-    checks[header] = value ? value.toLowerCase() === 'true' : null;
+    checks[header] = allDone || (value ? value.toLowerCase() === 'true' : null);
    } else if (header.endsWith(' result')) {
     // Iteration cells start with planned targets. Only a recorded exercise is actual training.
     const iteration = /^(.+) [1-9]\d* result$/.exec(header) ?? /^(.+) rounds result$/.exec(header);
-    results[header] = iteration && entry[`${iteration[1]} done`]?.toLowerCase() !== 'true' ? '' : value;
+    results[header] = iteration && !allDone && entry[`${iteration[1]} done`]?.toLowerCase() !== 'true' ? '' : value;
     if (header.endsWith(' rounds result') && results[header] && (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)))) throw new Error(`${context}: ${header.replace(/ rounds result$/, '')} rounds must be a nonnegative whole number or blank.`);
    }
   }

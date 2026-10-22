@@ -161,9 +161,10 @@ Keep structural headers and each group's subcolumn alignment intact.
 | N–S | Done, 1, 2, 3, 4, 5 | B rep fields |
 | T–Y | Done, 1, 2, 3, 4, 5 | C rep fields |
 | Z–AA | Done, Rounds | Core recording |
-| AB | Notes | Shared session notes |
-| AC–AE | Muscle-up result, HSPU result, Pistol result | Optional manual goal results |
-| AF–AK | Planned intensity, Effort rating, Expected performance, Actual performance, Scored metrics, Planned metrics | Separate ratings, performance formulas, and coverage |
+| AB | All done | Record every exercise group in the row at once |
+| AC | Notes | Shared session notes |
+| AD–AF | Muscle-up result, HSPU result, Pistol result | Optional manual goal results |
+| AG–AL | Planned intensity, Effort rating, Expected performance, Actual performance, Scored metrics, Planned metrics | Separate ratings, performance formulas, and coverage |
 
 **Plan:** the A and B session blocks stack each A), B), C) exercise and Core on
 separate lines, just like Technique. The session's Block A/B and the exercise
@@ -185,7 +186,15 @@ a Core prescription leave it blank. Adjust it to the actual nonnegative whole
 number of rounds (including zero), then select TRUE in Core Done to record it.
 Unrecorded round targets are ignored during import.
 
-**Manual goal results:** AC–AE start completely blank, with no formulas. Fill them
+**All done:** select TRUE in **AB**, immediately after Core, to record all exercise
+groups at once. First adjust the numbered results and Core rounds to what you
+actually did. The master control overrides individual Done fields during import
+and performance calculation and highlights those fields; their stored values
+stay available for individual recording. Select FALSE or clear All done to return
+to the individual controls. Missing results stay blank. This does not change
+Status or fill manual goal results. All example rows start with All done FALSE.
+
+**Manual goal results:** AD–AF start completely blank, with no formulas. Fill them
 only when you want a result in the matching goal note. They do not automatically
 summarize the A/B/C fields. Keep their exact headers while Strategy goal mappings
 refer to them.
@@ -259,17 +268,102 @@ for an included positive target. Higher-direction Actual score is actual/target
 unscored. Daily performance takes the median of the session's score rows, and
 Scored metrics / Planned metrics makes partial coverage visible.
 
-Enter **Planned intensity** (1–5, easy to very hard) before training. Optionally
-enter **Effort rating** (1–5) afterward to record how hard it felt, or leave it
-blank. These whole-number subjective ratings start blank and never affect the
-performance calculation. No duration × RPE score is required or inferred.
+The example calculates **Planned intensity** on a whole-number **0–10** scale
+from exercise assumptions and planned volume (0 means no planned demand,
+10 means highest planned demand). Optionally enter **Effort rating** (1–5)
+afterward to record how hard it felt, or leave it blank. Neither rating affects
+the performance calculation. No duration × RPE score is required or inferred.
 When extending the workout layout, update Scoring's actual-cell references,
 explicit targets, and the Daily median/count ranges for that session.
 Recalculate and save the XLSX before syncing.
 
+### Exercise-based planned intensity formula
+
+The **Exercise arsenal** (the last table on Strategy) has editable **Base
+intensity** (0–10), **Reference sets**, **Reference amount per set**, and **Unit**
+(`reps`, `reps/leg`, or `seconds`) in **C36:F90** for each exercise. Base
+intensity describes that exercise at its reference prescription. These are
+personal planning assumptions, not measured physiological intensity.
+
+For each planned exercise `i`, use:
+
+```text
+volume_factor_i = (planned_sets_i × planned_amount_per_set_i)
+                  / (reference_sets_i × reference_amount_per_set_i)
+contribution_i = base_intensity_i × volume_factor_i
+planned_intensity = ROUND(MAX(0, MIN(10, SUM(contribution_i))), 0)
+```
+
+For unequal sets, replace `planned_sets × planned_amount_per_set` with the sum
+of the planned amounts across sets. Use reps for repetition exercises and
+seconds for holds or timed exercises, matching that exercise's reference unit.
+Normalize each exercise before adding contributions; do not add raw reps to
+seconds. Adding sets, reps, or time increases the estimated session demand,
+up to the 10-point ceiling. This is a volume-adjusted planning score.
+
+For example, an exercise with base intensity 2 and reference prescription
+`3 × 10 reps`, planned as `3 × 15 reps`, contributes `2 × 45 / 30 = 3`.
+A hold with base intensity 1 and reference prescription `3 × 30 seconds`,
+planned as `2 × 30 seconds`, contributes `1 × 60 / 90 = 0.67`.
+Together, the planned rating is `ROUND(3.67, 0) = 4`.
+
+An Excel formula for one exercise, using named inputs, is:
+
+```excel
+=IF(OR(COUNT(BaseIntensity,PlannedSets,PlannedAmount,ReferenceSets,ReferenceAmount)<>5,BaseIntensity<0,BaseIntensity>10,PlannedSets<0,PlannedSets<>INT(PlannedSets),PlannedAmount<=0,ReferenceSets<=0,ReferenceAmount<=0),"",BaseIntensity*PlannedSets*PlannedAmount/(ReferenceSets*ReferenceAmount))
+```
+
+After calculating one contribution per planned exercise, aggregate the session:
+
+```excel
+=IF(OR(PlannedExerciseCount=0,COUNT(ExerciseContributions)<>PlannedExerciseCount),"",ROUND(MAX(0,MIN(10,SUM(ExerciseContributions))),0))
+```
+
+The names above describe inputs and ranges; they are not workbook named ranges.
+The implemented calculation is visible in **Scoring → N:Y**. Edit the green
+**Exercise**, **Unit**, **Planned sets**, and **Amount per set** inputs in **P:S**.
+The neutral **T:W** columns look up the arsenal assumptions by exact exercise
+name, and **X** calculates each contribution. For example, **X5** uses:
+
+```excel
+=IF(OR(COUNT(R5:V5)<>5,Q5<>W5,T5<0,T5>10,U5<=0,V5<=0,R5<0,R5<>INT(R5),S5<=0),"",T5*R5*S5/(U5*V5))
+```
+
+**Daily!AG3** aggregates the first session's seven exercise contributions:
+
+```excel
+=IF(COUNT(Scoring!X5:X11)<>ROWS(Scoring!X5:X11),"",ROUND(MAX(0,MIN(10,SUM(Scoring!X5:X11))),0))
+```
+
+Every Daily row has its own session contribution range. All 48 example sessions
+are populated. Missing or duplicate exercise matches,
+unit mismatches, or incomplete inputs must leave the session rating blank.
+Zero base intensity is valid, and zero planned sets omits an exercise without
+treating it as missing. Amounts and reference quantities must be positive.
+**Effort rating** remains an optional manual entry after training. Performance
+continues to use actual/target attainment independently.
+
+The numeric inputs are initialized from the example's written plan. **Changing
+the plan text does not rewrite these inputs.** Update Scoring's planned sets and
+amounts alongside the plan and the separate performance targets in **F**.
+Intensity does not depend on performance's Include checkbox or recorded results.
+Each Core round contributes four 30-second work intervals using the four arsenal
+exercises; rest is excluded. Clusters count both reps. Per-leg reps retain their
+own unit. Negative repetitions count reps, without adding lowering tempo as hold
+time. Range prescriptions use their upper bound (five for 3–5 singles), tests
+use the stated cap, and optional work is included until its planned sets are
+set to zero. These assumptions are visible in Scoring's **Prescription note**.
+
+The seeded base values are editable example assumptions. Reference prescriptions
+are generally 3 × 10 reps, 3 × 60 seconds for timed skill work, and 5 × 120 seconds
+for each Core exercise. Calibrate these to your planning preferences; they are
+not physiological measurements. In the saved example, the first session scores
+`1 + 1.8 + 1 + 4 × 0.25 = 4.8`, rounded to **5/10**.
+
 The plugin's Analytics folder separates **Table**, **Daily**, and **Graph**.
 Graph separates expected/actual performance from planned intensity and optional
-felt effort on a fixed 1–5 scale. Missing values leave gaps. For multiple sessions
+felt effort on a shared 0–10 axis, with felt effort explicitly labeled 1–5.
+Missing values leave gaps. For multiple sessions
 per date, each trend uses the median of available session values, and the number
 of felt-effort ratings remains visible. A score measures target attainment,
 not absolute training quality. Keep commentary outside protected generated sections.

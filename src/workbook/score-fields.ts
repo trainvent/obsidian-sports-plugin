@@ -11,7 +11,8 @@ export function scoreFields(entry: Record<string, string>, context: string): Ses
  const value = (name: typeof SCORE_COLUMNS[number]): number | null => {
   if (!entry[name]) return null;
   const number = Number(entry[name]);
-  if (['Planned intensity', 'Effort rating'].includes(name) && (!Number.isInteger(number) || number < 1 || number > 5)) throw new Error(`${context}: ${name} must be a whole number from 1 to 5, or blank.`);
+  if (name === 'Planned intensity' && (!Number.isInteger(number) || number < 0 || number > 10)) throw new Error(`${context}: ${name} must be a whole number from 0 to 10, or blank.`);
+  if (name === 'Effort rating' && (!Number.isInteger(number) || number < 1 || number > 5)) throw new Error(`${context}: ${name} must be a whole number from 1 to 5, or blank.`);
   if (!Number.isFinite(number) || number < 0 || (name.endsWith('RPE') && number > 10) || (name.endsWith('metrics') && !Number.isSafeInteger(number))) throw new Error(`${context}: ${name} must be a nonnegative ${name.endsWith('metrics') ? 'whole number' : 'number'}${name.endsWith('RPE') ? ' from 0 to 10' : ''}, or blank.`);
   return number;
  };

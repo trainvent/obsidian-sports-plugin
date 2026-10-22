@@ -38,7 +38,7 @@ export function startTemplateNextMonday(template: Uint8Array, now = new Date()):
  for (const path of Object.keys(files)) {
   if (!/^xl\/worksheets\/sheet\d+\.xml$/.test(path) || [strategyPath, logPath].includes(path)) continue;
   const xml = strFromU8(files[path]!);
-  files[path] = strToU8(xml.replace(cellPattern('A\\d+'), cell => /<(?:\w+:)?f\b[^>]*>(?:'Daily'|Daily)!A\d+<\//.test(cell) ? shift(cell) : cell));
+  files[path] = strToU8(xml.replace(cellPattern('[A-Z]+\\d+'), cell => /<(?:\w+:)?f\b[^>]*>(?:'Daily'|Daily)!A\d+<\//.test(cell) ? shift(cell) : cell));
  }
  return Uint8Array.from(zipSync(files)).buffer;
 }

@@ -4,16 +4,17 @@ import { build } from 'esbuild';
 import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { unzipSync, zipSync, strToU8, strFromU8 } from 'fflate';
-import { pathToFileURL } from 'node:url';
+import { createRequire } from 'node:module';
 const temp = mkdtempSync(`${tmpdir()}/sports-tests-`);
 process.on('exit', () => rmSync(temp, { recursive: true, force: true }));
-const output = await build({ entryPoints: ['src/notes/blocks.ts', 'src/model/calendar.ts', 'src/workbook/parse.ts', 'src/workbook/template.ts', 'src/notes/render.ts', 'src/notes/plan.ts', 'src/workbook/template-dates.ts'], bundle: true, format: 'esm', platform: 'browser', write: false, outdir: '/tmp/sports-tests' });
+// Large XLSX sheets use fflate workers; the Node test runner needs its Node implementation.
+const output = await build({ entryPoints: ['src/notes/blocks.ts', 'src/model/calendar.ts', 'src/workbook/parse.ts', 'src/workbook/template.ts', 'src/notes/render.ts', 'src/notes/plan.ts', 'src/workbook/template-dates.ts'], bundle: true, format: 'cjs', platform: 'node', write: false, outdir: '/tmp/sports-tests' });
+const require = createRequire(import.meta.url);
 async function moduleNamed(name) {
  const text = output.outputFiles.find(file => file.path.endsWith(`/${name}.js`)).text;
- const path = `${temp}/${name}.mjs`; writeFileSync(path, text);
+ const path = `${temp}/${name}.cjs`; writeFileSync(path, text);
  // Only the temporary file containing our own esbuild output is imported.
- // eslint-disable-next-line no-unsanitized/method -- Imports only our own build output from a private temporary directory.
- return import(pathToFileURL(path).href);
+ return require(path);
 }
 const { mergeBlock, generatedBlock } = await moduleNamed('blocks');
 const { weekDates, scheduleOn } = await moduleNamed('calendar');

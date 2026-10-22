@@ -138,7 +138,7 @@ adjusting a week. Weekly targets and dated session plans are separately editable
 changing a target does not silently rewrite daily sessions or shift dates.
 
 The offered **Daily** sheet has two header rows: wide A/B/C exercise headings
-above Done and numbered rep/time fields 1–5, followed by Core Done/Rounds, Notes and
+above Done and numbered rep/time fields 1–5, followed by Core Done/Rounds, All done, Notes and
 three optional manual goal-result columns. Plan stacks the exercises on separate
 lines. Green cells are editable; both green and neutral areas alternate row tones.
 Older **Training log** sheets with a single flat header row remain supported.
@@ -457,15 +457,19 @@ The current template defines `max_sets = 3` (exercise groups A, B, C) and
 values do not automatically resize the layout. Rep cells contain plain numbers
 or durations displayed as `mm:ss`. Adjust the targets, then select TRUE under
 Done to record them. Core uses the same recording rule with an editable Rounds
-count. Whole-session Status is separate. The last three goal-result columns are
+count. **All done**, after Core, records every group together when TRUE; FALSE
+or blank uses the individual Done fields. Adjust result values before confirming.
+Whole-session Status is separate. The three goal-result columns are
 blank manual inputs, with no formulas. See [Workbook.md](Workbook.md) for details.
 
 
 ### Intensity, performance, and optional felt effort
 
-**Intensity** is how hard a session is planned to be. Enter **Planned intensity**
-as a whole-number rating from 1 (easy) to 5 (very hard). It is a planning input,
-not a result inferred from repetitions, duration, or performance.
+**Intensity** is how hard a session is planned to be, on a whole-number **0–10**
+scale. The example calculates **Planned intensity** from the exercise arsenal's
+base values and Scoring's planned sets and amounts (reps, reps/leg, or seconds).
+Update these numeric inputs when changing the written plan. See
+[the formula in Workbook.md](Workbook.md#exercise-based-planned-intensity-formula).
 
 **Performance** compares actual results with targets. In Scoring, **Include**
 selects metrics and **Target** remains an explicit editable planning input. Each
@@ -476,14 +480,15 @@ Lower-direction zero actuals have no finite ratio and remain unscored. Units
 are normalized before combining scores; raw reps, time, and weight are never added.
 
 **Felt effort** is optional. After training, enter **Effort rating** from 1 (easy)
-to 5 (very hard), or leave it blank. It does not alter performance. Planned
-intensity and felt effort start blank and are never calculated from minutes × RPE.
+to 5 (very hard), or leave it blank. Felt effort starts blank and does not alter
+performance. No minutes × RPE calculation is used.
 
 Daily adds six fields: Planned intensity, Effort rating, Expected performance,
 Actual performance, Scored metrics, and Planned metrics. Recalculate and save
 before syncing. Graph shows planned intensity versus optional felt effort on a
-fixed 1–5 scale, plus expected versus actual performance. Missing values leave
-gaps. A real zero performance remains zero; 0 is not a valid subjective rating.
+a shared 0–10 axis (felt effort remains 1–5), plus expected versus actual
+performance. Missing values leave gaps. Zero is valid for planned intensity and
+performance; it is not a valid felt-effort rating.
 Coverage makes partially recorded performance visible. For several sessions on
 one date, graphs use medians of available session values and show how many
 sessions have a felt-effort rating. These are comparisons with a plan, not an

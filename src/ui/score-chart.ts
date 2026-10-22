@@ -10,13 +10,13 @@ export function registerScoreCharts(plugin: Plugin): void {
   const values = rows.flatMap(row => row.slice(1).filter(value => value !== '—').map(Number));
   if (!values.length) { element.createEl('p', { text: 'No values recorded for this chart yet. Leave optional ratings blank, or enter values in the workbook, save, then sync.' }); return; }
   const root = element.createDiv({ cls: 'sports-score-chart' });
-  root.createEl('p', { text: `${headers[1]}: dashed · ${headers[2]}: solid · missing values leave gaps`, cls: 'sports-performance-legend' });
+  const ratingScale = headers[1] === 'Planned intensity';
+  root.createEl('p', { text: `${headers[1]}${ratingScale ? ' (0–10)' : ''}: dashed · ${headers[2]}${ratingScale ? ' (1–5)' : ''}: solid · missing values leave gaps`, cls: 'sports-performance-legend' });
   const svg = root.createSvg('svg');
   svg.setAttribute('viewBox', '0 0 720 260'); svg.setAttribute('role', 'img');
   svg.setAttribute('aria-label', `${headers[1]} versus ${headers[2]} for ${rows.length} dates. Values are in the table below.`);
-  const ratingScale = headers[1] === 'Planned intensity';
-  const minimum = ratingScale ? 1 : 0;
-  const max = ratingScale ? 5 : values.reduce((maximum, value) => Math.max(maximum, value), 1);
+  const minimum = 0;
+  const max = ratingScale ? 10 : values.reduce((maximum, value) => Math.max(maximum, value), 1);
   const dates = rows.map(row => Date.parse(`${row[0]}T12:00:00Z`));
   const first = Math.min(...dates), last = Math.max(...dates);
   const x = (index: number): number => last === first ? 370 : 50 + (dates[index]! - first) / (last - first) * 620;

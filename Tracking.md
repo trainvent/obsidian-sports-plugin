@@ -71,7 +71,11 @@ Do not merge two exercise groups under the same name.
 
 Flat equivalents are `Squat done`, `Squat 1 result`, `Squat 2 result`, etc.
 `Circuit done` with `Circuit rounds result` also works. Numbered inputs and rounds
-remain gated by the corresponding Done flag.
+remain gated by the corresponding Done flag. The example's **All done** column,
+immediately after Core, records all groups together when TRUE. Adjust the result
+values first. FALSE or blank returns to individual Done controls. The master
+control affects import and workbook performance scoring; individual cells retain
+their values. Whole-session Status stays separate.
 
 For numeric comparisons, match the group name in Plan, one prescription per line:
 
@@ -118,8 +122,10 @@ The template adds Scoring and six Daily fields: **Planned intensity**, **Effort
 rating**, **Expected performance**, **Actual performance**, **Scored metrics**,
 and **Planned metrics**.
 
-- **Intensity:** choose how hard the session should be before training, from
-  1 (easy) to 5 (very hard). Planned intensity is a whole-number planning input.
+- **Intensity:** the example calculates planned intensity from 0 to 10 using
+  the exercise arsenal's base values and Scoring's planned sets and amounts.
+  Update those numeric inputs when changing the written plan. See
+  [Workbook.md](Workbook.md#exercise-based-planned-intensity-formula) for the formula.
 - **Performance:** compare results with targets. Scoring's Include, Target, and
   Direction choose the metrics. A higher-direction score is actual/target × 100;
   lower-direction is target/actual × 100. Use positive targets and recorded
@@ -129,12 +135,13 @@ and **Planned metrics**.
 - **Felt effort:** optionally rate how hard it felt after training, from 1 (easy)
   to 5 (very hard), or leave Effort rating blank. It never changes performance.
 
-Both ratings start blank. Duration does not determine either rating. Recalculate
+Felt effort starts blank. Planned intensity uses exercise volume, including
+timed work normalized to each exercise's reference prescription. Recalculate
 and save the XLSX before syncing. Analytics/Graph separates target attainment
-from planned intensity and optional felt effort; subjective ratings use a fixed
-1–5 scale. For several sessions on a date, each trend uses available session
+from planned intensity and optional felt effort; their shared axis spans 0–10,
+while felt effort retains its own 1–5 scale. For several sessions on a date, each trend uses available session
 medians. Rated-session counts show partial effort reporting. Missing values leave
-gaps. Zero is a valid performance result, but not a 1–5 rating.
+gaps. Zero is valid for performance and planned intensity, but not felt effort.
 
 Scoring is not an extra import mapping; keep tracking on Daily or your chosen
 tracking tab. Customizing exercises means adapting Scoring's actual references,
