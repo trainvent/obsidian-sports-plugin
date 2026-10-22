@@ -11,7 +11,7 @@ export function coachPlansMarkdown(enabled: boolean | undefined, cache?: CoachCa
  if (!enabled) return '';
  const today = garminToday(timezone, now);
  const workouts = (cache?.workouts ?? []).filter(workout => workout.date >= today).sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
- const status = cache?.lastSuccess ? `Last synced: ${cell(cache.lastSuccess)}. Published schedule: ${cell(cache.start)}–${cell(cache.end)}.` : 'No Garmin Coach schedule imported yet. Connect Garmin and sync to import published workouts.';
+ const status = cache?.lastSuccess ? `Published schedule: ${cell(cache.start)}–${cell(cache.end)}.` : 'No Garmin Coach schedule imported yet. Connect Garmin and sync to import published workouts.';
  const warning = cache?.error ? `\n\n${cell(cache.error)}` : '';
  const rows = workouts.map(workout => `| ${workout.date} | ${cell(workout.plan)} | ${cell(workout.name)} | ${cell(workout.sport)} | ${workout.duration === null ? '—' : (workout.duration / 60).toFixed(1)} | ${workout.distance === null ? '—' : (workout.distance / 1000).toFixed(2)} | ${cell(workout.description)} |`).join('\n');
  return `\n\n## Upcoming Garmin Coach workouts\n\n${status}${warning}\n\n${rows ? `| Date | Coach plan | Workout | Sport | Estimated min | Estimated km | Description |\n| --- | --- | --- | --- | --- | --- | --- |\n${rows}` : 'No upcoming Coach workouts in the imported schedule.'}\n\nGarmin Coach may publish only a few upcoming sessions and can change them after training. These are scheduled workouts, separate from XLSX plans and recorded activities. Check Garmin Connect for the latest prescription.`;

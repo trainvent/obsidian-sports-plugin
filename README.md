@@ -71,10 +71,12 @@ unresolved. A new tracking-only plan uses the device timezone until strategy sup
 Sync creates ordinary Markdown files in the configured **Notes folder**:
 
 - `Plans.md`: starting levels, goals, weekly links, and upcoming manual prescriptions.
-- `Analytics/Index.md`: navigation to Table, Daily, and Graph.
-- `Analytics/Table.md`: compact session results.
-- `Analytics/Daily.md`: individual sets and exercise comparisons.
-- `Analytics/Graph.md`: expected versus actual daily performance and effort trends.
+- `Analytics/Index.md`: navigation to Daily, Graph, and Smartwatch. Session results live in Log and dated day notes; the old Table note is retired.
+- `Analytics/Daily/Index.md`: date index, preserving reflections from the previous all-days note.
+- `Analytics/Daily/YYYY-MM-DD.md`: one combined day note with sheet sessions,
+  scores, individual sets, exercise comparisons, Garmin activities, and reflections.
+- `Analytics/Graph.md`: sheet intensity, performance, and felt-effort trends.
+- `Analytics/Smartwatch.md`: weekly volume, running pace/heart rate, and swimming pace/heart rate.
 - `Log.md`: today and earlier manual sessions, newest first, with results and notes.
 - `Strategy.md`: goals, exercise blocks, and regular weekly activities.
 - `Weeks/YYYY-MM-DD.md`: weekly focus and targets, that week's schedule and results,
@@ -97,6 +99,12 @@ Edit the workbook to change plans and record results. Commentary outside generat
 sections is preserved. Conflicting notes are reported without preventing other
 weekly notes from updating. The existing Fitness vault is a reference; the plugin
 writes only to the configured folder in the currently open vault.
+
+Generated-note writes are serialized through their baseline saves. Obsidian's
+automatic rewrites of exact known plugin note-renaming links do not count as
+manual edits; other link changes, aliases, prose edits, and damaged markers stay
+protected. A successful final note refresh clears stale note warnings while
+preserving workbook import failures. The retired Table note is not recreated.
 
 Each table begins
 with its name alone in column A, followed immediately by a header row and data rows.
@@ -172,8 +180,8 @@ The technical `Sessions` table remains supported for existing workbooks, with re
 
 ### Sets and plan/result comparisons
 
-Analytics is a folder: Table holds session results, Daily holds collapsed
-**sets and comparisons** cards, and Graph compares daily performance and effort.
+Log provides the session overview. Analytics contains dated Daily notes with
+sets and exercise comparisons, while Graph compares performance and effort.
 Plans contains upcoming prescriptions without result columns or comparison cards.
 Log and weekly notes retain their contextual session comparisons.
 Open a card to see a four-column exercise table with the planned prescription,
@@ -370,6 +378,16 @@ Multiple sessions and activities stay together in their date's row. Manual statu
 actual minutes and result fields remain independent from recorded Garmin measurements.
 Upcoming manual sessions stay in Plans.
 
+Log dates link to their notes in `Analytics/Daily/`. Sync creates a note for each
+date up to today that has a sheet session or Garmin activity, including days with
+only one source. Per-day reflections stay outside the protected generated block.
+
+Each manual session also shows planned intensity, actual performance, scored
+metric coverage, and optional felt effort. Expand its session details below the
+overview for scores, individual sets, and exercise comparisons. Missing ratings
+remain unrecorded, and separate sessions keep their own scores and coverage.
+
+
 
 ## Goal notes
 
@@ -465,6 +483,14 @@ blank manual inputs, with no formulas. See [Workbook.md](Workbook.md) for detail
 
 ### Intensity, performance, and optional felt effort
 
+**Analytics → Smartwatch** provides separate Garmin graphs: weekly recorded
+minutes stacked by sport, running pace with average heart rate, and swimming
+pace with average heart rate. Pace uses minutes/km for running and minutes/100 m
+for swimming, with faster pace higher on the left axis and bpm on the right.
+Missing measurements leave gaps; Garmin minutes are not added to workbook
+minutes. The note refreshes from cached Garmin data during sync, including when
+no workbook is selected, and preserves reflections outside its generated block.
+
 **Intensity** is how hard a session is planned to be, on a whole-number **0–10**
 scale. The example calculates **Planned intensity** from the exercise arsenal's
 base values and Scoring's planned sets and amounts (reps, reps/leg, or seconds).
@@ -492,7 +518,7 @@ shared scale: 100% follows intensity, 80% is 20% lower, and values can exceed
 on the left. Recorded
 effort remains 1–5. Each series uses daily medians of available session values.
 Intensity appears even without results; missing values leave gaps. Coverage
-and rated-session counts remain on Table. Separate axes compare trends in
+and individual felt-effort ratings remain in Log and dated day notes. Separate axes compare trends in
 different units; matching heights do not imply equal values.
 
 Existing workbooks remain supported. Template downloads never change a live

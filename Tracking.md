@@ -102,10 +102,14 @@ changes. Confirm **Settings → Sports → Tracking sheet** selects the intended
 
 Upcoming manual prescriptions appear in **Plans**. Results and comparisons live
 in **Analytics**, available through **Open analytics** on the dashboard or the link
-in Plans. The folder contains **Table** (sessions and results), **Daily**
-(individual sets), and **Graph** (daily score trends). Analytics includes every
-imported date; Plans has no result columns or comparison cards. In Daily, expand a session's **sets and comparisons** card. It contains a four-column
-table and paired plan/result bars. Each exercise/metric uses its own scale.
+in Plans. Session results live in **Log**. The Analytics folder contains **Daily**
+(the `Daily/Index.md` date index), **Graph** (sheet score trends), and **Smartwatch** (Garmin graphs).
+Daily links to `Daily/YYYY-MM-DD.md`, combining that day's sheet sessions, scores,
+individual sets, and Garmin activities. Log dates link there too. Only today and
+earlier dates with source entries receive day notes; upcoming sessions stay in
+Plans. Existing Daily reflections stay on the index. Each day has a protected
+generated section and a separate reflections area. Exercise details contain a
+four-column table and paired plan/result bars. Each exercise/metric uses its own scale.
 Missing targets and results stay missing; partial totals are labeled. Graphs use
 your selected aggregation (total by default); those totals are not a
 training score, and larger values are not automatically better. Set values remain
@@ -145,7 +149,7 @@ intensity, so 100% follows intensity and 80% sits 20% below it. Values may excee
 left and 0–10 on the right; actual effort ratings remain 1–5. The third chart
 shows actual performance only on a fixed 0–200% scale with 100% at the center. Each series uses daily medians of
 available values, so intensity can appear before results. Missing values leave
-gaps. Table retains coverage and rated-session counts. Zero is valid for
+gaps. Log and dated day notes retain session coverage and felt-effort ratings. Zero is valid for
 performance and intensity, but not a recorded felt-effort rating.
 
 Scoring is not an extra import mapping; keep tracking on Daily or your chosen

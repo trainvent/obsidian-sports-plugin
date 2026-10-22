@@ -43,3 +43,21 @@ test('combined log supports tracker-only history, cached warnings and safely esc
  assert.ok(!text.includes('## Recorded Garmin activities'));
  assert.ok(combinedLogMarkdown(null, undefined, now).includes('No log entries'));
 });
+
+test('Log keeps session scores, partial coverage and detailed sets together without inventing missing effort', () => {
+ const scored = { ...session, prescription: 'A) Pull-up: 3 x 5', checks: { 'A done': true }, results: { 'A 1 result': '4', 'A 2 result': '0', 'A 3 result': '' }, scores: { plannedIntensity: 6, actualPerformance: 80, expectedPerformance: 100, scoredMetrics: 1, plannedMetrics: 3, effortRating: null } };
+ const body = combinedLogMarkdown({ timezone: 'Europe/Berlin', parts: [], sessions: [scored, { ...session, id: 'evening', title: 'Evening', scores: { plannedIntensity: 2, actualPerformance: 0, effortRating: 5 } }, { ...scored, date: '2026-10-22', title: 'Future' }] }, undefined, now);
+ const row = body.split('\n').find(line => line.startsWith('| 2026-10-21 |'));
+ assert.ok(row.includes('Planned intensity: 6 / 10'));
+ assert.ok(row.includes('Performance: 80%'));
+ assert.ok(row.includes('Scored metrics: 1 / 3'));
+ assert.ok(row.includes('Performance: 0%'));
+ assert.ok(row.includes('Felt effort: 5 / 5'));
+ assert.ok(!row.includes('Felt effort: —'));
+ assert.ok(body.includes('> [!example]- 2026-10-21 · Skills · sets and comparisons'));
+ assert.ok(body.includes('> Planned intensity: 6 / 10 · Performance: 80% · Scored metrics: 1 / 3'));
+ assert.ok(body.includes('| Exercise | Plan | Result | Sets in order |'));
+ assert.ok(body.includes('4 / 0 / —'));
+ assert.ok(body.includes('· Evening · session scores'));
+ assert.ok(!body.includes('2026-10-22'));
+});

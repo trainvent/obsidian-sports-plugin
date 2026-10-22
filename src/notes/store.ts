@@ -3,8 +3,13 @@ import { normalizePath, TFile } from 'obsidian';
 import type SportsPlugin from '../main';
 import { backupBeforeReset } from './cache';
 import { generatedBlock, mergeBlock } from './blocks';
+import { queueNoteWrite } from './write-queue';
 
-export async function updateNote(plugin: SportsPlugin, relativePath: string, id: string, body: string, initial: string, recreateMissing = false): Promise<TFile> {
+export function updateNote(plugin: SportsPlugin, relativePath: string, id: string, body: string, initial: string, recreateMissing = false): Promise<TFile> {
+ return queueNoteWrite(plugin, () => writeNote(plugin, relativePath, id, body, initial, recreateMissing));
+}
+
+async function writeNote(plugin: SportsPlugin, relativePath: string, id: string, body: string, initial: string, recreateMissing: boolean): Promise<TFile> {
  const folder = plugin.data.notesFolder;
  if (!folder || folder.startsWith('/') || folder.split(/[\\/]/).some(part => part === '..' || part.startsWith('.'))) throw new Error('Choose a normal vault folder for Sports notes.');
  const path = normalizePath(`${folder}/${relativePath}`);
@@ -34,7 +39,7 @@ export async function updateNote(plugin: SportsPlugin, relativePath: string, id:
    const end = snapshot.indexOf(endMarker);
    const baseline = begin >= 0 && end >= begin ? snapshot.slice(begin, end + endMarker.length) : undefined;
    // Validate markers before creating a backup or changing the existing file.
-   const restored = mergeBlock(snapshot, id, body, baseline);
+   const restored = mergeBlock(snapshot, id, body, baseline, folder);
    await backupBeforeReset(plugin, path, snapshot);
    await plugin.app.vault.process(existing, content => {
     if (content !== snapshot) throw new Error(`${path} changed during recovery. Retry sync.`);
@@ -46,7 +51,7 @@ export async function updateNote(plugin: SportsPlugin, relativePath: string, id:
   }
   await plugin.app.vault.process(existing, content => {
    if (/<!-- complete-(?:log|plans):start -->/.test(content)) throw new Error(`${path} is managed by the existing Fitness refresh scripts. Choose a separate notes folder to avoid mixing generators.`);
-   return removeGeneratedHeading(mergeBlock(content, id, body, plugin.data.generatedBlocks[key]));
+   return removeGeneratedHeading(mergeBlock(content, id, body, plugin.data.generatedBlocks[key], folder));
   });
   file = existing;
  } else if (existing) throw new Error(`A folder occupies ${path}.`);

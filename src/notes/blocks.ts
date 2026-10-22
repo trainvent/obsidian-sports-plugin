@@ -1,4 +1,6 @@
-export function mergeBlock(existing: string, id: string, body: string, previous?: string): string {
+import { canonicalNoteLinks } from './renames';
+
+export function mergeBlock(existing: string, id: string, body: string, previous?: string, folder?: string): string {
  const begin = `<!-- sports:begin ${id} -->`;
  const end = `<!-- sports:end ${id} -->`;
  const block = `${begin}\n${body.trim()}\n${end}`;
@@ -17,9 +19,10 @@ export function mergeBlock(existing: string, id: string, body: string, previous?
  // Rebuild a lost baseline only when source-derived output is identical apart from
  // Garmin's refresh timestamp. Content, imported range, and warnings must still match.
  const withoutRefreshTime = (value: string): string => value.replace(
-  /(^## Recorded Garmin activities\r?\n\r?\nLast successful sync: )\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z(?=\. Imported )/gm, '$1<refresh-time>');
+  /(^## Recorded Garmin activities\r?\n\r?\n)Last successful sync: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z\. (?=Imported )/gm, '$1');
  const recovered = previous === undefined && withoutRefreshTime(current) === withoutRefreshTime(block);
- if (!recovered && (previous === undefined || current !== previous)) throw new Error('The generated section was edited or has no trusted baseline. The note was preserved.');
+ const rewrittenLinks = previous !== undefined && folder !== undefined && canonicalNoteLinks(current, folder) === canonicalNoteLinks(previous, folder);
+ if (!recovered && !rewrittenLinks && (previous === undefined || current !== previous)) throw new Error('The generated section was edited or has no trusted baseline. The note was preserved.');
  return existing.slice(0, start) + block + existing.slice(finish + end.length);
 }
 export function generatedBlock(id: string, body: string): string {

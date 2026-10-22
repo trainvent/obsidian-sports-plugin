@@ -1,14 +1,16 @@
-import { sessionDetails, compactResults } from './performance';
+import { scoredSessionDetails, compactResults } from './performance';
 import type { TrainingPlan, Session } from '../model/types';
 import type { GarminActivity, GarminCache } from '../garmin/types';
 import { activityDetails } from '../garmin/activities';
+import { sessionScoreSummary } from './session-scores';
+import { noteLink } from './plan';
 
 function text(value: string | number): string {
  return String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replace(/[\\`*[\]_]/g, '\\$&').replaceAll('|', '&#124;').replace(/[\r\n]+/g, '<br>');
 }
 
 /** Join by local calendar date, keeping every manual session and tracker activity distinct. */
-export function combinedLogMarkdown(plan: TrainingPlan | null, cache?: GarminCache, now = new Date()): string {
+export function combinedLogMarkdown(plan: TrainingPlan | null, cache?: GarminCache, now = new Date(), folder?: string): string {
  const today = new Intl.DateTimeFormat('en-CA', { timeZone: plan?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
  const manual = new Map<string, Session[]>();
  for (const session of plan?.sessions ?? []) {
@@ -19,7 +21,7 @@ export function combinedLogMarkdown(plan: TrainingPlan | null, cache?: GarminCac
   const entries = recordedByDate.get(activity.date) ?? []; entries.push(activity); recordedByDate.set(activity.date, entries);
  }
  const dates = [...new Set([...manual.keys(), ...recordedByDate.keys()])].filter(date => date <= today).sort().reverse();
- const status = cache ? `${cache.lastSuccess ? `Garmin last synced: ${text(cache.lastSuccess)}. Imported dates: ${text(cache.start)}–${text(cache.end)}.` : 'Garmin has not been imported yet.'}${cache.error ? `\n\n${text(cache.error)} Cached activities are retained.` : ''}\n\n` : '';
+ const status = cache ? `${cache.lastSuccess ? `Garmin imported dates: ${text(cache.start)}–${text(cache.end)}.` : 'Garmin has not been imported yet.'}${cache.error ? `\n\n${text(cache.error)} Cached activities are retained.` : ''}\n\n` : '';
  if (!dates.length) return `${status}No log entries for today or earlier.`;
  const rows = dates.map(date => {
   const sessions = manual.get(date) ?? [];
@@ -33,12 +35,14 @@ export function combinedLogMarkdown(plan: TrainingPlan | null, cache?: GarminCac
    `Status: ${text(session.status)}`,
    ...(session.actualMinutes !== null ? [`Actual: ${text(session.actualMinutes)} min`] : []),
    ...(compactResults(session) ? [text(compactResults(session))] : []),
+   ...(sessionScoreSummary(session) ? [text(sessionScoreSummary(session))] : []),
   ].join('<br>'));
   const notes = sessions.filter(session => session.notes).map(session => `${sessions.length > 1 ? `${label(session)}<br>` : ''}${text(session.notes)}`);
   const activities = (recordedByDate.get(date) ?? []).sort((a, b) => a.time.localeCompare(b.time) || a.id.localeCompare(b.id));
   const recorded = activities.map(activity => `[${text(activity.name)}](https://connect.garmin.com/modern/activity/${activity.id}) · ${text(activityDetails(activity))}`).join('<br>');
   const missing = cache?.lastSuccess && date >= cache.start && date <= cache.end ? 'None recorded' : 'Not imported';
-  return `| ${date} | ${plans.join('<br><br>') || '—'} | ${results.join('<br><br>') || '—'} | ${recorded || missing} | ${notes.join('<br><br>') || '—'} |`;
+  const dateLabel = folder ? noteLink(folder, `Analytics/Daily/${date}`, date).replaceAll('|', '\\|') : date;
+  return `| ${dateLabel} | ${plans.join('<br><br>') || '—'} | ${results.join('<br><br>') || '—'} | ${recorded || missing} | ${notes.join('<br><br>') || '—'} |`;
  });
- return `${status}## Recent and recorded\n\n| Date | Manual plan | Manual results | Garmin activities | Manual notes |\n| --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nGarmin records do not mark manual sessions complete.${dates.flatMap(date => (manual.get(date) ?? []).map(sessionDetails)).filter(Boolean).map(detail => `\n\n${detail}`).join('')}`;
+ return `${status}## Recent and recorded\n\n| Date | Manual plan | Manual results | Garmin activities | Manual notes |\n| --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nGarmin records do not mark manual sessions complete.${dates.flatMap(date => (manual.get(date) ?? []).map(scoredSessionDetails)).filter(Boolean).map(detail => `\n\n${detail}`).join('')}`;
 }

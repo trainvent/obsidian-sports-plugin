@@ -89,3 +89,6 @@
 .sports-score-actual { stroke: var(--interactive-accent); fill: var(--interactive-accent); stroke-width: 2; }
 
 .sports-score-chart circle.sports-score-expected { stroke-dasharray: none; }
+.sports-watch-pace { stroke: var(--interactive-accent); fill: var(--interactive-accent); stroke-width: 2; }
+.sports-watch-heart { stroke: #D6A45B; fill: #D6A45B; stroke-width: 2; stroke-dasharray: 5 4; }
+.sports-smartwatch-chart circle { stroke-dasharray: none; }

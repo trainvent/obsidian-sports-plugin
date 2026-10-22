@@ -47,7 +47,7 @@ export function calendarMarkdown(plan: TrainingPlan | null, coachEnabled: boolea
   ...(specializedEnabled ? [row.manual.join('<br><br>') || '—'] : []),
   ...(coachEnabled ? [row.coach.join('<br><br>') || '—'] : []),
  ]));
- const coachStatus = !coachEnabled ? '' : cache?.lastSuccess ? `Coach last synced: ${text(cache.lastSuccess)}. Published range: ${text(cache.start)}–${text(cache.end)}.${cache.error ? ` ${text(cache.error)}` : ''}` : 'No Coach schedule imported yet. Connect Garmin and sync.';
+ const coachStatus = !coachEnabled ? '' : cache?.lastSuccess ? `Coach published range: ${text(cache.start)}–${text(cache.end)}.${cache.error ? ` ${text(cache.error)}` : ''}` : 'No Coach schedule imported yet. Connect Garmin and sync.';
  const table = [tableRow(columns), tableRow(columns.map(() => '---')), ...rows].join('\n');
  return `Today and upcoming dated plans, starting ${today}. Multiple workouts on the same date stay together. Recurring weekly training is shown for the next 28 days and on all imported upcoming plan dates. Weekly strategy remains in Plans; recorded activities remain in Log.${coachStatus ? `\n\n${coachStatus}` : ''}\n\n${table}${rows.length ? '' : '\n\nNo upcoming dated plans.'}\n\n${coachEnabled ? 'Coach sessions can change and Garmin may publish only a few days ahead. ' : ''}A blank cell means no imported plan from that source; it does not imply a rest day. Edit prescriptions in the workbook${coachEnabled ? ' or Garmin Connect' : ''}.`;
 }

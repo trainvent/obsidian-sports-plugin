@@ -343,7 +343,11 @@ The seeded base values are editable difficulty estimates; the four Core
 exercises start at 6, 4, 5, and 5. Optional felt effort and actual/target
 performance remain separate from planned intensity.
 
-The plugin's Analytics folder separates **Table**, **Daily**, and **Graph**.
+The plugin's Analytics folder separates **Daily**, **Graph**, and
+**Smartwatch**. `Daily/Index.md` is the date index; `Daily/YYYY-MM-DD.md` holds that day's
+sheet sessions, scores, sets, and Garmin activities. Log dates link to these
+notes. Existing Daily reflections remain on the index, and each day has its
+own preserved reflections section.
 Graph shows three time-series charts, all with dates on the horizontal axis:
 
 1. Performance × intensity and planned intensity on one shared scale.
@@ -359,7 +363,7 @@ Graph shows three time-series charts, all with dates on the horizontal axis:
 Performance is scaled per session before taking the daily median. Other series
 use the median of available session values per date. Intensity
 is visible before performance or effort is recorded. Missing values leave gaps;
-they are not plotted as zero. Coverage and rated-session counts remain on Table.
+they are not plotted as zero. Session coverage and felt-effort ratings remain in Log and dated day notes.
 The separate axes compare trends across different units, not equal values.
 A score measures target attainment, not absolute training quality. Keep
 commentary outside protected generated sections.

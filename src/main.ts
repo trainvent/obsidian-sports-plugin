@@ -21,6 +21,7 @@ import { clearImportCache } from './notes/cache';
 import { migrateNoteNames } from './notes/migrate';
 import { syncNotes } from './notes/sync';
 import { updateNote } from './notes/store';
+import { reconcileNoteWarning } from './notes/warnings';
 import { weekMarkdown } from './notes/render';
 
 export default class SportsPlugin extends Plugin {
@@ -78,9 +79,16 @@ export default class SportsPlugin extends Plugin {
   this.noteBusy = true;
   try {
    const issues = this.data.plan ? await syncNotes(this, this.data.plan, recreateMissing) : [];
-   if (!this.data.plan) await updateNote(this, 'Log.md', 'training-log', combinedLogMarkdown(null, this.data.garminCache), '# Log\n\n## Reflections\n', recreateMissing);
+   if (!this.data.plan) {
+    issues.push(...await migrateNoteNames(this));
+    await updateNote(this, 'Log.md', 'training-log', combinedLogMarkdown(null, this.data.garminCache, new Date(), this.data.notesFolder), '# Log\n\n## Reflections\n', recreateMissing);
+    for (const task of analyticsNoteTasks(null, this.data.notesFolder, this.data.garminCache)) {
+     if (!issues.some(issue => issue.startsWith(`${task.path}:`))) await updateNote(this, task.path, task.id, task.body, task.initial, recreateMissing);
+    }
+   }
    await syncCoachOnlyPlans(this, recreateMissing);
-   if (issues.length || recreateMissing) { this.data.lastError = issues[0] || ''; await this.save(); }
+   const warning = reconcileNoteWarning(this.data.lastError, issues);
+   if (warning !== this.data.lastError) { this.data.lastError = warning; await this.save(); }
    if (notify || issues.length) new Notice(issues[0] || 'Sports notes generated in the notes folder.');
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not generate notes.'); }
   finally { this.noteBusy = false; this.refreshViews(); }
@@ -131,7 +139,7 @@ export default class SportsPlugin extends Plugin {
   try {
    const issues = await migrateNoteNames(this);
    if (issues.length) throw new Error(issues[0]);
-   for (const task of analyticsNoteTasks(this.data.plan, this.data.notesFolder)) {
+   for (const task of analyticsNoteTasks(this.data.plan, this.data.notesFolder, this.data.garminCache)) {
     await updateNote(this, task.path, task.id, task.body, task.initial);
    }
    const file = this.app.vault.getFileByPath(`${this.data.notesFolder}/Analytics/Index.md`);
@@ -155,7 +163,7 @@ export default class SportsPlugin extends Plugin {
   try {
    const issues = await migrateNoteNames(this);
    if (issues.length) throw new Error(issues[0]);
-   const file = await updateNote(this, 'Log.md', 'training-log', `${noteLink(this.data.notesFolder, 'Plans', 'Plans')} · ${noteLink(this.data.notesFolder, 'Analytics/Index', 'Analytics')}\n\n${combinedLogMarkdown(this.data.plan, this.data.garminCache)}`, '# Log\n\n## Commentary\n');
+   const file = await updateNote(this, 'Log.md', 'training-log', `${noteLink(this.data.notesFolder, 'Plans', 'Plans')} · ${noteLink(this.data.notesFolder, 'Analytics/Index', 'Analytics')}\n\n${combinedLogMarkdown(this.data.plan, this.data.garminCache, new Date(), this.data.notesFolder)}`, '# Log\n\n## Commentary\n');
    await this.app.workspace.getLeaf(false).openFile(file);
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not update the training log.'); }
   finally { this.noteBusy = false; }

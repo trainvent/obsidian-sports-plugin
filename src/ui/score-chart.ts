@@ -1,8 +1,10 @@
 import type { Plugin } from 'obsidian';
 import { registerScoreScatter } from './score-scatter';
+import { registerSmartwatchCharts } from './smartwatch-chart';
 
 export function registerScoreCharts(plugin: Plugin): void {
  registerScoreScatter(plugin);
+ registerSmartwatchCharts(plugin);
  plugin.registerMarkdownCodeBlockProcessor('sports-trend', (source, element) => {
   const lines = source.trim().split('\n');
   let headers = lines.shift()?.split('\t') ?? [];

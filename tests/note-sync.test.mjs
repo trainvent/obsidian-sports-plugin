@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url';
 const temp = mkdtempSync(`${tmpdir()}/sports-note-tests-`);
 process.on('exit', () => rmSync(temp, { recursive: true, force: true }));
 const output = await build({
- stdin: { contents: "export { calendarMarkdown } from './src/notes/calendar'; export { syncCoachOnlyPlans } from './src/notes/coach-plans'; export { syncNotes } from './src/notes/sync'; export { clearImportCache } from './src/notes/cache';", resolveDir: process.cwd(), loader: 'ts' }, bundle: true, format: 'esm', platform: 'browser', write: false, loader: { '.md': 'text' },
+ stdin: { contents: "export { calendarMarkdown } from './src/notes/calendar'; export { syncCoachOnlyPlans } from './src/notes/coach-plans'; export { syncNotes } from './src/notes/sync'; export { clearImportCache } from './src/notes/cache'; export { updateNote } from './src/notes/store'; export { mergeBlock } from './src/notes/blocks'; export { reconcileNoteWarning } from './src/notes/warnings';", resolveDir: process.cwd(), loader: 'ts' }, bundle: true, format: 'esm', platform: 'browser', write: false, loader: { '.md': 'text' },
  plugins: [{ name: 'obsidian-test-vault', setup(builder) {
   builder.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'obsidian', namespace: 'test' }));
   builder.onLoad({ filter: /.*/, namespace: 'test' }, () => ({ contents: 'export class TFile { constructor(path) { this.path = path; } } export const normalizePath = path => path;' }));
@@ -16,7 +16,7 @@ const output = await build({
 });
 writeFileSync(`${temp}/sync.mjs`, output.outputFiles[0].text + '\nexport { TFile };');
 // eslint-disable-next-line no-unsanitized/method -- Imports our own esbuild output from a private temporary directory.
-const { calendarMarkdown, syncCoachOnlyPlans, syncNotes, clearImportCache, TFile } = await import(pathToFileURL(`${temp}/sync.mjs`).href);
+const { calendarMarkdown, syncCoachOnlyPlans, syncNotes, clearImportCache, updateNote, mergeBlock, reconcileNoteWarning, TFile } = await import(pathToFileURL(`${temp}/sync.mjs`).href);
 
 function fixture() {
  const files = new Map();
@@ -35,6 +35,82 @@ function fixture() {
  return { plugin, plan, files };
 }
 
+test('a final note refresh clears stale note warnings without hiding workbook import failures', () => {
+ assert.equal(reconcileNoteWarning('Workbook imported; 62 note(s) need attention: old issue', []), '');
+ assert.equal(reconcileNoteWarning('Generated notes: old warning', []), '');
+ assert.equal(reconcileNoteWarning('Workbook download failed', []), 'Workbook download failed');
+ assert.equal(reconcileNoteWarning('Workbook download failed', ['Log.md: note conflict']), 'Workbook download failed');
+ assert.ok(reconcileNoteWarning('Workbook imported; old warning', ['Log.md: note conflict']).includes('1 note(s) need attention: Log.md: note conflict'));
+});
+
+test('a deleted retired Table note stays deleted without raising a warning or leaving navigation links', async () => {
+ const { plugin, plan, files } = fixture();
+ plugin.data.generatedBlocks['Sports/Analytics/Table.md:analytics-table'] = '<!-- sports:begin analytics-table -->\nOld table\n<!-- sports:end analytics-table -->';
+ for (let i = 0; i < 3; i++) assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.equal(files.has('Sports/Analytics/Table.md'), false);
+ for (const note of files.values()) if (note instanceof TFile) assert.ok(!note.content.includes('Analytics/Table'), note.path);
+});
+
+test('overlapping updates serialize note content and baseline publication, and preserve commentary', async () => {
+ const { plugin, files } = fixture();
+ await updateNote(plugin, 'Test.md', 'test', 'Initial', '# Test\n\n## Reflections\nKeep me\n');
+ const file = files.get('Sports/Test.md');
+ let release, started;
+ const hold = new Promise(resolve => { release = resolve; });
+ const entered = new Promise(resolve => { started = resolve; });
+ let first = true;
+ plugin.app.vault.process = async (note, transform) => {
+  note.content = transform(note.content);
+  if (first) { first = false; started(); await hold; }
+ };
+ const a = updateNote(plugin, 'Test.md', 'test', 'First sync', '# Test\n');
+ await entered;
+ const b = updateNote(plugin, 'Test.md', 'test', 'Second sync', '# Test\n');
+ const completed = Promise.all([a, b]);
+ release(); await completed;
+ assert.ok(file.content.includes('Second sync'));
+ assert.ok(file.content.endsWith('Keep me\n'));
+ assert.ok(plugin.data.generatedBlocks['Sports/Test.md:test'].includes('Second sync'));
+ await Promise.all(Array.from({ length: 8 }, (_, i) => updateNote(plugin, 'Test.md', 'test', `Sync ${i}`, '# Test\n')));
+ assert.ok(file.content.includes('Sync 7'));
+ file.content = file.content.replace('Sync 7', 'My edit');
+ await assert.rejects(updateNote(plugin, 'Test.md', 'test', 'Next', '# Test\n'), /generated section was edited/);
+ file.content = file.content.replace('My edit', 'Sync 7');
+ await updateNote(plugin, 'Test.md', 'test', 'Recovered queue', '# Test\n');
+ assert.ok(file.content.includes('Recovered queue'));
+});
+
+test('automatic link rewrites during Daily migration do not look like edits on repeated sync', async () => {
+ const { plugin, plan, files } = fixture();
+ const baseline = (id, body) => `<!-- sports:begin ${id} -->\n${body}\n<!-- sports:end ${id} -->`;
+ const oldDaily = new TFile('Sports/Analytics/Daily.md'); oldDaily.content = baseline('analytics-daily', 'Old index');
+ const index = new TFile('Sports/Analytics/Index.md');
+ const oldIndex = baseline('analytics', '[[Sports/Analytics/Daily|Daily]]\nOld overview');
+ index.content = `${oldIndex}\n\nKeep index reflections\n`;
+ files.set(oldDaily.path, oldDaily); files.set(index.path, index);
+ plugin.data.generatedBlocks['Sports/Analytics/Daily.md:analytics-daily'] = baseline('analytics-daily', 'Old index');
+ plugin.data.generatedBlocks['Sports/Analytics/Index.md:analytics'] = oldIndex;
+ plugin.app.fileManager.renameFile = async (file, path) => {
+  files.delete(file.path); file.path = path; files.set(path, file);
+  // Obsidian updates referring files, but does not update plugin metadata.
+  for (const note of files.values()) if (note instanceof TFile) note.content = note.content.replaceAll('[[Sports/Analytics/Daily|', '[[Sports/Analytics/Daily/Index|');
+ };
+ for (let i = 0; i < 3; i++) assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.ok(index.content.includes('[[Sports/Analytics/Daily/Index|Daily]]'));
+ assert.ok(index.content.endsWith('Keep index reflections\n'));
+ assert.equal(files.has('Sports/Analytics/Daily.md'), false);
+});
+
+test('link migration tolerance rejects changes to prose, aliases and unrelated destinations', () => {
+ const previous = '<!-- sports:begin test -->\n[[Sports/Analytics/Daily|Daily]] · original prose\n<!-- sports:end test -->';
+ const rewritten = previous.replace('Analytics/Daily|', 'Analytics/Daily/Index|');
+ const current = `${rewritten}\n\nMy commentary\n`;
+ assert.ok(mergeBlock(current, 'test', 'New source output', previous, 'Sports').endsWith('My commentary\n'));
+ for (const edited of [current.replace('original prose', 'My prose'), current.replace('|Daily', '|My alias'), current.replace('Daily/Index|', 'Other|')]) assert.throws(() => mergeBlock(edited, 'test', 'New source output', previous, 'Sports'), /generated section was edited/);
+ const escaped = previous.replace('|Daily', '\\|Daily');
+ assert.doesNotThrow(() => mergeBlock(escaped.replace('Analytics/Daily\\|', 'Analytics/Daily/Index\\|'), 'test', 'New source output', escaped, 'Sports'));
+});
+
 test('sync creates browsable notes and future weeks without first opening the dashboard', async () => {
  const { plugin, plan, files } = fixture();
  assert.deepEqual(await syncNotes(plugin, plan), []);
@@ -46,6 +122,96 @@ test('sync creates browsable notes and future weeks without first opening the da
  const original = log.content;
  assert.deepEqual(await syncNotes(plugin, plan), []);
  assert.equal(log.content, original);
+});
+
+test('Smartwatch graphs refresh from cached Garmin measurements and preserve reflections', async () => {
+ const { plugin, plan, files } = fixture();
+ plugin.data.garminCache = { start: '2026-12-28', end: '2026-12-31', lastSuccess: '2026-12-31T12:00:00Z', activities: [{ id: '1', date: '2026-12-28', time: '08:00', name: 'Run', type: 'running', duration: 1800, distance: 5000, average_hr: 150 }] };
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ const watch = files.get('Sports/Analytics/Smartwatch.md');
+ assert.ok(watch.content.includes('"pace":360'));
+ assert.ok(watch.content.includes('"values":[30]'));
+ watch.content += '\nMy watch reflections\n';
+ plugin.data.garminCache.activities[0].duration = 1500;
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.ok(watch.content.includes('"pace":300'));
+ assert.ok(watch.content.endsWith('My watch reflections\n'));
+});
+
+test('all generated notes omit Garmin and Coach sync timestamps while keeping source ranges and warnings', async () => {
+ const { plugin, plan, files } = fixture();
+ const stamp = '2026-10-22T10:11:12.345Z';
+ plan.goals = [{ id: 'running', title: 'Running', benchmark: 'Maintain pace', baseline: '', test: '', category: 'maintenance', garminTypes: ['running'] }];
+ plugin.data.garminCache = { start: '2020-01-01', end: '2020-01-02', lastSuccess: stamp, error: 'Cached activity warning', activities: [{ id: '1', date: '2020-01-01', time: '08:00', name: 'Run', type: 'running', duration: 600, distance: 1000, average_hr: 140 }] };
+ plugin.data.showGarminCoachPlans = true;
+ plugin.data.garminCoachCache = { start: '2099-01-01', end: '2099-01-28', lastSuccess: stamp, error: 'Cached Coach warning', workouts: [] };
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ const notes = [...files.values()].filter(file => file instanceof TFile);
+ for (const file of notes) {
+  assert.ok(!file.content.includes(stamp), file.path);
+  assert.doesNotMatch(file.content, /Last successful.*sync|[Ll]ast synced:/, file.path);
+ }
+ assert.ok(files.get('Sports/Analytics/Daily/2020-01-01.md').content.includes('Imported 2020-01-01 to 2020-01-02'));
+ assert.ok(files.get('Sports/Analytics/Smartwatch.md').content.includes('Cached activity warning'));
+ assert.ok(files.get('Sports/Calendar.md').content.includes('Cached Coach warning'));
+ const before = new Map(notes.map(file => [file.path, file.content]));
+ plugin.data.garminCache.lastSuccess = '2026-10-22T11:11:12.345Z';
+ plugin.data.garminCoachCache.lastSuccess = '2026-10-22T11:11:12.345Z';
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ for (const [path, content] of before) assert.equal(files.get(path).content, content, path);
+});
+
+test('dated Daily notes combine sources, link from Log, and preserve old Daily reflections in its index', async () => {
+ const { plugin, plan, files } = fixture();
+ const baseline = '<!-- sports:begin analytics-daily -->\nOld all-days details\n<!-- sports:end analytics-daily -->';
+ const daily = new TFile('Sports/Analytics/Daily.md'); daily.content = `${baseline}\n\nOriginal Daily reflections\n`;
+ files.set(daily.path, daily); plugin.data.generatedBlocks[`${daily.path}:analytics-daily`] = baseline;
+ const session = { id: 's', date: '2020-01-01', title: 'Skills', sport: 'training', partId: '', partVersion: '', status: 'planned', notes: 'Sheet note', result: '', plannedMinutes: 30, actualMinutes: 0, prescription: 'A) Pull-up: 2 x 5', checks: { 'A done': true }, results: { 'A 1 result': '4', 'A 2 result': '0' }, scores: { plannedIntensity: 5, actualPerformance: 40, scoredMetrics: 1, plannedMetrics: 2, effortRating: 3 } };
+ plan.sessions = [session, { ...session, id: 'sheet-only', date: '2020-01-03' }, { ...session, id: 'future', date: '2099-01-01' }];
+ plugin.data.garminCache = { start: '2020-01-01', end: '2020-01-03', lastSuccess: '2020-01-03T12:00:00Z', error: '', activities: [{ id: '123', date: '2020-01-01', time: '08:00', name: 'Morning swim', type: 'lap_swimming', duration: 1800, distance: 1000, average_hr: 130 }, { id: '124', date: '2020-01-02', time: '08:00', name: 'Watch-only run', type: 'running', duration: 1200, distance: 2000, average_hr: 140 }] };
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ const path = 'Sports/Analytics/Daily/2020-01-01.md';
+ const day = files.get(path);
+ for (const value of ['Morning swim', 'sports-compare', '4 / 0', 'Status: planned', 'Actual: 0 min', 'Performance: 40%', 'Scored metrics: 1 / 2', 'Sheet note']) assert.ok(day.content.includes(value), value);
+ assert.ok(!day.content.includes('Watch-only run'));
+ assert.ok(files.get('Sports/Analytics/Daily/2020-01-02.md').content.includes('No sheet sessions'));
+ assert.ok(files.get('Sports/Analytics/Daily/2020-01-03.md').content.includes('No recorded activities'));
+ assert.ok(!files.has('Sports/Analytics/Daily/2099-01-01.md'));
+ assert.ok(files.get('Sports/Log.md').content.includes('[[Sports/Analytics/Daily/2020-01-01\\|2020-01-01]]'));
+ assert.ok(daily.content.includes('[[Sports/Analytics/Daily/2020-01-02|2020-01-02]]'));
+ assert.ok(!daily.content.includes('Old all-days details'));
+ assert.ok(daily.content.endsWith('Original Daily reflections\n'));
+ assert.equal(files.has('Sports/Analytics/Daily.md'), false);
+ assert.equal(daily.path, 'Sports/Analytics/Daily/Index.md');
+ assert.ok(files.get('Sports/Analytics/Index.md').content.includes('[[Sports/Analytics/Daily/Index|Daily]]'));
+ assert.equal(plugin.data.generatedBlocks['Sports/Analytics/Daily.md:analytics-daily'], undefined);
+ assert.ok(plugin.data.generatedBlocks['Sports/Analytics/Daily/Index.md:analytics-daily']);
+ day.content += '\nMy day reflection\n';
+ plan.sessions[0].results['A 1 result'] = '3';
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.ok(day.content.includes('3 / 0'));
+ assert.ok(day.content.endsWith('My day reflection\n'));
+ day.content = day.content.replace('sports-compare', 'my-edited-chart');
+ const snapshot = day.content;
+ const issues = await syncNotes(plugin, plan);
+ assert.ok(issues.some(issue => issue.startsWith('Analytics/Daily/2020-01-01.md:')));
+ assert.equal(day.content, snapshot);
+ assert.ok(files.get('Sports/Analytics/Daily/2020-01-02.md').content.includes('Watch-only run'));
+});
+
+test('moving the Daily index never overwrites an existing destination', async () => {
+ const { plugin, plan, files } = fixture();
+ const baseline = '<!-- sports:begin analytics-daily -->\nOld index\n<!-- sports:end analytics-daily -->';
+ const source = new TFile('Sports/Analytics/Daily.md'); source.content = `${baseline}\nOld reflections\n`;
+ const target = new TFile('Sports/Analytics/Daily/Index.md'); target.content = 'My existing index';
+ files.set(source.path, source); files.set(target.path, target);
+ plugin.data.generatedBlocks[`${source.path}:analytics-daily`] = baseline;
+ const issues = await syncNotes(plugin, plan);
+ assert.ok(issues.some(issue => issue.startsWith('Analytics/Daily/Index.md:')));
+ assert.equal(source.path, 'Sports/Analytics/Daily.md');
+ assert.ok(source.content.endsWith('Old reflections\n'));
+ assert.equal(target.content, 'My existing index');
+ assert.equal(plugin.data.generatedBlocks[`${source.path}:analytics-daily`], baseline);
 });
 
 test('a protected-note conflict does not prevent other weeks from being created', async () => {
@@ -408,10 +574,12 @@ test('Garmin-only historical weeks recover missing baselines for refresh-time-on
  await syncNotes(plugin, plan);
  const path = 'Sports/Weeks/2026-07-20.md';
  const note = files.get(path); note.content += '\nPersonal historical review\n';
+ // Migrate an older timestamp-bearing block even when its baseline was lost.
+ note.content = note.content.replace('## Recorded Garmin activities\n\nImported ', '## Recorded Garmin activities\n\nLast successful sync: 2026-10-21T09:15:00.457Z. Imported ');
  delete plugin.data.generatedBlocks[`${path}:week:2026-07-20`];
  plugin.data.garminCache.lastSuccess = '2026-10-21T12:30:25.824Z';
  assert.deepEqual(await syncNotes(plugin, plan), []);
- assert.match(note.content, /12:30:25.824Z/); assert.match(note.content, /Personal historical review/);
+ assert.doesNotMatch(note.content, /Last successful sync|12:30:25.824Z|09:15:00.457Z/); assert.match(note.content, /Personal historical review/);
  assert.ok(plugin.data.generatedBlocks[`${path}:week:2026-07-20`]);
  delete plugin.data.generatedBlocks[`${path}:week:2026-07-20`];
  note.content = note.content.replace('10000', '99999').replace('10.00 km', '99.99 km');
@@ -437,9 +605,9 @@ test('legacy sheet guide is renamed to Workbook without losing edits or overwrit
 
 test('Analytics owns comparisons, links from Plans, preserves reflections, and protects edited graphs', async () => {
  const { plugin, plan, files } = fixture();
- plan.sessions = [{ id: 'future', date: '2099-01-01', title: 'Practice', sport: 'training', partId: '', partVersion: '', prescription: 'Squat) Back squat: 3 x 5', checks: { 'Squat done': true }, results: { 'Squat 1 result': '4' }, plannedMinutes: 20, actualMinutes: 10, result: 'Recorded result', status: 'in-progress', notes: 'Session note' }];
+ plan.sessions = [{ id: 'future', date: '2020-01-01', title: 'Practice', sport: 'training', partId: '', partVersion: '', prescription: 'Squat) Back squat: 3 x 5', checks: { 'Squat done': true }, results: { 'Squat 1 result': '4' }, plannedMinutes: 20, actualMinutes: 10, result: 'Recorded result', status: 'in-progress', notes: 'Session note' }];
  assert.deepEqual(await syncNotes(plugin, plan), []);
- const analytics = files.get('Sports/Analytics/Daily.md');
+ const analytics = files.get('Sports/Analytics/Daily/2020-01-01.md');
  assert.ok(analytics.content.includes('sports-compare'));
  assert.ok(analytics.content.includes('(reps)\t15\t4'));
  const plans = files.get('Sports/Plans.md');
@@ -455,7 +623,7 @@ test('Analytics owns comparisons, links from Plans, preserves reflections, and p
  analytics.content = analytics.content.replace('sports-compare', 'edited-graph');
  const snapshot = analytics.content;
  const issues = await syncNotes(plugin, plan);
- assert.ok(issues.some(issue => issue.startsWith('Analytics/Daily.md:')));
+ assert.ok(issues.some(issue => issue.startsWith('Analytics/Daily/2020-01-01.md:')));
  assert.equal(analytics.content, snapshot);
 });
 
@@ -472,15 +640,20 @@ test('Analytics folder separates table, daily details and score graphs, and migr
  assert.ok(!files.has('Sports/Analytics.md'));
  const index = files.get('Sports/Analytics/Index.md');
  assert.ok(index.content.endsWith('My existing analytics reflections\n'));
- for (const name of ['Table', 'Daily', 'Graph']) assert.ok(index.content.includes(`Sports/Analytics/${name}`));
- assert.ok(!files.get('Sports/Analytics/Table.md').content.includes('sports-compare'));
- assert.ok(files.get('Sports/Analytics/Daily.md').content.includes('sports-compare'));
+ for (const name of ['Daily', 'Graph', 'Smartwatch']) assert.ok(index.content.includes(`Sports/Analytics/${name}`));
+ assert.ok(!files.has('Sports/Analytics/Table.md'));
+ assert.ok(!index.content.includes('Analytics/Table'));
+ assert.ok(!files.get('Sports/Analytics/Daily/Index.md').content.includes('sports-compare'));
  const graph = files.get('Sports/Analytics/Graph.md');
  assert.ok(graph.content.includes('2026-12-28\t80'));
  assert.ok(graph.content.includes('2026-12-28\t4\t3'));
  assert.ok(graph.content.includes('sports-trend'));
  assert.ok(!graph.content.includes('| Date |'));
  graph.content += '\nGraph reflections\n';
+ const watch = files.get('Sports/Analytics/Smartwatch.md');
+ assert.ok(watch.content.includes('sports-watch'));
+ watch.content += '\nWatch reflections\n';
  assert.deepEqual(await syncNotes(plugin, plan), []);
  assert.ok(graph.content.endsWith('Graph reflections\n'));
+ assert.ok(watch.content.endsWith('Watch reflections\n'));
 });

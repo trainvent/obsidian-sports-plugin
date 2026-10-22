@@ -21,6 +21,7 @@ const { startTemplateNextMonday } = await load('workbook/template-dates');
 const { analyticsNoteTasks, analyticsGraphMarkdown } = await load('notes/analytics');
 const { registerScoreCharts } = await load('ui/score-chart');
 const { registerScoreScatter, correlation } = await load('ui/score-scatter');
+const { dailyNoteTasks, dailyIndexMarkdown } = await load('notes/daily');
 
 test('daily summaries keep planned intensity, performance, and optional felt effort independent', () => {
  assert.equal(median([0, 200]), 100);
@@ -41,6 +42,21 @@ test('daily summaries keep planned intensity, performance, and optional felt eff
  assert.equal(dailyScores(plan)[0].actualPerformance, 100);
  assert.equal(dailyScores(plan)[0].effortRating, 1);
  assert.deepEqual(dailyScores(null), []);
+});
+
+test('daily notes follow the plan timezone and also support Garmin-only dates in custom folders', () => {
+ const sessions = ['2026-10-21', '2026-10-22'].map(date => ({ date, title: 'Practice', status: 'planned', result: '', notes: '', partId: '', partVersion: '', plannedMinutes: null, actualMinutes: null }));
+ const plan = { timezone: 'Europe/Berlin', parts: [], sessions };
+ const now = new Date('2026-10-20T22:30:00Z');
+ const tasks = dailyNoteTasks(plan, 'My sports', undefined, now);
+ assert.deepEqual(tasks.map(t => t.path), ['Analytics/Daily/2026-10-21.md']);
+ assert.ok(tasks[0].body.includes('[[My sports/Analytics/Daily/Index|All days]]'));
+ const cache = { lastSuccess: '', activities: [{ id: '1', date: '2020-01-01', time: '08:00', name: 'Only watch', type: 'running', duration: null, distance: null, average_hr: null }] };
+ const watch = dailyNoteTasks(null, 'My sports', cache, now);
+ assert.equal(watch.length, 1);
+ assert.ok(watch[0].body.includes('Only watch'));
+ assert.ok(watch[0].body.includes('No sheet sessions'));
+ assert.ok(dailyIndexMarkdown(null, 'My sports', cache, now).includes('0 sheet sessions, 1 smartwatch activity'));
 });
 
 test('score import validates numbers and coverage, retains explicit zeros and leaves absent fields unavailable', () => {
@@ -107,7 +123,7 @@ test('scoring workbook imports saved formulas, no invented actuals, and rebases 
 test('analytics pages separate their content and graph preserves missing values without plotting zeros', () => {
  const plan = { parts: [], sessions: [{ date: '2026-10-26', title: 'Training', result: '', status: 'planned', notes: '', sport: 'training', plannedMinutes: 30, actualMinutes: null, scores: { expectedPerformance: 100, actualPerformance: null, plannedIntensity: 3, effortRating: null, scoredMetrics: 0, plannedMetrics: 3 } }] };
  const pages = analyticsNoteTasks(plan, 'Custom sports');
- assert.deepEqual(pages.map(page => page.path), ['Analytics/Index.md', 'Analytics/Table.md', 'Analytics/Daily.md', 'Analytics/Graph.md']);
+ assert.deepEqual(pages.map(page => page.path), ['Analytics/Index.md', 'Analytics/Daily/Index.md', 'Analytics/Graph.md', 'Analytics/Smartwatch.md']);
  const graph = analyticsGraphMarkdown(plan, 'Custom sports');
  assert.ok(graph.includes('2026-10-26\t—'));
  assert.equal((graph.match(/```sports-trend/g) ?? []).length, 3);
@@ -115,7 +131,8 @@ test('analytics pages separate their content and graph preserves missing values 
  assert.ok(graph.includes('2026-10-26\t—\t3'));
  assert.ok(!graph.includes('minutes × RPE'));
  assert.ok(!graph.includes('| Date |'));
- assert.ok(pages[1].body.includes('0 / 3'));
+ assert.ok(!pages.some(page => page.path === 'Analytics/Table.md'));
+ assert.ok(!graph.includes('Analytics/Table'));
  assert.ok(graph.indexOf('## Effort and intensity over time') < graph.indexOf('## Daily performance'));
  assert.ok(pages[0].body.includes('[[Custom sports/Analytics/Graph|Graph]]'));
 });

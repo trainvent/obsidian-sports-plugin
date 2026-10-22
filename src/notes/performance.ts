@@ -1,5 +1,6 @@
 import type { Session } from '../model/types';
 import { exerciseTracking, resultKey, aggregateValues } from '../model/exercise-tracking';
+import { sessionScoreSummary } from './session-scores';
 
 export function safeText(value: string | number): string {
  return String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replace(/[\\`*[\]_#~]/g, '\\$&').replaceAll('|', '&#124;').replace(/[\r\n]+/g, '<br>');
@@ -34,9 +35,18 @@ export function performanceMarkdown(session: Session): string {
 }
 
 export function sessionDetails(session: Session): string {
+ return renderSessionDetails(session, '');
+}
+
+export function scoredSessionDetails(session: Session): string {
+ return renderSessionDetails(session, sessionScoreSummary(session));
+}
+
+function renderSessionDetails(session: Session, scores: string): string {
  const performance = performanceMarkdown(session);
- if (!performance) return '';
- return `> [!example]- ${safeText(session.date)} · ${safeText(session.title)} · sets and comparisons\n${`${safeText(session.status)}${performance}`.split('\n').map(line => `> ${line}`).join('\n')}`;
+ if (!performance && !scores) return '';
+ const details = `${safeText(session.status)}${scores ? `\n\n${scores}` : ''}${performance || (session.result ? `\n\n${safeText(session.result)}` : '')}`;
+ return `> [!example]- ${safeText(session.date)} · ${safeText(session.title)} · ${performance ? 'sets and comparisons' : 'session scores'}\n${details.split('\n').map(line => `> ${line}`).join('\n')}`;
 }
 
 /** Keep numbered input-column names out of the narrow overview; retain custom measurements. */
