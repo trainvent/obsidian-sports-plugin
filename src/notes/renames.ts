@@ -4,6 +4,7 @@ export const NOTE_RENAMES = [
  ['Training log.md', 'Log.md', 'training-log'],
  ['Analytics.md', 'Analytics/Index.md', 'analytics'],
  ['Analytics/Daily.md', 'Analytics/Daily/Index.md', 'analytics-daily'],
+ ['Analytics/Graph.md', 'Analytics/Sheet.md', 'analytics-graph'],
 ] as const;
 
 /** Obsidian may rewrite these exact plugin-owned targets while moving notes.

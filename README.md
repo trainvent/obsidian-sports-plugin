@@ -71,11 +71,12 @@ unresolved. A new tracking-only plan uses the device timezone until strategy sup
 Sync creates ordinary Markdown files in the configured **Notes folder**:
 
 - `Plans.md`: starting levels, goals, weekly links, and upcoming manual prescriptions.
-- `Analytics/Index.md`: navigation to Daily, Graph, and Smartwatch. Session results live in Log and dated day notes; the old Table note is retired.
+- `Analytics/Index.md`: navigation to Daily, Sheet, Smartwatch, and Combined. Session results live in Log and dated day notes; the old Table note is retired.
 - `Analytics/Daily/Index.md`: date index, preserving reflections from the previous all-days note.
 - `Analytics/Daily/YYYY-MM-DD.md`: one combined day note with sheet sessions,
   scores, individual sets, exercise comparisons, Garmin activities, and reflections.
-- `Analytics/Graph.md`: sheet intensity, performance, and felt-effort trends.
+- `Analytics/Sheet.md`: sheet intensity, performance, and felt-effort trends.
+- `Analytics/Combined.md`: separate source totals over time, plus intensity and heart rate on independent axes.
 - `Analytics/Smartwatch.md`: weekly volume, running pace/heart rate, and swimming pace/heart rate.
 - `Log.md`: today and earlier manual sessions, newest first, with results and notes.
 - `Strategy.md`: goals, exercise blocks, and regular weekly activities.
@@ -511,7 +512,7 @@ performance. No minutes × RPE calculation is used.
 
 Daily adds six fields: Planned intensity, Effort rating, Expected performance,
 Actual performance, Scored metrics, and Planned metrics. Recalculate and save
-before syncing. Graph shows three charts with dates on the horizontal axis:
+before syncing. Sheet shows three charts with dates on the horizontal axis:
 performance versus intensity, effort versus intensity, and actual daily performance on a fixed 0–200% scale (100% centered). The first plots intensity × performance / 100 alongside intensity on one
 shared scale: 100% follows intensity, 80% is 20% lower, and values can exceed
 10. The second uses intensity’s 0–10 scale on the right and effort’s 0–5 scale

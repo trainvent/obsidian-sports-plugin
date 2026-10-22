@@ -103,7 +103,7 @@ changes. Confirm **Settings → Sports → Tracking sheet** selects the intended
 Upcoming manual prescriptions appear in **Plans**. Results and comparisons live
 in **Analytics**, available through **Open analytics** on the dashboard or the link
 in Plans. Session results live in **Log**. The Analytics folder contains **Daily**
-(the `Daily/Index.md` date index), **Graph** (sheet score trends), and **Smartwatch** (Garmin graphs).
+(the `Daily/Index.md` date index), **Sheet** (sheet score trends), and **Smartwatch** (Garmin graphs), and **Combined** (both sources over time).
 Daily links to `Daily/YYYY-MM-DD.md`, combining that day's sheet sessions, scores,
 individual sets, and Garmin activities. Log dates link there too. Only today and
 earlier dates with source entries receive day notes; upcoming sessions stay in
@@ -142,7 +142,7 @@ and **Planned metrics**.
 Felt effort starts blank. Planned intensity uses exercise volume, including
 timed work converted using Scoring's shared seconds-per-rep weighting assumption.
 The rating averages exercise base values (0–10), weighted by planned volume. Recalculate
-and save the XLSX before syncing. Analytics/Graph uses time on the horizontal
+and save the XLSX before syncing. Analytics/Sheet uses time on the horizontal
 axis for all three charts. Performance is shown as intensity × performance / 100 on the same scale as
 intensity, so 100% follows intensity and 80% sits 20% below it. Values may exceed
 10 when performance exceeds 100%. Scaling is per session before daily medians. Effort versus intensity uses 0–5 on the

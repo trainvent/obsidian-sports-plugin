@@ -253,7 +253,7 @@ test('changing regular-activity visibility refreshes notes while preserving the 
 test('legacy names migrate once with commentary and trusted baselines preserved', async () => {
  const { plugin, plan, files } = fixture();
  await syncNotes(plugin, plan);
- for (const [current, legacy, id] of [['Plans.md', 'Plan.md', 'plan'], ['Log.md', 'complete-log.md', 'training-log']]) {
+ for (const [current, legacy, id] of [['Plans.md', 'Plan.md', 'plan'], ['Log.md', 'complete-log.md', 'training-log'], ['Analytics/Sheet.md', 'Analytics/Graph.md', 'analytics-graph']]) {
   const file = files.get(`Sports/${current}`);
   file.content += '\nKeep my personal changes\n';
   await plugin.app.fileManager.renameFile(file, `Sports/${legacy}`);
@@ -261,6 +261,9 @@ test('legacy names migrate once with commentary and trusted baselines preserved'
   delete plugin.data.generatedBlocks[`Sports/${current}:${id}`];
  }
  assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.ok(!files.has('Sports/Analytics/Graph.md'));
+ assert.ok(files.get('Sports/Analytics/Sheet.md').content.endsWith('Keep my personal changes\n'));
+ assert.ok(files.has('Sports/Analytics/Combined.md'));
  assert.ok(!files.has('Sports/Plan.md'));
  assert.ok(!files.has('Sports/complete-log.md'));
  assert.ok(files.get('Sports/Plans.md').content.endsWith('Keep my personal changes\n'));
@@ -640,11 +643,11 @@ test('Analytics folder separates table, daily details and score graphs, and migr
  assert.ok(!files.has('Sports/Analytics.md'));
  const index = files.get('Sports/Analytics/Index.md');
  assert.ok(index.content.endsWith('My existing analytics reflections\n'));
- for (const name of ['Daily', 'Graph', 'Smartwatch']) assert.ok(index.content.includes(`Sports/Analytics/${name}`));
+ for (const name of ['Daily', 'Sheet', 'Smartwatch', 'Combined']) assert.ok(index.content.includes(`Sports/Analytics/${name}`));
  assert.ok(!files.has('Sports/Analytics/Table.md'));
  assert.ok(!index.content.includes('Analytics/Table'));
  assert.ok(!files.get('Sports/Analytics/Daily/Index.md').content.includes('sports-compare'));
- const graph = files.get('Sports/Analytics/Graph.md');
+ const graph = files.get('Sports/Analytics/Sheet.md');
  assert.ok(graph.content.includes('2026-12-28\t80'));
  assert.ok(graph.content.includes('2026-12-28\t4\t3'));
  assert.ok(graph.content.includes('sports-trend'));

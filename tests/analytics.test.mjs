@@ -21,6 +21,7 @@ const { startTemplateNextMonday } = await load('workbook/template-dates');
 const { analyticsNoteTasks, analyticsGraphMarkdown } = await load('notes/analytics');
 const { registerScoreCharts } = await load('ui/score-chart');
 const { registerScoreScatter, correlation } = await load('ui/score-scatter');
+const { combinedAnalyticsMarkdown } = await load('notes/combined-analytics');
 const { dailyNoteTasks, dailyIndexMarkdown } = await load('notes/daily');
 
 test('daily summaries keep planned intensity, performance, and optional felt effort independent', () => {
@@ -123,7 +124,7 @@ test('scoring workbook imports saved formulas, no invented actuals, and rebases 
 test('analytics pages separate their content and graph preserves missing values without plotting zeros', () => {
  const plan = { parts: [], sessions: [{ date: '2026-10-26', title: 'Training', result: '', status: 'planned', notes: '', sport: 'training', plannedMinutes: 30, actualMinutes: null, scores: { expectedPerformance: 100, actualPerformance: null, plannedIntensity: 3, effortRating: null, scoredMetrics: 0, plannedMetrics: 3 } }] };
  const pages = analyticsNoteTasks(plan, 'Custom sports');
- assert.deepEqual(pages.map(page => page.path), ['Analytics/Index.md', 'Analytics/Daily/Index.md', 'Analytics/Graph.md', 'Analytics/Smartwatch.md']);
+ assert.deepEqual(pages.map(page => page.path), ['Analytics/Index.md', 'Analytics/Daily/Index.md', 'Analytics/Sheet.md', 'Analytics/Smartwatch.md', 'Analytics/Combined.md']);
  const graph = analyticsGraphMarkdown(plan, 'Custom sports');
  assert.ok(graph.includes('2026-10-26\t—'));
  assert.equal((graph.match(/```sports-trend/g) ?? []).length, 3);
@@ -134,7 +135,7 @@ test('analytics pages separate their content and graph preserves missing values 
  assert.ok(!pages.some(page => page.path === 'Analytics/Table.md'));
  assert.ok(!graph.includes('Analytics/Table'));
  assert.ok(graph.indexOf('## Effort and intensity over time') < graph.indexOf('## Daily performance'));
- assert.ok(pages[0].body.includes('[[Custom sports/Analytics/Graph|Graph]]'));
+ assert.ok(pages[0].body.includes('[[Custom sports/Analytics/Sheet|Sheet]]'));
 });
 
 test('time comparisons show independently available values on each date', () => {
@@ -236,6 +237,9 @@ test('score charts break lines at missing measurements and retain recorded zero 
   const boundaries = new Element();
   render('Date\tPlanned intensity\tFelt effort (optional)\n2026-10-26\t0\t—\n2026-10-27\t10\t—', boundaries);
   assert.deepEqual(boundaries.children[0].children[1].children.filter(child => child.tag === 'circle').map(child => child.attributes.cy), ['210', '35']);
+  const combined = new Element();
+  render('Date\tPlanned intensity (0–10)\tWatch heart rate (bpm)\n2026-10-26\t5\t100', combined);
+  assert.deepEqual(combined.children[0].children[1].children.filter(c => c.tag === 'circle').map(c => c.attributes.cy), ['122.5', '122.5']);
   const dual = new Element();
   render('Date\tFelt effort (1–5)\tPlanned intensity (0–10)\n2026-10-26\t5\t10\n2026-10-27\t—\t0', dual);
   const dualSvg = dual.children[0].children[1];
@@ -266,4 +270,28 @@ test('score charts break lines at missing measurements and retain recorded zero 
   const invalid = new Element(); render('Date\tExpected\tActual\n<script>\t100\tNaN', invalid);
   assert.equal(invalid.children[0].tag, 'pre');
  } finally { globalThis.document = previous; }
+});
+
+
+test('Combined keeps source minutes separate and preserves missing measurements', () => {
+ const plan = { timezone: 'UTC', sessions: [
+  { date: '2020-01-01', actualMinutes: 30, scores: { plannedIntensity: 6 } },
+  { date: '2020-01-01', actualMinutes: null, scores: { plannedIntensity: 8 } },
+  { date: '2020-01-02', actualMinutes: 0 },
+  { date: '2019-12-01', actualMinutes: null },
+  { date: '2099-01-01', actualMinutes: 50 },
+ ] };
+ const cache = { start: '2020-01-01', end: '2020-01-03', lastSuccess: '2020-01-04', activities: [
+  { date: '2020-01-01', duration: 600, average_hr: 140 },
+  { date: '2020-01-01', duration: 1200, average_hr: 160 },
+  { date: '2020-01-03', duration: null, average_hr: null },
+ ] };
+ const body = combinedAnalyticsMarkdown(plan, 'Custom', cache, new Date('2020-01-04T12:00:00Z'));
+ assert.ok(body.includes('2020-01-01\t30\t30'));
+ assert.ok(body.includes('2020-01-01\t7\t150'));
+ assert.ok(body.includes('2020-01-02\t0\t0'));
+ assert.ok(body.includes('2019-12-01\t—\t—'));
+ assert.ok(body.includes('2020-01-03\t—\t—'));
+ assert.ok(!body.includes('2099-01-01'));
+ assert.ok(body.includes('[[Custom/Analytics/Sheet|Sheet]]'));
 });

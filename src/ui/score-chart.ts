@@ -20,18 +20,20 @@ export function registerScoreCharts(plugin: Plugin): void {
   const root = element.createDiv({ cls: 'sports-score-chart' });
   const ratingScale = headers[1] === 'Planned intensity';
   const scaledPerformance = headers[1] === 'Performance × intensity';
-  const dualAxis = headers[2] === 'Planned intensity (0–10)' && ['Felt effort (1–5)', 'Performance (%)'].includes(headers[1]!);
+  const watchAxes = headers[1] === 'Planned intensity (0–10)' && headers[2] === 'Watch heart rate (bpm)';
+  const dualAxis = watchAxes || headers[2] === 'Planned intensity (0–10)' && ['Felt effort (1–5)', 'Performance (%)'].includes(headers[1]!);
   root.createEl('p', { text: performanceOnly ? `Actual performance · 0–200% scale · ${values.length ? 'missing values leave gaps' : 'no results recorded yet'}${values.some(value => value > 200) ? ' · values above 200% marked at the top; point labels retain actual values' : ''}` : `${headers[1]}${ratingScale ? ' (0–10)' : ''}${dualAxis ? ' (left axis)' : ''}: dashed · ${headers[2]}${ratingScale ? ' (1–5)' : ''}${dualAxis ? ' (right axis)' : ''}: solid · missing values leave gaps`, cls: 'sports-performance-legend' });
   const svg = root.createSvg('svg');
   svg.setAttribute('viewBox', '0 0 720 260'); svg.setAttribute('role', 'img');
   svg.setAttribute('aria-label', `${performanceOnly ? 'Actual performance on a 0–200% scale' : `${headers[1]} versus ${headers[2]}`} for ${rows.length} dates. Point labels contain dates and values.`);
   const minimum = 0;
   const leftValues = dualAxis ? rows.filter(row => row[1] !== '—').map(row => Number(row[1])) : values;
-  const max = performanceOnly ? 200 : dualAxis && headers[1] === 'Felt effort (1–5)' ? 5 : ratingScale ? 10 : leftValues.reduce((maximum, value) => Math.max(maximum, value), scaledPerformance ? 10 : dualAxis ? 100 : 1);
+  const rightMax = watchAxes ? rows.reduce((maximum, row) => row[2] === '—' ? maximum : Math.max(maximum, Math.ceil(Number(row[2]) / 10) * 10), 200) : 10;
+  const max = watchAxes ? 10 : performanceOnly ? 200 : dualAxis && headers[1] === 'Felt effort (1–5)' ? 5 : ratingScale ? 10 : leftValues.reduce((maximum, value) => Math.max(maximum, value), scaledPerformance ? 10 : dualAxis ? 100 : 1);
   const dates = rows.map(row => Date.parse(`${row[0]}T12:00:00Z`));
   const first = dates.length ? Math.min(...dates) : 0, last = dates.length ? Math.max(...dates) : 0;
   const x = (index: number): number => last === first ? 370 : 50 + (dates[index]! - first) / (last - first) * 620;
-  const y = (value: number, column = 1): number => 210 - ((performanceOnly ? Math.min(200, value) : value) - minimum) / ((dualAxis && column === 2 ? 10 : max) - minimum) * 175;
+  const y = (value: number, column = 1): number => 210 - ((performanceOnly ? Math.min(200, value) : value) - minimum) / ((dualAxis && column === 2 ? rightMax : max) - minimum) * 175;
   const node = (tag: keyof SVGElementTagNameMap, attributes: Record<string, string>, text?: string): SVGElement => {
    const child = svg.createSvg(tag);
    for (const [key, value] of Object.entries(attributes)) child.setAttribute(key, value);
@@ -42,7 +44,7 @@ export function registerScoreCharts(plugin: Plugin): void {
    const value = minimum + (max - minimum) * fraction;
    node('line', { x1: '50', x2: '670', y1: String(y(value)), y2: String(y(value)), class: 'sports-score-grid' });
    node('text', { x: '43', y: String(y(value) + 4), 'text-anchor': 'end' }, `${Math.round(value * 10) / 10}${performanceOnly ? '%' : ''}`);
-   if (dualAxis) node('text', { x: '680', y: String(y(value) + 4), 'text-anchor': 'start' }, String(10 * fraction));
+   if (dualAxis) node('text', { x: '680', y: String(y(value) + 4), 'text-anchor': 'start' }, String(rightMax * fraction));
   }
   if (dualAxis) {
    node('text', { x: '50', y: '19' }, headers[1]);
