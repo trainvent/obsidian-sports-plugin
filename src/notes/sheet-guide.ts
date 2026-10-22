@@ -1,3 +1,4 @@
+import { upgradeWorkbookGuide } from './guide-upgrade';
 import { withoutNoteTitle } from './titles';
 import { normalizePath, TFile } from 'obsidian';
 import type SportsPlugin from '../main';
@@ -15,7 +16,7 @@ export async function ensureSheetGuide(plugin: SportsPlugin): Promise<void> {
   existing = legacy;
  }
  if (existing instanceof TFile) {
-  await plugin.app.vault.process(existing, content => withoutNoteTitle(content, 'Adapting the Sports workbook'));
+  await plugin.app.vault.process(existing, content => upgradeWorkbookGuide(withoutNoteTitle(content, 'Adapting the Sports workbook')));
   return;
  }
  if (existing) throw new Error(`A folder occupies ${path}.`);

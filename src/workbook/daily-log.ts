@@ -1,3 +1,5 @@
+import { dailyHeaders } from './daily-headers';
+import { setLog } from './set-log';
 import type { SheetData } from 'read-excel-file/browser';
 import type { Session, TrainingPart } from '../model/types';
 
@@ -12,21 +14,11 @@ export function validDate(value: string, context: string): string {
 }
 /** Recognize the user-facing daily format without inferring meaning from plan prose. */
 export function dailyLog(rows: SheetData, parts: TrainingPart[], hasStrategy: boolean): Session[] | null {
+ const sets = setLog(rows, parts, hasStrategy);
+ if (sets !== null) return sets;
  const first = rows.findIndex(row => row.some(value => cellText(value) === 'Date') && row.some(value => cellText(value) === 'Plan'));
  if (first < 0) return null;
- const headers = rows[first]!.map(cellText);
- // A merged exercise heading spans Done and its five numbered iteration columns.
- const groups = first > 0 ? rows[first - 1]!.map(cellText) : [];
- let group = '';
- headers.forEach((header, column) => {
-  if (groups[column]) group = groups[column]!;
-  if (/^(?:[ABC]|Core)$/.test(group)) {
-   if (header === 'Done') headers[column] = `${group} done`;
-   else if (group === 'Core' && header === 'Rounds') headers[column] = 'Core rounds result';
-   else if (group !== 'Core' && /^[1-5]$/.test(header)) headers[column] = `${group} ${header} result`;
-  }
- });
- while (headers.length && !headers[headers.length - 1]) headers.pop();
+ const headers = dailyHeaders(rows, first);
  if (!headers.includes('Date') || !headers.includes('Block') || !headers.includes('Plan')) return null;
  if (headers.some(header => !header) || new Set(headers).size !== headers.length) throw new Error('Daily log: column headers must be nonempty and unique.');
  const structural = ['Date', 'Block', 'Plan', 'Notes', 'Session ID', 'Part version', 'Status', 'Sport', 'Planned minutes', 'Actual minutes', 'Title'];
@@ -59,9 +51,9 @@ export function dailyLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bo
     checks[header] = value ? value.toLowerCase() === 'true' : null;
    } else if (header.endsWith(' result')) {
     // Iteration cells start with planned targets. Only a recorded exercise is actual training.
-    const iteration = /^([ABC]) [1-5] result$/.exec(header) ?? /^(Core) rounds result$/.exec(header);
+    const iteration = /^(.+) [1-9]\d* result$/.exec(header) ?? /^(.+) rounds result$/.exec(header);
     results[header] = iteration && entry[`${iteration[1]} done`]?.toLowerCase() !== 'true' ? '' : value;
-    if (header === 'Core rounds result' && results[header] && (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)))) throw new Error(`${context}: Core rounds must be a nonnegative whole number or blank.`);
+    if (header.endsWith(' rounds result') && results[header] && (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)))) throw new Error(`${context}: ${header.replace(/ rounds result$/, '')} rounds must be a nonnegative whole number or blank.`);
    }
   }
   const hasResults = Object.values(results).some(value => value !== '') || Object.values(checks).some(value => value === true);

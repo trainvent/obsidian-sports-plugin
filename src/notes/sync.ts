@@ -1,3 +1,4 @@
+import trackingGuide from '../../Tracking.md';
 import { calendarMarkdown } from './calendar';
 import { coachPlansMarkdown } from './coach-plans';
 import { goalNoteTask } from './goal-notes';
@@ -25,6 +26,7 @@ export async function syncNotes(plugin: SportsPlugin, plan: TrainingPlan, recrea
  }
  const ordered = [...weeks].sort();
  const tasks = [
+  { path: 'Guide/Tracking.md', id: 'tracking-guide', body: trackingGuide, initial: '# Flexible Daily tracking\n\n## My workbook choices\n' },
   { path: 'Calendar.md', id: 'calendar', body: `${noteLink(folder, 'Plans', 'Plans')} · ${noteLink(folder, 'Log', 'Log')}\n\n${calendarMarkdown(plan, plugin.data.showGarminCoachPlans, plugin.data.garminCoachCache, new Date(), !!plugin.data.trackingSheet?.trim())}`, initial: '\n\n## Reflections\n' },
   ...plan.goals.map(goal => goalNoteTask(goal, plan, plugin.data.garminCache, folder)),
   { path: 'Plans.md', id: 'plan', body: `${planMarkdown(plan, folder, ordered)}\n\n${datedLogMarkdown(plan, true)}${coachPlansMarkdown(plugin.data.showGarminCoachPlans, plugin.data.garminCoachCache, plan.timezone)}`, initial: '# Plans\n\n## Reflections\n' },

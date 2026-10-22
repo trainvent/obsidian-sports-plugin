@@ -1,3 +1,5 @@
+import { renderPerformanceChart } from './performance-chart';
+import { performanceMarkdown, compactResults } from '../notes/performance';
 import { activityDetails } from '../garmin/activities';
 import { ItemView, WorkspaceLeaf, Setting } from 'obsidian';
 import { SPORTS_ICON_ID } from './icon';
@@ -17,6 +19,10 @@ export class SportsDashboard extends ItemView {
   new Setting(root).setName('Training overview')
    .addButton(button => button.setButtonText(this.plugin.syncing ? 'Syncing…' : 'Sync now').setDisabled(this.plugin.syncing).onClick(() => this.plugin.sync(true)))
    .addButton(button => button.setButtonText('Open training log').onClick(() => this.plugin.openTrainingLog()));
+  new Setting(root).setName('Sets and plan/result graphs')
+   .setDesc('Open upcoming sessions or the flexible daily tracking guide.')
+   .addButton(button => button.setButtonText('Open plans').onClick(() => this.plugin.openPlans()))
+   .addButton(button => button.setButtonText('Tracking guide').onClick(() => this.plugin.openTrackingGuide()));
   root.createEl('p', { text: this.plugin.data.plan ? `${this.plugin.data.plan.name} · Last imported ${new Date(this.plugin.data.plan.importedAt).toLocaleString()}` : 'Set a workbook source and its sheets in Settings → Sports to get started.' });
   if (this.plugin.data.lastError) root.createEl('p', { text: this.plugin.data.lastError, cls: 'sports-error' });
   root.createEl('p', { text: (this.plugin.data.strategySheet || this.plugin.data.trackingSheet || this.plugin.data.scheduleSheet) && this.plugin.data.syncMinutes ? `Automatic workbook sync every ${this.plugin.data.syncMinutes} minutes while Obsidian is running.` : 'Automatic sync is off. Use Sync now to import changes.' });
@@ -45,7 +51,13 @@ export class SportsDashboard extends ItemView {
     if (session.prescription) section.createEl('p', { text: session.prescription });
     if (part) { const details = section.createEl('details'); details.createEl('summary', { text: `${part.title} · v${part.version}` }); details.createEl('p', { text: part.prescription }); }
     if (session.notes) section.createEl('p', { text: session.notes });
-    if (session.result) section.createEl('p', { text: session.result });
+    if (compactResults(session)) section.createEl('p', { text: compactResults(session) });
+    const graph = /```sports-compare\n([\s\S]*?)\n```/.exec(performanceMarkdown(session));
+    if (graph) {
+     const comparison = section.createEl('details');
+     comparison.createEl('summary', { text: 'Sets and plan/result comparison' });
+     renderPerformanceChart(graph[1]!, comparison.createDiv());
+    }
    }
    for (const item of scheduled) {
     section.createEl('p', { text: `${item.time} ${item.title} · ${item.minutes ?? '—'} min · ${item.recordedBy} · Planned, no manual results` });

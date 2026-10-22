@@ -1,5 +1,5 @@
 import type { Session } from '../model/types';
-import { exerciseTracking } from '../model/exercise-tracking';
+import { exerciseTracking, resultKey, aggregateValues } from '../model/exercise-tracking';
 
 export function safeText(value: string | number): string {
  return String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replace(/[\\`*[\]_#~]/g, '\\$&').replaceAll('|', '&#124;').replace(/[\r\n]+/g, '<br>');
@@ -12,21 +12,25 @@ export function performanceMarkdown(session: Session): string {
  if (!exercises.length) return '';
  const graph: string[] = [];
  const rows = exercises.map(exercise => {
-  const planned = exercise.targets.reduce((sum, value) => sum + value, 0);
+  const planned = aggregateValues(exercise.targets, exercise.aggregation);
   const recorded = exercise.actual.filter((value): value is number => value !== null);
-  const total = recorded.reduce((sum, value) => sum + value, 0);
-  const label = `${exercise.group} · ${exercise.name} (${exercise.unit})`;
-  graph.push(`${label.replace(/[\t\r\n`]/g, ' ')}\t${number(planned)}\t${recorded.length ? number(total) : '—'}`);
-  const hasText = exercise.done === true && exercise.actual.some((value, i) => value === null && session.results?.[exercise.group === 'Core' ? 'Core rounds result' : `${exercise.group} ${i + 1} result`]?.trim());
-  const result = exercise.done === false ? 'Not recorded (unchecked)' : !recorded.length ? hasText ? 'See sets (not numeric)' : 'Unrecorded' : `${number(total)} ${exercise.unit}${recorded.length < exercise.actual.length ? ' · partial' : ''}`;
+  const total = aggregateValues(exercise.actual, exercise.aggregation);
+  const label = `${exercise.group === exercise.name ? exercise.name : `${exercise.group} · ${exercise.name}`} (${exercise.unit})${exercise.aggregation && exercise.aggregation !== 'total' ? ` · ${exercise.aggregation}` : ''}`;
+  graph.push(`${label.replace(/[\t\r\n`]/g, ' ')}\t${planned !== null ? number(planned) : '—'}\t${total !== null ? number(total) : '—'}`);
+  const hasText = exercise.done === true && exercise.actual.some((value, i) => value === null && (exercise.resultKeys ? session.results?.[resultKey(exercise, i)] : undefined)?.trim());
+  const result = exercise.done === false ? 'Not recorded (unchecked)' : !recorded.length ? hasText ? 'See sets (not numeric)' : 'Unrecorded' : `${number(total!)} ${exercise.unit}${exercise.aggregation && exercise.aggregation !== 'total' ? ` (${exercise.aggregation})` : ''}${recorded.length < exercise.actual.length ? ' · partial' : ''}`;
   const sets = exercise.actual.map((value, i) => {
    if (value !== null) return number(value);
-   const raw = session.results?.[exercise.group === 'Core' ? 'Core rounds result' : `${exercise.group} ${i + 1} result`];
+   const raw = (exercise.resultKeys ? session.results?.[resultKey(exercise, i)] : undefined);
+   if (exercise.setChecks?.[i] === false) return '— (unchecked)';
    return exercise.done === true ? safeText(raw || '—') : '—';
   }).join(' / ');
-  return `| ${safeText(exercise.group)} · ${safeText(exercise.name)} | ${exercise.targets.length} × ${number(exercise.targets[0]!)} ${exercise.unit} | ${result} | ${sets} |`;
+  const plannedSets = exercise.targets.map(value => value === null ? '—' : number(value));
+  const prescription = exercise.targets.length && exercise.targets[0] !== null && exercise.targets.every(value => value === exercise.targets[0]) ? `${exercise.targets.length} × ${number(exercise.targets[0]!)}` : plannedSets.join(' / ');
+  const setLabels = exercise.setNumbers ? `Set ${exercise.setNumbers.join(' / ')}: ` : '';
+  return `| ${safeText(exercise.group === exercise.name ? exercise.name : `${exercise.group} · ${exercise.name}`)} | ${prescription} ${safeText(exercise.unit)} | ${safeText(result)} | ${setLabels}${sets} |`;
  });
- return `\n\n\`\`\`sports-compare\nExercise\tPlan\tResult\n${graph.join('\n')}\n\`\`\`\n\n| Exercise | Plan | Result | Sets in order |\n| --- | --- | --- | --- |\n${rows.join('\n')}\n\nEach bar uses its own exercise scale. — means unrecorded; zero is a recorded result. Timed sets use seconds. Totals include numeric recorded sets only; text results remain in the sets table; unchecked inputs are never results.`;
+ return `\n\n\`\`\`sports-compare\nExercise\tPlan\tResult\n${graph.join('\n')}\n\`\`\`\n\n| Exercise | Plan | Result | Sets in order |\n| --- | --- | --- | --- |\n${rows.join('\n')}\n\nEach bar uses its own exercise/metric scale. — means unrecorded; zero is a recorded result. Timed sets use seconds. Comparisons use numeric recorded sets only (total unless another aggregation is named); text results remain in the sets table; unchecked inputs are never results.`;
 }
 
 export function sessionDetails(session: Session): string {
@@ -43,12 +47,12 @@ export function compactResults(session: Session): string {
  const summary = exercises.map(exercise => {
   const values = exercise.actual.filter((value): value is number => value !== null);
   const hasText = exercise.done === true && Object.entries(session.results ?? {}).some(([key, value]) => value && (key.startsWith(`${exercise.group} `)));
-  return `${exercise.group}: ${exercise.done === false ? 'unchecked' : values.length ? `${number(values.reduce((sum, value) => sum + value, 0))} ${exercise.unit}${values.length < exercise.actual.length ? ' (partial)' : ''}` : hasText ? 'recorded; see sets' : 'unrecorded'}`;
+  return `${exercise.group}: ${exercise.done === false ? 'unchecked' : values.length ? `${number(aggregateValues(exercise.actual, exercise.aggregation)!)} ${exercise.unit}${exercise.aggregation && exercise.aggregation !== 'total' ? ` (${exercise.aggregation})` : ''}${values.length < exercise.actual.length ? ' (partial)' : ''}` : hasText ? 'recorded; see sets' : 'unrecorded'}`;
  });
  for (const [key, value] of Object.entries(session.checks)) if (!groups.has(key.replace(/ done$/, ''))) summary.push(`${key}: ${value === null ? 'unrecorded' : value ? 'yes' : 'no'}`);
  for (const [key, value] of Object.entries(session.results)) {
-  const match = /^([ABC]) [1-5] result$/.exec(key) ?? /^(Core) rounds result$/.exec(key);
-  if (value && (!match || !groups.has(match[1]!))) summary.push(`${key}: ${value}`);
+  const tracked = exercises.some(exercise => exercise.resultKeys?.includes(key));
+  if (value && !tracked) summary.push(`${key}: ${value}`);
  }
  return summary.join('; ');
 }

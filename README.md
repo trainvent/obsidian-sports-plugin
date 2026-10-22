@@ -124,7 +124,7 @@ Optionally add a **Week plans** table to Strategy:
 
 | Week | Start | Phase | Focus | Targets | Advance when | Minutes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 2026-10-26 | Foundation | Establish starting level | Record controlled variations | Review results before progressing | 160 |
+| 1 | YYYY-MM-DD | Foundation | Establish starting level | Record controlled variations | Review results before progressing | 160 |
 
 `Week` is a unique positive program-week number. `Start` is a unique Monday date.
 `Phase` and `Focus` are required; other fields may be blank. You can plan 12 weeks
@@ -175,8 +175,8 @@ keep results compact instead of listing all numbered workbook columns.
 
 The chart reads only explicit lines such as `A) Pull-up: 3 x 5`,
 `B) Wall hold: 3 x 20 sec`, `C) Pistol: 3 x 5/leg`, `A) Mobility: 2 min`,
-and `Core: 5 rounds`. One to five sets, `x` or `×`, seconds, and minutes are
-supported. Other plan wording remains visible without a numeric comparison.
+and `Core: 5 rounds`. Custom group names and set counts, `x` or `×`, and explicit metric units are
+supported. For variable targets and multiple metrics, see [Flexible Daily tracking](Tracking.md). Other plan wording remains visible without a numeric comparison.
 Each exercise has its own scale and unit; reps, seconds, reps per leg, and rounds
 are never added together. More training is not automatically a better result.
 

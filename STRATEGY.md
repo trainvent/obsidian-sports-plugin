@@ -1,6 +1,6 @@
 # Sports — product strategy and implementation checklist
 
-Status: proposal for discussion · 2026-10-20
+Status: proposal for discussion
 
 ## Product goal
 

@@ -1,3 +1,4 @@
+import trackingGuide from '../Tracking.md';
 import { registerPerformanceCharts } from './ui/performance-chart';
 import { downloadWorkbook } from './workbook/download';
 import { syncCoachOnlyPlans } from './notes/coach-plans';
@@ -42,6 +43,8 @@ export default class SportsPlugin extends Plugin {
   this.addCommand({ id: 'connect-garmin', name: 'Connect Garmin', callback: () => this.connectGarmin() });
   this.addCommand({ id: 'sync', name: 'Sync now', callback: () => this.sync(true) });
   this.addCommand({ id: 'open-week', name: 'Create or open weekly note', callback: () => this.openWeekly() });
+  this.addCommand({ id: 'open-tracking-guide', name: 'Open flexible tracking guide', callback: () => this.openTrackingGuide() });
+  this.addCommand({ id: 'open-plans', name: 'Open upcoming plans', callback: () => this.openPlans() });
   this.addCommand({ id: 'open-log', name: 'Open training log', callback: () => this.openTrainingLog() });
   this.settingsTab = new SportsSettingTab(this.app, this);
   this.addSettingTab(this.settingsTab);
@@ -110,6 +113,22 @@ export default class SportsPlugin extends Plugin {
   const leaf = existing ?? this.app.workspace.getLeaf('tab');
   if (!existing) await leaf.setViewState({ type: SPORTS_VIEW, active: true });
   await this.app.workspace.revealLeaf(leaf);
+ }
+ async openPlans(): Promise<void> {
+  if (this.syncing || this.noteBusy) return;
+  await this.refreshNotes(false);
+  const file = this.app.vault.getFileByPath(`${this.data.notesFolder}/Plans.md`);
+  if (file) await this.app.workspace.getLeaf(false).openFile(file);
+  else new Notice('Sync a workbook before opening plans.');
+ }
+ async openTrackingGuide(): Promise<void> {
+  if (this.noteBusy || this.syncing) return;
+  this.noteBusy = true;
+  try {
+   const file = await updateNote(this, 'Guide/Tracking.md', 'tracking-guide', trackingGuide, '# Flexible Daily tracking\n\n## My workbook choices\n');
+   await this.app.workspace.getLeaf(false).openFile(file);
+  } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not open the tracking guide.'); }
+  finally { this.noteBusy = false; }
  }
  async openTrainingLog(): Promise<void> {
   if (this.noteBusy) return;

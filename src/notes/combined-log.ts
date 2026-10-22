@@ -32,7 +32,7 @@ export function combinedLogMarkdown(plan: TrainingPlan | null, cache?: GarminCac
    ...(sessions.length > 1 ? [label(session)] : []),
    `Status: ${text(session.status)}`,
    ...(session.actualMinutes !== null ? [`Actual: ${text(session.actualMinutes)} min`] : []),
-   ...(session.result ? [text(compactResults(session))] : []),
+   ...(compactResults(session) ? [text(compactResults(session))] : []),
   ].join('<br>'));
   const notes = sessions.filter(session => session.notes).map(session => `${sessions.length > 1 ? `${label(session)}<br>` : ''}${text(session.notes)}`);
   const activities = (recordedByDate.get(date) ?? []).sort((a, b) => a.time.localeCompare(b.time) || a.id.localeCompare(b.id));

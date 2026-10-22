@@ -51,7 +51,7 @@ test('only unambiguous prescriptions supply targets; extra sets and unsupported 
  assert.ok(compactResults({ ...base, results: { 'Muscle-up result': '3 assisted' } }).includes('Muscle-up result: 3 assisted'));
  assert.ok(!compactResults(base).includes('A 1 result'));
  assert.ok(compactResults(base).includes('A: 8 reps'));
- assert.equal(exerciseTracking({ ...base, prescription: 'A) Pull-up: 6 x 5' }).length, 0);
+ assert.equal(exerciseTracking({ ...base, prescription: 'A) Pull-up: 6 x 5' })[0].targets.length, 6);
  const unsafe = performanceMarkdown({ ...base, prescription: 'A) <img> | ```name: 3 x 5' });
  assert.ok(unsafe.includes('&lt;img&gt; &#124;'));
  assert.equal(unsafe.split('```sports-compare').length, 2);
@@ -109,6 +109,10 @@ test('chart renderer provides accessible finite SVG bars and rejects malformed s
   const bars = svgs.flatMap(svg => svg.children.filter(child => child.tag === 'rect'));
   assert.equal(bars.length, 5);
   for (const bar of bars) assert.ok(Number(bar.attributes.width) >= 0 && Number(bar.attributes.width) <= 280);
+  const flexible = new Element();
+  render('Exercise\tPlan\tResult\n' + Array.from({ length: 8 }, (_, i) => `Metric ${i}\t—\t0`).join('\n'), flexible);
+  assert.equal(flexible.children[0].children.length, 9);
+  assert.ok(flexible.children[0].children[1].children[1].attributes['aria-label'].includes('plan unspecified'));
   const invalid = new Element();
   render('Exercise\tPlan\tResult\n<script>\tInfinity\t0', invalid);
   assert.equal(invalid.children[0].tag, 'pre');

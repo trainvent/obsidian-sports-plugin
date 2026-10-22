@@ -15,7 +15,7 @@ back to it.
 | --- | --- | --- |
 | Pale green, alternating tones | Editable entry cells | Enter or adjust your training values. |
 | White / light gray, alternating tones | Reference information and formulas | Read the plan and preserve formulas. |
-| Neutral blue-gray | Headings | Keep the group labels and column names. |
+| Neutral blue-gray | Headings | Keep structural column names; exercise group names are customizable. |
 
 Both editable and reference areas alternate row tones to help you follow a session
 across the sheet. Colors are cues, not access restrictions.
@@ -64,11 +64,9 @@ plan ID requires clearing the cached plan. `start_date` stays at **E3**. Set a
 Monday before recording history. Plugin-created workbooks start next Monday in
 the user's local calendar and use the user's local timezone.
 
-The template defines `max_sets = 3` in **F3** for the three exercise groups
-**A, B, C**, plus **Core** separately. `max_reps = 5` in **G3** describes the five
-numbered rep fields beneath each exercise group. These metadata values describe
-the template layout; changing them does not automatically add/remove columns or
-rewrite prescriptions.
+The template's `max_sets` and `max_reps` cells describe its example layout only.
+They do not impose an exercise count, require A/B/C/Core, or limit set counts.
+Changing these cells does not automatically resize the workbook.
 
 **Goals:** use `milestone` for skills to achieve or `maintenance` for abilities to
 maintain. Baselines and results must reflect actual information; do not invent
@@ -145,9 +143,16 @@ notes. Keep the weekly schedule in Recurring only. For legacy workbooks with a `
 
 ## Daily
 
-The template uses two header rows. Row 1 groups the exercise columns under
-**A**, **B**, **C** and **Core**. Row 2 contains the regular column names and
-subheadings. Keep these labels and their alignment intact.
+Daily supports custom exercise groups and set counts. **A/B/C/Core and five
+numbered fields are only the example layout**, not required names or limits.
+For maximum flexibility, use one row per set/measurement with the headers
+`Date`, `Session ID`, `Exercise`, `Set`, `Unit`, `Target`, `Result`, `Done`.
+See [Flexible Daily tracking](Tracking.md) or **Guide/Tracking** in your vault for
+examples, multiple metrics, variable set targets, and recording rules.
+
+The existing example uses two header rows with A/B/C/Core exercise groups.
+Rename, add, or remove these groups and their numbered set subcolumns as needed.
+Keep structural headers and each group's subcolumn alignment intact.
 
 | Columns | Row 2 headings | Use |
 | --- | --- | --- |
@@ -164,7 +169,7 @@ separate lines, just like Technique. The session's Block A/B and the exercise
 groups A/B/C are separate labels. Keep tempo, rest, per-leg instructions and other
 details in Plan; the rep entry cells contain no explanatory words.
 
-**A/B/C:** the numbered fields are the rep fields. Counts use plain numbers such
+**Exercise groups (A/B/C in the example):** numbered fields record reps or time. Counts use plain numbers such
 as `2` or `5`; timed entries use native spreadsheet durations displayed as
 `mm:ss`, such as `00:15` or `02:00`. When entering native times, use `0:00:15`
 for fifteen seconds so the spreadsheet does not interpret it as fifteen minutes.
@@ -174,7 +179,7 @@ to record them. A group left FALSE or blank does not import its prefilled values
 as actual results. For a partial attempt, adjust the values first and use TRUE
 to record that attempt; this does not complete the whole session.
 
-**Core:** Rounds starts with the day's planned round count; Technique days without
+**Rounds groups (Core in the example):** Rounds starts with the day's planned round count; Technique days without
 a Core prescription leave it blank. Adjust it to the actual nonnegative whole
 number of rounds (including zero), then select TRUE in Core Done to record it.
 Unrecorded round targets are ignored during import.
@@ -207,8 +212,8 @@ Older flat layouts can put the headers on one row. Required names are `Date`,
 Custom result columns must end with ` result`; completion columns must end with
 ` done` and contain TRUE, FALSE or blank. FALSE and blank are distinct.
 
-The grouped template is imported as `A done`, `A 1 result` through `A 5 result`
-(and the equivalent B/C names), plus `Core done` and `Core rounds result`.
+A grouped heading is imported as `<group> done`, `<group> 1 result`,
+`<group> 2 result`, etc., or `<group> rounds result`. Names and counts are custom.
 The grouped headers are the exception to the flat custom-column naming rule.
 Do not add arbitrary columns such as `Reps` or `Weight`; use `Reps result` or
 `Weight result` instead.
