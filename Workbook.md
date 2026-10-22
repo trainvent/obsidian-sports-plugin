@@ -13,14 +13,18 @@ back to it.
 
 | Color | Meaning | How to use it |
 | --- | --- | --- |
-| Pale blue | IDs and matching keys | Keep stable once training is recorded. |
-| Amber | Planning inputs | Adapt goals, prescriptions, times and budgets. |
-| Pale green | Recorded training | Enter actual minutes, status, results and notes. |
-| Light gray | Formula output | Preserve formulas and their references. |
-| Dark blue | Column headings | Preserve exact spelling and capitalization. |
+| Pale green, alternating tones | Editable entry cells | Enter or adjust your training values. |
+| White / light gray, alternating tones | Reference information and formulas | Read the plan and preserve formulas. |
+| Neutral blue-gray | Headings | Keep the group labels and column names. |
 
-Colors are cues, not access restrictions. `Strategy!E3` is an amber editable
-start-date anchor; dependent dates are gray.
+Both editable and reference areas alternate row tones to help you follow a session
+across the sheet. Colors are cues, not access restrictions.
+
+In **Daily**, actual minutes, status, A/B/C entries, Core, Notes and the final three
+manual result columns are green. Dates, plans, titles and planned minutes stay
+neutral. In **Recurring**, start/end times, activity, recorded-by and notes are
+green; the calculated Minutes column stays neutral. Strategy's `max_sets` and
+`max_reps` cells and all headings stay neutral.
 
 ## Keep the workbook contract
 
@@ -48,7 +52,7 @@ Keep the following sections and headers:
 
 | Section | Headers |
 | --- | --- |
-| Plan | `schema_version`, `plan_id`, `plan_name`, `timezone`, `start_date` |
+| Plan | `schema_version`, `plan_id`, `plan_name`, `timezone`, `start_date`, `max_sets`, `max_reps` |
 | Goals | `goal_id`, `title`, `benchmark`, `baseline`, `test`, `category`, `result_column`, `garmin_types` |
 | Parts | `part_id`, `version`, `title`, `prescription`, `goal_ids` |
 | Week plans | `Week`, `Start`, `Phase`, `Focus`, `Targets`, `Advance when`, `Minutes`, `A`, `B` |
@@ -59,6 +63,12 @@ timezone, such as `Europe/Berlin`. Choose a stable `plan_id`; switching an impor
 plan ID requires clearing the cached plan. `start_date` stays at **E3**. Set a
 Monday before recording history. Plugin-created workbooks start next Monday in
 the user's local calendar and use the user's local timezone.
+
+The template defines `max_sets = 3` in **F3** for the three exercise groups
+**A, B, C**, plus **Core** separately. `max_reps = 5` in **G3** describes the five
+numbered rep fields beneath each exercise group. These metadata values describe
+the template layout; changing them does not automatically add/remove columns or
+rewrite prescriptions.
 
 **Goals:** use `milestone` for skills to achieve or `maintenance` for abilities to
 maintain. Baselines and results must reflect actual information; do not invent
@@ -135,27 +145,73 @@ notes. Keep the weekly schedule in Recurring only. For legacy workbooks with a `
 
 ## Daily
 
-Keep these headers exactly, once each, on the first nonempty row:
+The template uses two header rows. Row 1 groups the exercise columns under
+**A**, **B**, **C** and **Core**. Row 2 contains the regular column names and
+subheadings. Keep these labels and their alignment intact.
 
-`Date`, `Block`, `Plan`, `Title`, `Planned minutes`, `Actual minutes`, `Status`,
-`Muscle-up result`, `HSPU result`, `Pistol result`, `Notes`.
+| Columns | Row 2 headings | Use |
+| --- | --- | --- |
+| A–G | Date, Block, Plan, Title, Planned minutes, Actual minutes, Status | Session plan and recording |
+| H–M | Done, 1, 2, 3, 4, 5 | A rep fields |
+| N–S | Done, 1, 2, 3, 4, 5 | B rep fields |
+| T–Y | Done, 1, 2, 3, 4, 5 | C rep fields |
+| Z–AA | Done, Rounds | Core recording |
+| AB | Notes | Shared session notes |
+| AC–AE | Muscle-up result, HSPU result, Pistol result | Optional manual goal results |
+
+**Plan:** the A and B session blocks stack each A), B), C) exercise and Core on
+separate lines, just like Technique. The session's Block A/B and the exercise
+groups A/B/C are separate labels. Keep tempo, rest, per-leg instructions and other
+details in Plan; the rep entry cells contain no explanatory words.
+
+**A/B/C:** the numbered fields are the rep fields. Counts use plain numbers such
+as `2` or `5`; timed entries use native spreadsheet durations displayed as
+`mm:ss`, such as `00:15` or `02:00`. When entering native times, use `0:00:15`
+for fifteen seconds so the spreadsheet does not interpret it as fifteen minutes.
+Unused fields stay blank. Prefilled values are targets, not completed training.
+Adjust the values to what you did, then select TRUE in that group's Done field
+to record them. A group left FALSE or blank does not import its prefilled values
+as actual results. For a partial attempt, adjust the values first and use TRUE
+to record that attempt; this does not complete the whole session.
+
+**Core:** Rounds starts with the day's planned round count; Technique days without
+a Core prescription leave it blank. Adjust it to the actual nonnegative whole
+number of rounds (including zero), then select TRUE in Core Done to record it.
+Unrecorded round targets are ignored during import.
+
+**Manual goal results:** AC–AE start completely blank, with no formulas. Fill them
+only when you want a result in the matching goal note. They do not automatically
+summarize the A/B/C fields. Keep their exact headers while Strategy goal mappings
+refer to them.
 
 - One row represents one manual session. Keep Date and Plan formulas connected
   to the correct week and block. Copying a row requires checking every reference.
 - Block must match a Parts `part_id`. Use `Part version` if that ID has multiple
   versions. Blank or `empty` Block means no linked strategy part.
 - Status is one of `planned`, `in-progress`, `completed`, `skipped`, `cancelled`.
-  Set `completed` explicitly only after doing the session.
-- Leave actual minutes and results blank until recorded. A result alone does not
-  mark the session completed. Without Status, recorded results imply in-progress.
-- Result columns may be renamed or added, but must end with ` result`.
-  Optional completion columns must end with ` done` and contain TRUE, FALSE,
-  or blank. FALSE and blank are different; neither claims completion.
-- Other supported optional headers are `Session ID`, `Part version`, `Sport`.
-  Do not add arbitrary columns such as `Reps` or `Weight`; use `Reps result`
-  or `Weight result` instead.
+  Set `completed` explicitly only after doing the session. A Done flag records
+  an exercise, not the whole session. The template's explicit `planned` Status
+  remains planned until you change it. Without Status, actual results imply
+  in-progress.
+- Leave Actual minutes and manual goal results blank until recorded. Keep the
+  prefilled rep and round targets separate from actual recorded training by
+  leaving their Done flags FALSE or blank until recording.
 - Without Session ID, the plugin uses Date plus Block as the session identity.
   For two sessions with the same date and block, add distinct stable Session IDs.
+
+### Other supported daily layouts
+
+Older flat layouts can put the headers on one row. Required names are `Date`,
+`Block`, `Plan`. Other supported fields include `Title`, `Planned minutes`,
+`Actual minutes`, `Status`, `Notes`, `Session ID`, `Part version` and `Sport`.
+Custom result columns must end with ` result`; completion columns must end with
+` done` and contain TRUE, FALSE or blank. FALSE and blank are distinct.
+
+The grouped template is imported as `A done`, `A 1 result` through `A 5 result`
+(and the equivalent B/C names), plus `Core done` and `Core rounds result`.
+The grouped headers are the exception to the flat custom-column naming rule.
+Do not add arbitrary columns such as `Reps` or `Weight`; use `Reps result` or
+`Weight result` instead.
 
 ## Protect recorded history
 
@@ -175,7 +231,8 @@ sections against accidental edits; change plans in the workbook instead.
 1. Read this guide. Ask for the user's goals, availability and known baselines.
 2. Adapt a copy of the example; preserve headers, sections, IDs and formulas.
 3. Update goal links, arsenal names, weekly prescriptions and Daily consistently.
-4. Preserve recorded history; leave future actuals and results blank.
+4. Preserve recorded history. Leave future actual minutes and manual results blank;
+   prefilled rep/round targets must have FALSE or blank Done flags.
 5. Recalculate and save the XLSX. Check for formula errors, broken references,
    duplicate IDs, unknown blocks/goals and commas or colons in arsenal names.
 6. In Obsidian, select the file and sheet names, then **Sync now**. Confirm the

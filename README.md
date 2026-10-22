@@ -52,9 +52,9 @@ actual results are blank. Template download and note sync save `Guide/Workbook.m
 vault notes folder (by default `Sports/Guide/Workbook.md`), preserving an existing guide. No customization flow is required. Give the workbook and
 [Workbook.md](Workbook.md) to your own chatbot to adapt it safely.
 
-Column colors have consistent roles: pale blue for identifiers, amber for planning
-inputs, green for recorded training, and gray for formulas. The guide explains the
-exact headers, ID links, exercise-name delimiters, formula caches and history rules.
+Green marks editable entry cells; neutral white/gray marks reference information
+and formulas. Both alternate row tones, and headings stay neutral blue-gray.
+See [Workbook.md](Workbook.md) for the exact grouped layout and recording rules.
 Plugin-created copies start next Monday and use the local timezone. The browser controls where downloaded copies are saved. Select Strategy, Daily, and Recurring as the strategy, tracking, and weekly schedule
 sheet mappings. Each sheet can be imported independently or disabled by leaving
 its mapping blank. The older templates and formats remain supported.
@@ -133,12 +133,11 @@ increases. Review results each week and edit the remaining plan when repeating o
 adjusting a week. Weekly targets and dated session plans are separately editable;
 changing a target does not silently rewrite daily sessions or shift dates.
 
-On **Training log**, the offered template follows a simple daily layout. Put these
-headers in row 1; there is no technical `Sessions` marker:
-
-| Date | Block | Plan | Core done | Muscle-up result | HSPU result | Pistol result | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-10-19 | A | Muscle-up + pistol practice, then core | FALSE | | | | |
+The offered **Daily** sheet has two header rows: wide A/B/C exercise headings
+above Done and numbered rep fields 1–5, followed by Core Done/Rounds, Notes and
+three optional manual goal-result columns. Plan stacks the exercises on separate
+lines. Green cells are editable; both green and neutral areas alternate row tones.
+Older **Training log** sheets with a single flat header row remain supported.
 
 Use one row per session (several rows can share a date), with block `A`, `B`, `Technique`, or `Empty` in the example.
 `Block` links to a Strategy part's `part_id`; you may define your own block names.
@@ -419,19 +418,10 @@ enable only the new copy. Generated notes and source workbooks stay in place.
 Settings use the searchable declarative API on Obsidian 1.13 or later, with the
 same controls rendered through the legacy API on Obsidian 1.11.4–1.12.
 
-Daily skill tracking in the example template labels the three exercises A, B, and C.
-Each has five iteration fields, with the prescribed reps, seconds, or per-leg target
-prefilled for the planned sets. Strategy records the template limits as `max_sets = 3` and `max_reps = 5`.
-Unused iteration fields stay blank. Select TRUE in the exercise's **done** field to
-record the prefilled values, or first adjust the fields for fewer/more reps or sets
-and then select TRUE. Prefilled values are ignored by import until the exercise is
-marked done. Session Status remains separate. The result columns at the right
-summarize recorded exercises for the existing goal notes.
-
-The grouped **Core** columns in Daily provide a TRUE/FALSE **Done** field and
-an editable **Rounds** field prefilled from the day's core prescription. Adjust
-rounds if needed, then select TRUE to record them. Unrecorded round targets do
-not become actual results; technique days without Core start with blank rounds.
-Iteration inputs contain only rep counts or durations formatted as `mm:ss`.
-Per-leg instructions, tempo, and rest details stay in Plan; cluster reps are
-entered as their total count, and test sets default to the prescribed cap.
+The current template defines `max_sets = 3` (exercise groups A, B, C) and
+`max_reps = 5` (the numbered rep fields), plus Core separately. These metadata
+values do not automatically resize the layout. Rep cells contain plain numbers
+or durations displayed as `mm:ss`. Adjust the targets, then select TRUE under
+Done to record them. Core uses the same recording rule with an editable Rounds
+count. Whole-session Status is separate. The last three goal-result columns are
+blank manual inputs, with no formulas. See [Workbook.md](Workbook.md) for details.
