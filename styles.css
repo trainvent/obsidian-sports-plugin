@@ -62,3 +62,12 @@
 }
 .sports-settings-link:hover { background: var(--interactive-hover); color: var(--text-normal); text-decoration: none; }
 .sports-settings-link:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }
+
+.sports-performance { padding: 12px; border: 1px solid var(--background-modifier-border); border-radius: 8px; }
+.sports-performance-legend { color: var(--text-muted); font-size: var(--font-smallest); margin: 0 0 12px; }
+.sports-performance-row + .sports-performance-row { margin-top: 12px; }
+.sports-performance-label { font-size: var(--font-small); margin-bottom: 4px; overflow-wrap: anywhere; }
+.sports-performance svg { display: block; width: 100%; max-width: 600px; }
+.sports-performance svg text { fill: var(--text-normal); font-size: 12px; }
+.sports-performance-plan { fill: var(--text-muted); opacity: .4; }
+.sports-performance-actual { fill: var(--interactive-accent); }

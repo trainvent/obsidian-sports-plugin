@@ -134,7 +134,7 @@ adjusting a week. Weekly targets and dated session plans are separately editable
 changing a target does not silently rewrite daily sessions or shift dates.
 
 The offered **Daily** sheet has two header rows: wide A/B/C exercise headings
-above Done and numbered rep fields 1–5, followed by Core Done/Rounds, Notes and
+above Done and numbered rep/time fields 1–5, followed by Core Done/Rounds, Notes and
 three optional manual goal-result columns. Plan stacks the exercises on separate
 lines. Green cells are editable; both green and neutral areas alternate row tones.
 Older **Training log** sheets with a single flat header row remain supported.
@@ -166,8 +166,35 @@ The technical `Sessions` table remains supported for existing workbooks, with re
 `session_id`, `date`, `sport`, `title`, and optional `part_id`, `part_version`,
 `planned_minutes`, `actual_minutes`, `result`, `status`, and `notes` columns.
 
-Dates may be spreadsheet dates or ISO text (`YYYY-MM-DD`). Daily Plan text is not
-parsed into invented durations, distances, or sets. Distance fields, exercise tables,
+### Sets and plan/result comparisons
+
+Log, Plans, and weekly notes include collapsed **sets and comparisons** cards.
+Open a card to see a four-column exercise table with the planned prescription,
+recorded total, and sets in order, plus paired plan/result bars. Overview tables
+keep results compact instead of listing all numbered workbook columns.
+
+The chart reads only explicit lines such as `A) Pull-up: 3 x 5`,
+`B) Wall hold: 3 x 20 sec`, `C) Pistol: 3 x 5/leg`, `A) Mobility: 2 min`,
+and `Core: 5 rounds`. One to five sets, `x` or `×`, seconds, and minutes are
+supported. Other plan wording remains visible without a numeric comparison.
+Each exercise has its own scale and unit; reps, seconds, reps per leg, and rounds
+are never added together. More training is not automatically a better result.
+
+Mark the exercise's **Done** flag TRUE after recording its set values. Prefilled
+inputs with FALSE or blank Done flags remain unrecorded. Blank sets stay missing,
+zero is a real recorded value, and partial totals are labeled. Excel time cells
+and `mm:ss` results become seconds for timed comparisons. Text results stay
+visible in the sets table and are excluded from numeric totals. Session completion
+still requires its own Status; exercise flags never mark the whole session complete.
+
+Charts render locally in reading view and Live Preview using the plugin's
+`sports-compare` code block. The underlying tab-separated values and Markdown table
+remain readable outside Obsidian or with the plugin disabled. No chart service,
+network request, or additional plugin is required. Refresh uses the existing
+protected generated sections and preserves commentary outside those sections.
+
+Dates may be spreadsheet dates or ISO text (`YYYY-MM-DD`). No achievements,
+session durations, or distances are inferred from plan prose. Distance fields, exercise tables,
 progression rules, import previews, custom intervals, and per-occurrence recurrence
 edits remain planned. Date display and weekly navigation use the device calendar;
 schedule-timezone conversion is not yet implemented. Only one plan is active; changing

@@ -1,3 +1,4 @@
+import { sessionDetails, compactResults } from './performance';
 import type { TrainingPlan, Session } from '../model/types';
 import type { GarminActivity, GarminCache } from '../garmin/types';
 import { activityDetails } from '../garmin/activities';
@@ -31,7 +32,7 @@ export function combinedLogMarkdown(plan: TrainingPlan | null, cache?: GarminCac
    ...(sessions.length > 1 ? [label(session)] : []),
    `Status: ${text(session.status)}`,
    ...(session.actualMinutes !== null ? [`Actual: ${text(session.actualMinutes)} min`] : []),
-   ...(session.result ? [text(session.result)] : []),
+   ...(session.result ? [text(compactResults(session))] : []),
   ].join('<br>'));
   const notes = sessions.filter(session => session.notes).map(session => `${sessions.length > 1 ? `${label(session)}<br>` : ''}${text(session.notes)}`);
   const activities = (recordedByDate.get(date) ?? []).sort((a, b) => a.time.localeCompare(b.time) || a.id.localeCompare(b.id));
@@ -39,5 +40,5 @@ export function combinedLogMarkdown(plan: TrainingPlan | null, cache?: GarminCac
   const missing = cache?.lastSuccess && date >= cache.start && date <= cache.end ? 'None recorded' : 'Not imported';
   return `| ${date} | ${plans.join('<br><br>') || '—'} | ${results.join('<br><br>') || '—'} | ${recorded || missing} | ${notes.join('<br><br>') || '—'} |`;
  });
- return `${status}## Recent and recorded\n\n| Date | Manual plan | Manual results | Garmin activities | Manual notes |\n| --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nGarmin records do not mark manual sessions complete.`;
+ return `${status}## Recent and recorded\n\n| Date | Manual plan | Manual results | Garmin activities | Manual notes |\n| --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nGarmin records do not mark manual sessions complete.${dates.flatMap(date => (manual.get(date) ?? []).map(sessionDetails)).filter(Boolean).map(detail => `\n\n${detail}`).join('')}`;
 }

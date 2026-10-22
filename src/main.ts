@@ -1,3 +1,4 @@
+import { registerPerformanceCharts } from './ui/performance-chart';
 import { downloadWorkbook } from './workbook/download';
 import { syncCoachOnlyPlans } from './notes/coach-plans';
 import { combinedLogMarkdown } from './notes/combined-log';
@@ -30,6 +31,7 @@ export default class SportsPlugin extends Plugin {
  async onload(): Promise<void> {
   this.data = Object.assign({}, DEFAULT_DATA, await this.loadData() as Partial<SportsData>);
   addIcon(SPORTS_ICON_ID, SPORTS_ICON_SVG);
+  registerPerformanceCharts(this);
   this.registerView(SPORTS_VIEW, leaf => new SportsDashboard(leaf, this));
   this.addRibbonIcon(SPORTS_ICON_ID, 'Open dashboard', () => { void this.openDashboard(); });
   this.addCommand({ id: 'open-dashboard', name: 'Open dashboard', callback: () => this.openDashboard() });
