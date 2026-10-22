@@ -20,6 +20,7 @@ const { parseWorkbook } = await load('workbook/parse');
 const { startTemplateNextMonday } = await load('workbook/template-dates');
 const { analyticsNoteTasks, analyticsGraphMarkdown } = await load('notes/analytics');
 const { registerScoreCharts } = await load('ui/score-chart');
+const { registerScoreScatter, correlation } = await load('ui/score-scatter');
 
 test('daily summaries keep planned intensity, performance, and optional felt effort independent', () => {
  assert.equal(median([0, 200]), 100);
@@ -108,12 +109,51 @@ test('analytics pages separate their content and graph preserves missing values 
  const pages = analyticsNoteTasks(plan, 'Custom sports');
  assert.deepEqual(pages.map(page => page.path), ['Analytics/Index.md', 'Analytics/Table.md', 'Analytics/Daily.md', 'Analytics/Graph.md']);
  const graph = analyticsGraphMarkdown(plan, 'Custom sports');
- assert.ok(graph.includes('2026-10-26\t100\t—'));
- assert.ok(graph.includes('2026-10-26\t3\t—'));
- assert.ok(graph.includes('Planned intensity\tFelt effort (optional)'));
+ assert.ok(graph.includes('2026-10-26\t—'));
+ assert.equal((graph.match(/```sports-trend/g) ?? []).length, 3);
+ assert.ok(graph.includes('Date\tFelt effort (1–5)\tPlanned intensity (0–10)'));
+ assert.ok(graph.includes('2026-10-26\t—\t3'));
  assert.ok(!graph.includes('minutes × RPE'));
- assert.ok(graph.includes('0 / 3'));
+ assert.ok(!graph.includes('| Date |'));
+ assert.ok(pages[1].body.includes('0 / 3'));
+ assert.ok(graph.indexOf('## Effort and intensity over time') < graph.indexOf('## Daily performance'));
  assert.ok(pages[0].body.includes('[[Custom sports/Analytics/Graph|Graph]]'));
+});
+
+test('time comparisons show independently available values on each date', () => {
+ const make = (date, scores) => ({ date, title: 'Training', scores });
+ const graph = analyticsGraphMarkdown({ sessions: [
+  make('2026-10-26', { plannedIntensity: 0, actualPerformance: 0, effortRating: 1, plannedMetrics: 2, scoredMetrics: 2 }),
+  make('2026-10-27', { plannedIntensity: 8, actualPerformance: 120, effortRating: 5, plannedMetrics: 2, scoredMetrics: 1 }),
+  make('2026-10-28', { plannedIntensity: 3 }), make('2026-10-29', { effortRating: 4 }),
+ ] }, 'Sports');
+ const [performance, effort] = [...graph.matchAll(/```sports-trend\n([\s\S]*?)\n```/g)].map(match => match[1]);
+ assert.ok(performance.includes('2026-10-26\t0\t0'));
+ assert.ok(performance.includes('2026-10-27\t9.6\t8'));
+ assert.ok(performance.includes('2026-10-28\t—\t3'));
+ assert.ok(effort.includes('2026-10-28\t—\t3'));
+ assert.ok(effort.includes('2026-10-29\t4\t—'));
+ assert.ok(!graph.includes('sports-scatter'));
+});
+
+test('performance scales each session before aggregation and follows intensity at 100 percent', () => {
+ const sessions = [
+  { date: '2026-10-26', scores: { plannedIntensity: 6, actualPerformance: 100 } },
+  { date: '2026-10-27', scores: { plannedIntensity: 6, actualPerformance: 80 } },
+  { date: '2026-10-28', scores: { plannedIntensity: 10, actualPerformance: 120 } },
+  { date: '2026-10-29', scores: { plannedIntensity: 2, actualPerformance: 200 } },
+  { date: '2026-10-29', scores: { plannedIntensity: 8, actualPerformance: 50 } },
+ ];
+ const chart = analyticsGraphMarkdown({ sessions }, 'Sports').split('```')[1];
+ for (const row of ['2026-10-26\t6\t6', '2026-10-27\t4.8\t6', '2026-10-28\t12\t10', '2026-10-29\t4\t5']) assert.ok(chart.includes(row));
+});
+
+test('scatter correlation requires variable paired samples', () => {
+ assert.equal(correlation([{ x: 0, y: 0 }, { x: 5, y: 50 }, { x: 10, y: 100 }]), 1);
+ assert.equal(correlation([{ x: 0, y: 100 }, { x: 5, y: 50 }, { x: 10, y: 0 }]), -1);
+ assert.equal(correlation([{ x: 1, y: 1 }, { x: 1, y: 2 }, { x: 1, y: 3 }]), null);
+ assert.equal(correlation([{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 3, y: 1 }]), null);
+ assert.equal(correlation([{ x: 1, y: 1 }, { x: 2, y: 2 }]), null);
 });
 
 class Element {
@@ -124,6 +164,40 @@ class Element {
  setAttribute(key, value) { this.attributes[key] = value; }
  appendChild(child) { this.children.push(child); }
 }
+test('scatter renderer places points against intensity and preserves scale boundaries', () => {
+ let render; registerScoreScatter({ registerMarkdownCodeBlockProcessor: (_, callback) => { render = callback; } });
+ const previous = globalThis.document;
+ globalThis.document = { createElementNS: (_, tag) => new Element(tag) };
+ try {
+  const root = new Element();
+  render('Session\tPlanned intensity (0–10)\tPerformance (%)\nLow\t0\t0\nMid\t5\t50\nHigh\t10\t100', root);
+  assert.ok(root.children[0].children[0].textContent.includes('Pearson r = 1.00'));
+  const svg = root.children[0].children[1];
+  const points = svg.children.filter(child => child.tag === 'circle');
+  assert.deepEqual(points.map(p => p.attributes.cx), ['65', '365', '665']);
+  assert.deepEqual(points.map(p => p.attributes.cy), ['230', '132.5', '35']);
+  const ratings = new Element();
+  render('Session\tPlanned intensity (0–10)\tFelt effort (1–5)\nEasy\t0\t1\nHard\t10\t5', ratings);
+  assert.deepEqual(ratings.children[0].children[1].children.filter(c => c.tag === 'circle').map(c => c.attributes.cy), ['230', '35']);
+  const empty = new Element(); render('Session\tPlanned intensity (0–10)\tPerformance (%)', empty);
+  assert.ok(empty.children[0].textContent.includes('planned intensity'));
+  const intensityOnly = new Element();
+  render('Session\tPlanned intensity (0–10)\tPerformance (%)\nPlanned\t0\t—\nHard\t10\t—', intensityOnly);
+  const intensitySvg = intensityOnly.children[0].children[1];
+  assert.equal(intensitySvg.children.filter(c => c.tag === 'circle').length, 0);
+  const marks = intensitySvg.children.filter(c => c.tag === 'line' && c.attributes.y1 === '300');
+  assert.deepEqual(marks.map(c => c.attributes.x1), ['65', '665']);
+  assert.ok(intensityOnly.children[0].children[0].textContent.includes('0 paired sessions · 2 intensity only'));
+  assert.ok(!intensityOnly.children[0].children[0].textContent.includes('Pearson r ='));
+  const mixed = new Element();
+  render('Session\tPlanned intensity (0–10)\tFelt effort (1–5)\nRecorded\t3\t4\nPlanned\t5\t—', mixed);
+  assert.equal(mixed.children[0].children[1].children.filter(c => c.tag === 'circle').length, 1);
+  for (const value of ['NaN', '11', '-1']) {
+   const invalid = new Element(); render(`Session\tPlanned intensity (0–10)\tPerformance (%)\nTest\t${value}\t100`, invalid);
+   assert.equal(invalid.children[0].tag, 'pre');
+  }
+ } finally { globalThis.document = previous; }
+});
 test('score charts break lines at missing measurements and retain recorded zero points', () => {
  let render; registerScoreCharts({ registerMarkdownCodeBlockProcessor: (_, callback) => { render = callback; } });
  const previous = globalThis.document;
@@ -145,6 +219,31 @@ test('score charts break lines at missing measurements and retain recorded zero 
   const boundaries = new Element();
   render('Date\tPlanned intensity\tFelt effort (optional)\n2026-10-26\t0\t—\n2026-10-27\t10\t—', boundaries);
   assert.deepEqual(boundaries.children[0].children[1].children.filter(child => child.tag === 'circle').map(child => child.attributes.cy), ['210', '35']);
+  const dual = new Element();
+  render('Date\tFelt effort (1–5)\tPlanned intensity (0–10)\n2026-10-26\t5\t10\n2026-10-27\t—\t0', dual);
+  const dualSvg = dual.children[0].children[1];
+  assert.deepEqual(dualSvg.children.filter(c => c.tag === 'circle').map(c => c.attributes.cy), ['35', '35', '210']);
+  assert.ok(dual.children[0].children[0].textContent.includes('left axis'));
+  assert.ok(dual.children[0].children[0].textContent.includes('right axis'));
+  assert.ok(dualSvg.children.some(c => c.tag === 'text' && c.attributes.x === '680' && c.textContent === '10'));
+  const intensity = new Element();
+  render('Date\tPerformance (%)\tPlanned intensity (0–10)\n2026-10-26\t—\t5', intensity);
+  assert.equal(intensity.children[0].children[1].children.filter(c => c.tag === 'circle')[0].attributes.cy, '122.5');
+  const scaled = new Element();
+  render('Date\tPerformance × intensity\tPlanned intensity (0–10)\n2026-10-26\t6\t6\n2026-10-27\t12\t10', scaled);
+  const scaledPoints = scaled.children[0].children[1].children.filter(c => c.tag === 'circle');
+  assert.equal(scaledPoints[0].attributes.cy, scaledPoints[2].attributes.cy);
+  assert.equal(scaledPoints[1].attributes.cy, '35');
+  const daily = new Element();
+  render('Date\tPerformance (%)\n2026-10-26\t0\n2026-10-27\t100\n2026-10-28\t200', daily);
+  const dailySvg = daily.children[0].children[1];
+  assert.deepEqual(dailySvg.children.filter(c => c.tag === 'circle').map(c => c.attributes.cy), ['210', '122.5', '35']);
+  assert.deepEqual(dailySvg.children.filter(c => c.tag === 'text' && c.attributes.x === '43').map(c => c.textContent), ['0%', '100%', '200%']);
+  assert.equal(dailySvg.children.filter(c => c.attributes.class === 'sports-score-expected').length, 0);
+  const noPerformance = new Element();
+  render('Date\tPerformance (%)\n2026-10-26\t—', noPerformance);
+  assert.equal(noPerformance.children[0].children[1].tag, 'svg');
+  assert.equal(noPerformance.children[0].children[1].children.filter(c => c.tag === 'circle').length, 0);
   const empty = new Element(); render('Date\tExpected\tActual\n2026-10-26\t—\t—', empty);
   assert.ok(empty.children[0].textContent.includes('No values recorded'));
   const invalid = new Element(); render('Date\tExpected\tActual\n<script>\t100\tNaN', invalid);

@@ -485,14 +485,15 @@ performance. No minutes × RPE calculation is used.
 
 Daily adds six fields: Planned intensity, Effort rating, Expected performance,
 Actual performance, Scored metrics, and Planned metrics. Recalculate and save
-before syncing. Graph shows planned intensity versus optional felt effort on a
-a shared 0–10 axis (felt effort remains 1–5), plus expected versus actual
-performance. Missing values leave gaps. Zero is valid for planned intensity and
-performance; it is not a valid felt-effort rating.
-Coverage makes partially recorded performance visible. For several sessions on
-one date, graphs use medians of available session values and show how many
-sessions have a felt-effort rating. These are comparisons with a plan, not an
-absolute fitness or workout-quality score.
+before syncing. Graph shows three charts with dates on the horizontal axis:
+performance versus intensity, effort versus intensity, and actual daily performance on a fixed 0–200% scale (100% centered). The first plots intensity × performance / 100 alongside intensity on one
+shared scale: 100% follows intensity, 80% is 20% lower, and values can exceed
+10. The second uses intensity’s 0–10 scale on the right and effort’s 0–5 scale
+on the left. Recorded
+effort remains 1–5. Each series uses daily medians of available session values.
+Intensity appears even without results; missing values leave gaps. Coverage
+and rated-session counts remain on Table. Separate axes compare trends in
+different units; matching heights do not imply equal values.
 
 Existing workbooks remain supported. Template downloads never change a live
 cloud workbook. Add equivalent score formulas to a copy preserving history,

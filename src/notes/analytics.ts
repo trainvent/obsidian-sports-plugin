@@ -1,5 +1,5 @@
 import type { TrainingPlan } from '../model/types';
-import { dailyScores } from '../model/daily-scores';
+import { dailyScores, median } from '../model/daily-scores';
 import { noteLink } from './plan';
 import { trainingLogMarkdown } from './render';
 import { safeText, sessionDetails } from './performance';
@@ -25,11 +25,17 @@ export function analyticsDailyMarkdown(plan: TrainingPlan | null, folder: string
 }
 export function analyticsGraphMarkdown(plan: TrainingPlan | null, folder: string): string {
  const days = dailyScores(plan);
- const chart = (expected: 'expectedPerformance' | 'plannedIntensity', actual: 'actualPerformance' | 'effortRating', expectedLabel = 'Expected', actualLabel = 'Actual'): string => {
-  const rows = days.map(day => `${day.date}\t${number(day[expected])}\t${number(day[actual])}`);
-  return ['```sports-trend', `Date\t${expectedLabel}\t${actualLabel}`, ...rows, '```'].join('\n');
- };
- return `${navigation(folder)}\n\n## Daily performance (%)\n\n${chart('expectedPerformance', 'actualPerformance')}\n\n## Planned intensity (0–10) and optional felt effort (1–5)\n\n${chart('plannedIntensity', 'effortRating', 'Planned intensity', 'Felt effort (optional)')}\n\n${scoreTable(plan)}\n\nPerformance comes from the workbook's median actual/target ratios for selected metrics. For several sessions on a date, the daily point is the median of their available session scores. Coverage shows which planned metrics contributed; partial coverage is not a complete day's result. Planned intensity uses 0–10 (0 no planned demand, 10 highest planned demand). Optional felt effort uses 1–5 (1 easy, 5 very hard). The shared axis spans 0–10; compare the series using their labeled scales. Each daily point is the median of available session ratings. Felt effort never changes the performance score. Rated-session counts show partial effort reporting. Missing values create gaps. Edit metric inclusion and performance targets in the workbook. The example calculates planned intensity from exercise arsenal assumptions and the planned sets and amounts on Scoring; update those inputs when changing the written plan. Record felt effort only if useful. Older workbooks without score columns keep their results on Table and Daily; add score columns for Graph.`;
+ const scaledPerformance = ['```sports-trend', 'Date\tPerformance × intensity\tPlanned intensity (0–10)', ...days.map(day => {
+  const adjusted = median((plan?.sessions ?? []).filter(session => session.date === day.date).map(session => {
+   const score = session.scores;
+   return typeof score?.plannedIntensity === 'number' && typeof score.actualPerformance === 'number' ? score.plannedIntensity * score.actualPerformance / 100 : null;
+  }));
+  return `${day.date}\t${number(adjusted)}\t${number(day.plannedIntensity)}`;
+ }), '```'].join('\n');
+ const performanceTrend = ['```sports-trend', 'Date\tPerformance (%)', ...days.map(day => `${day.date}\t${number(day.actualPerformance)}`), '```'].join('\n');
+ const chart = (left: 'actualPerformance' | 'effortRating' | 'expectedPerformance', right: 'plannedIntensity' | 'actualPerformance', leftLabel: string, rightLabel: string): string =>
+  ['```sports-trend', `Date\t${leftLabel}\t${rightLabel}`, ...days.map(day => `${day.date}\t${number(day[left])}\t${number(day[right])}`), '```'].join('\n');
+ return `${navigation(folder)}\n\n## Intensity and performance over time\n\n${scaledPerformance}\n\nPerformance is plotted as intensity × actual performance / 100 on the same scale as intensity: at 100% the lines coincide; at 80% the performance point is 20% below intensity. Values above 100% can plot above 10. This changes the display only, not the workbook score. Missing performance leaves a gap. At zero intensity the scaled value remains zero; raw percentages remain in the third chart.\n\n## Effort and intensity over time\n\n${chart('effortRating', 'plannedIntensity', 'Felt effort (1–5)', 'Planned intensity (0–10)')}\n\nFelt effort uses the left 0–5 axis (recorded ratings are 1–5); planned intensity uses the right 0–10 axis. Intensity appears even before effort or performance is recorded. Missing values leave gaps, not zero points.\n\n## Daily performance (%)\n\n${performanceTrend}\n\nPerformance scaling is calculated per session before taking the daily median. Each other series uses the median of its available session values for the date. Dates with incomplete session reporting can compare different subsets; check partial performance coverage and rated-session counts on ${noteLink(folder, 'Analytics/Table', 'Table')}. Edit intensity assumptions and planned volume in the workbook, record results and optional felt effort, save, then sync.`;
 }
 
 export function analyticsNoteTasks(plan: TrainingPlan | null, folder: string): { path: string; id: string; body: string; initial: string }[] {

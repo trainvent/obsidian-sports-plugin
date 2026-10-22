@@ -279,91 +279,87 @@ Recalculate and save the XLSX before syncing.
 
 ### Exercise-based planned intensity formula
 
-The **Exercise arsenal** (the last table on Strategy) has editable **Base
-intensity** (0–10), **Reference sets**, **Reference amount per set**, and **Unit**
-(`reps`, `reps/leg`, or `seconds`) in **C36:F90** for each exercise. Base
-intensity describes that exercise at its reference prescription. These are
-personal planning assumptions, not measured physiological intensity.
+The **Exercise arsenal** has **Base intensity** (0–10) in **C36:C90** and
+**Unit** in **D36:D90**. Base intensity means the difficulty of one rep, or one
+second of a timed exercise. It is a rating, not additive intensity points.
+There are no per-exercise reference sets or reference amounts.
 
-For each planned exercise `i`, use:
+Daily's session rating is a **volume-weighted average** of those base values:
 
 ```text
-volume_factor_i = (planned_sets_i × planned_amount_per_set_i)
-                  / (reference_sets_i × reference_amount_per_set_i)
-contribution_i = base_intensity_i × volume_factor_i
-planned_intensity = ROUND(MAX(0, MIN(10, SUM(contribution_i))), 0)
+planned_amount_i = sets_i × reps_or_seconds_per_set_i
+weight_i = planned_amount_i                         for reps
+weight_i = 2 × planned_amount_i                     for reps per leg
+weight_i = planned_amount_i / seconds_per_rep        for timed work
+session_intensity = ROUND(SUM(base_intensity_i × weight_i) / SUM(weight_i), 0)
 ```
 
-For unequal sets, replace `planned_sets × planned_amount_per_set` with the sum
-of the planned amounts across sets. Use reps for repetition exercises and
-seconds for holds or timed exercises, matching that exercise's reference unit.
-Normalize each exercise before adding contributions; do not add raw reps to
-seconds. Adding sets, reps, or time increases the estimated session demand,
-up to the 10-point ceiling. This is a volume-adjusted planning score.
+The result stays between 0 and 10 without capping a sum. More work at a higher
+base intensity pulls the session average up; more work at a lower intensity
+pulls it down. Doubling every exercise's sets leaves intensity unchanged and
+increases volume. All zero base values or all zero sets give a rating of zero.
+Missing inputs leave the rating blank.
 
-For example, an exercise with base intensity 2 and reference prescription
-`3 × 10 reps`, planned as `3 × 15 reps`, contributes `2 × 45 / 30 = 3`.
-A hold with base intensity 1 and reference prescription `3 × 30 seconds`,
-planned as `2 × 30 seconds`, contributes `1 × 60 / 90 = 0.67`.
-Together, the planned rating is `ROUND(3.67, 0) = 4`.
+To combine rep and timed exercises, **Scoring!O1** holds one editable weighting
+assumption: **3 seconds per rep equivalent**, initially. This is a planning
+conversion, not a measured rep tempo. Per-leg amounts count both legs. Unlike
+units are converted before weighting. Adjust this assumption to change the
+relative weight of timed work; no exercise-specific reference prescriptions
+are needed.
 
-An Excel formula for one exercise, using named inputs, is:
+The calculation is visible in **Scoring → N:Y**. Green **P:S** cells contain
+Exercise, Unit, Planned sets, and Amount per set. **T** looks up Base intensity,
+**U** calculates the total amount, **V** calculates its volume weight, **W**
+checks the arsenal unit, and **X** calculates base intensity × volume weight.
+For example, **X5** uses:
 
 ```excel
-=IF(OR(COUNT(BaseIntensity,PlannedSets,PlannedAmount,ReferenceSets,ReferenceAmount)<>5,BaseIntensity<0,BaseIntensity>10,PlannedSets<0,PlannedSets<>INT(PlannedSets),PlannedAmount<=0,ReferenceSets<=0,ReferenceAmount<=0),"",BaseIntensity*PlannedSets*PlannedAmount/(ReferenceSets*ReferenceAmount))
+=IF(OR(COUNT(T5:V5)<>3,Q5<>W5,T5<0,T5>10),"",T5*V5)
 ```
 
-After calculating one contribution per planned exercise, aggregate the session:
+**Daily!AG3** combines the first session's exercise rows:
 
 ```excel
-=IF(OR(PlannedExerciseCount=0,COUNT(ExerciseContributions)<>PlannedExerciseCount),"",ROUND(MAX(0,MIN(10,SUM(ExerciseContributions))),0))
+=IF(COUNT(Scoring!X5:X11)<>ROWS(Scoring!X5:X11),"",IF(SUM(Scoring!V5:V11)=0,0,ROUND(SUM(Scoring!X5:X11)/SUM(Scoring!V5:V11),0)))
 ```
 
-The names above describe inputs and ranges; they are not workbook named ranges.
-The implemented calculation is visible in **Scoring → N:Y**. Edit the green
-**Exercise**, **Unit**, **Planned sets**, and **Amount per set** inputs in **P:S**.
-The neutral **T:W** columns look up the arsenal assumptions by exact exercise
-name, and **X** calculates each contribution. For example, **X5** uses:
+Every Daily row has its own session range; all 48 sessions are populated. Missing
+or duplicate exercise names, unit mismatches, invalid sets, or incomplete inputs
+leave the rating blank. Sets must be nonnegative whole numbers; amounts and the
+seconds-per-rep assumption must be positive. Zero sets omits an exercise.
 
-```excel
-=IF(OR(COUNT(R5:V5)<>5,Q5<>W5,T5<0,T5>10,U5<=0,V5<=0,R5<0,R5<>INT(R5),S5<=0),"",T5*R5*S5/(U5*V5))
-```
+For example, 20 reps at base intensity 8 and 40 reps at base intensity 2 give
+`(20 × 8 + 40 × 2) / (20 + 40) = 4`. The exercise base values remain 8 and 2;
+the session's volume determines their weights.
 
-**Daily!AG3** aggregates the first session's seven exercise contributions:
-
-```excel
-=IF(COUNT(Scoring!X5:X11)<>ROWS(Scoring!X5:X11),"",ROUND(MAX(0,MIN(10,SUM(Scoring!X5:X11))),0))
-```
-
-Every Daily row has its own session contribution range. All 48 example sessions
-are populated. Missing or duplicate exercise matches,
-unit mismatches, or incomplete inputs must leave the session rating blank.
-Zero base intensity is valid, and zero planned sets omits an exercise without
-treating it as missing. Amounts and reference quantities must be positive.
-**Effort rating** remains an optional manual entry after training. Performance
-continues to use actual/target attainment independently.
-
-The numeric inputs are initialized from the example's written plan. **Changing
-the plan text does not rewrite these inputs.** Update Scoring's planned sets and
-amounts alongside the plan and the separate performance targets in **F**.
-Intensity does not depend on performance's Include checkbox or recorded results.
-Each Core round contributes four 30-second work intervals using the four arsenal
-exercises; rest is excluded. Clusters count both reps. Per-leg reps retain their
-own unit. Negative repetitions count reps, without adding lowering tempo as hold
-time. Range prescriptions use their upper bound (five for 3–5 singles), tests
-use the stated cap, and optional work is included until its planned sets are
-set to zero. These assumptions are visible in Scoring's **Prescription note**.
-
-The seeded base values are editable example assumptions. Reference prescriptions
-are generally 3 × 10 reps, 3 × 60 seconds for timed skill work, and 5 × 120 seconds
-for each Core exercise. Calibrate these to your planning preferences; they are
-not physiological measurements. In the saved example, the first session scores
-`1 + 1.8 + 1 + 4 × 0.25 = 4.8`, rounded to **5/10**.
+The numeric volume inputs are initialized from the written Daily plan.
+**Changing the plan text does not rewrite these inputs.** Update Scoring's sets
+and amounts alongside the plan and the separate performance targets in **F**.
+Each Core round includes four 30-second work intervals, with rest excluded.
+Clusters count both reps; lowering tempo does not add separate hold time.
+Ranges and tests use their stated upper bounds, and optional work is included
+until its sets are zero. Scoring's Prescription note records these assumptions.
+The seeded base values are editable difficulty estimates; the four Core
+exercises start at 6, 4, 5, and 5. Optional felt effort and actual/target
+performance remain separate from planned intensity.
 
 The plugin's Analytics folder separates **Table**, **Daily**, and **Graph**.
-Graph separates expected/actual performance from planned intensity and optional
-felt effort on a shared 0–10 axis, with felt effort explicitly labeled 1–5.
-Missing values leave gaps. For multiple sessions
-per date, each trend uses the median of available session values, and the number
-of felt-effort ratings remains visible. A score measures target attainment,
-not absolute training quality. Keep commentary outside protected generated sections.
+Graph shows three time-series charts, all with dates on the horizontal axis:
+
+1. Performance × intensity and planned intensity on one shared scale.
+   Displayed performance = session intensity × actual performance / 100. At
+   100% the lines coincide; at 80% the performance point is 20% lower. Values
+   above 100% can extend above 10; the display expands without clipping.
+2. Felt effort (left 0–5 axis, recorded ratings 1–5) and intensity (right 0–10).
+3. Actual daily performance only, on a fixed 0–200% scale: 0% at the bottom,
+   100% in the center, and 200% at the top. There is no expected-performance
+   series. Values above 200% are marked at the top with actual values in point
+   labels. With no results, the axes remain visible without data points.
+
+Performance is scaled per session before taking the daily median. Other series
+use the median of available session values per date. Intensity
+is visible before performance or effort is recorded. Missing values leave gaps;
+they are not plotted as zero. Coverage and rated-session counts remain on Table.
+The separate axes compare trends across different units, not equal values.
+A score measures target attainment, not absolute training quality. Keep
+commentary outside protected generated sections.

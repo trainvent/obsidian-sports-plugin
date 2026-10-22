@@ -136,12 +136,17 @@ and **Planned metrics**.
   to 5 (very hard), or leave Effort rating blank. It never changes performance.
 
 Felt effort starts blank. Planned intensity uses exercise volume, including
-timed work normalized to each exercise's reference prescription. Recalculate
-and save the XLSX before syncing. Analytics/Graph separates target attainment
-from planned intensity and optional felt effort; their shared axis spans 0–10,
-while felt effort retains its own 1–5 scale. For several sessions on a date, each trend uses available session
-medians. Rated-session counts show partial effort reporting. Missing values leave
-gaps. Zero is valid for performance and planned intensity, but not felt effort.
+timed work converted using Scoring's shared seconds-per-rep weighting assumption.
+The rating averages exercise base values (0–10), weighted by planned volume. Recalculate
+and save the XLSX before syncing. Analytics/Graph uses time on the horizontal
+axis for all three charts. Performance is shown as intensity × performance / 100 on the same scale as
+intensity, so 100% follows intensity and 80% sits 20% below it. Values may exceed
+10 when performance exceeds 100%. Scaling is per session before daily medians. Effort versus intensity uses 0–5 on the
+left and 0–10 on the right; actual effort ratings remain 1–5. The third chart
+shows actual performance only on a fixed 0–200% scale with 100% at the center. Each series uses daily medians of
+available values, so intensity can appear before results. Missing values leave
+gaps. Table retains coverage and rated-session counts. Zero is valid for
+performance and intensity, but not a recorded felt-effort rating.
 
 Scoring is not an extra import mapping; keep tracking on Daily or your chosen
 tracking tab. Customizing exercises means adapting Scoring's actual references,

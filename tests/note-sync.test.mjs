@@ -476,8 +476,10 @@ test('Analytics folder separates table, daily details and score graphs, and migr
  assert.ok(!files.get('Sports/Analytics/Table.md').content.includes('sports-compare'));
  assert.ok(files.get('Sports/Analytics/Daily.md').content.includes('sports-compare'));
  const graph = files.get('Sports/Analytics/Graph.md');
- assert.ok(graph.content.includes('2026-12-28\t100\t80'));
- assert.ok(graph.content.includes('2026-12-28\t3\t4'));
+ assert.ok(graph.content.includes('2026-12-28\t80'));
+ assert.ok(graph.content.includes('2026-12-28\t4\t3'));
+ assert.ok(graph.content.includes('sports-trend'));
+ assert.ok(!graph.content.includes('| Date |'));
  graph.content += '\nGraph reflections\n';
  assert.deepEqual(await syncNotes(plugin, plan), []);
  assert.ok(graph.content.endsWith('Graph reflections\n'));
