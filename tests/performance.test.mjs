@@ -19,6 +19,7 @@ const { performanceMarkdown, sessionDetails, compactResults } = await load('note
 const { parseWorkbook } = await load('workbook/parse');
 const { trainingLogMarkdown, weekMarkdown, datedLogMarkdown } = await load('notes/render');
 const { combinedLogMarkdown } = await load('notes/combined-log');
+const { analyticsDailyMarkdown: analyticsMarkdown } = await load('notes/analytics');
 const { registerPerformanceCharts } = await load('ui/performance-chart');
 const base = { id: 's', date: '2026-10-20', sport: 'training', title: 'Skills', partId: '', partVersion: '', status: 'in-progress', notes: '', result: '', plannedMinutes: 30, actualMinutes: null,
  prescription: 'A) Pull-up: 3 x 5\nB) Wall hold: 3 x 20 sec\nC) Pistol: 2 x 4/leg\nCore: 5 rounds',
@@ -78,10 +79,18 @@ test('real grouped Daily cells preserve adjusted reps and Excel times through im
  assert.ok(!text.includes('| Planned min | Actual min |'));
 });
 
-test('graphs reach Log, Plans and weekly notes without corrupting cards when dates are reversed', () => {
+test('graphs reach Analytics, Log and weekly notes while Plans only shows upcoming prescriptions', () => {
  const plan = { timezone: 'Europe/Berlin', parts: [], sessions: [base, { ...base, id: 'next', date: '2026-10-21' }] };
  const now = new Date('2026-10-20T12:00:00Z');
- for (const text of [combinedLogMarkdown(plan, undefined, now), datedLogMarkdown(plan, true, now), weekMarkdown(plan, ['2026-10-20'])]) assert.ok(text.includes('sports-compare'));
+ for (const text of [combinedLogMarkdown(plan, undefined, now), analyticsMarkdown(plan, 'Sports'), weekMarkdown(plan, ['2026-10-20'])]) assert.ok(text.includes('sports-compare'));
+ const upcoming = datedLogMarkdown(plan, true, now);
+ assert.ok(!upcoming.includes('sports-compare'));
+ assert.ok(!upcoming.includes('| Results |'));
+ assert.ok(!upcoming.includes('in-progress'));
+ assert.ok(upcoming.includes('3 x 5'));
+ assert.ok(upcoming.includes('| Planned min |'));
+ assert.ok(analyticsMarkdown(plan, 'Sports').includes('2026-10-21'));
+ assert.ok(analyticsMarkdown(null, 'Sports').includes('No manual training data'));
  assert.ok(sessionDetails(base).split('\n').every(line => line.startsWith('>')));
  assert.ok(!combinedLogMarkdown(plan, undefined, now).includes('2026-10-21'));
 });

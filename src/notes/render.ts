@@ -20,18 +20,19 @@ export function weekMarkdown(plan: TrainingPlan | null, dates: string[], showReg
 }
 
 /** Four columns retain the full source schedule; exercise detail grows vertically. */
-export function trainingLogMarkdown(plan: TrainingPlan | null): string {
+export function trainingLogMarkdown(plan: TrainingPlan | null, planningOnly = false, includeDetails = true): string {
  const sessions = [...(plan?.sessions ?? [])].sort((left, right) => left.date.localeCompare(right.date));
  if (!sessions.length) return 'No training log entries imported yet. Select the second sheet under Tracking sheet in Sports settings, then select Sync now.';
  const rows = sessions.map(session => {
   const part = plan?.parts.find(part => part.id === session.partId && part.version === session.partVersion);
   const description = [session.block, session.title, session.sport].filter(Boolean).map(value => safeText(value!)).join(' · ');
   const prescription = safeText(session.prescription ?? part?.prescription ?? '');
+  if (planningOnly) return `| ${cell(session.date)} | **${description}**<br>${prescription} | ${cell(session.plannedMinutes)} | ${cell(session.notes)} |`;
   const results = [safeText(session.status), `Minutes: ${cell(session.plannedMinutes)} planned / ${cell(session.actualMinutes)} actual`, safeText(compactResults(session))].filter(Boolean).join('<br>');
   return `| ${cell(session.date)} | **${description}**<br>${prescription} | ${results} | ${cell(session.notes)} |`;
  });
- const details = sessions.map(sessionDetails).filter(Boolean);
- return `## Imported schedule\n\n| Date | Training and plan | Results | Notes |\n| --- | --- | --- | --- |\n${rows.join('\n')}${details.length ? `\n\n## Sets and comparisons\n\n${details.join('\n\n')}` : ''}`;
+ const details = planningOnly || !includeDetails ? [] : sessions.map(sessionDetails).filter(Boolean);
+ return `## Imported schedule\n\n${planningOnly ? '| Date | Training and plan | Planned min | Notes |' : '| Date | Training and plan | Results | Notes |'}\n| --- | --- | --- | --- |\n${rows.join('\n')}${details.length ? `\n\n## Sets and comparisons\n\n${details.join('\n\n')}` : ''}`;
 }
 
 /** Split the manual log at today in the strategy's timezone. */
@@ -39,7 +40,7 @@ export function datedLogMarkdown(plan: TrainingPlan | null, upcoming: boolean, n
  const today = new Intl.DateTimeFormat('en-CA', { timeZone: plan?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
  const sessions = (plan?.sessions ?? []).filter(session => upcoming ? session.date > today : session.date <= today);
  if (!sessions.length) return upcoming ? 'No upcoming manual sessions.' : 'No training log entries for today or earlier.';
- const markdown = trainingLogMarkdown(plan ? { ...plan, sessions } : null);
+ const markdown = trainingLogMarkdown(plan ? { ...plan, sessions } : null, upcoming);
  if (upcoming) return markdown;
  // Reverse only schedule rows; exercise cards retain their complete block structure.
  const lines = markdown.split('\n');

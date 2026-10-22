@@ -4,9 +4,10 @@ import { App, PluginSettingTab, Setting, Platform } from 'obsidian';
 import type SportsPlugin from './main';
 
 export class SportsSettingTab extends PluginSettingTab {
+ private refreshStatusControls: (() => void) | undefined;
  private refreshGarminControls: (() => void) | undefined;
- refreshGarmin(): void { this.refreshGarminControls?.(); }
- hide(): void { this.refreshGarminControls = undefined; }
+ refreshGarmin(): void { this.refreshStatusControls?.(); this.refreshGarminControls?.(); }
+ hide(): void { this.refreshGarminControls = undefined; this.refreshStatusControls = undefined; }
  constructor(app: App, public plugin: SportsPlugin) { super(app, plugin); }
 
  /** Obsidian 1.13+ indexes these definitions without constructing DOM or doing I/O. */
@@ -24,6 +25,24 @@ export class SportsSettingTab extends PluginSettingTab {
    }));
   } });
   return [
+   group('Warnings', [{ name: 'Workbook sync', render: setting => {
+    setting.settingEl.setAttribute('aria-live', 'polite');
+    let syncButton: { setDisabled(disabled: boolean): unknown };
+    setting.addButton(button => {
+     syncButton = button;
+     button.setButtonText('Sync now').onClick(() => plugin.sync(true));
+    });
+    this.refreshStatusControls = () => {
+     const error = plugin.data.lastError;
+     setting.setName(error ? 'Workbook sync needs attention' : '');
+     setting.setDesc(error || '');
+     setting.settingEl.toggleClass('sports-warning-empty', !error);
+     setting.settingEl.toggleClass('sports-sync-error', !!error);
+     setting.settingEl.setAttribute('role', error ? 'alert' : 'status');
+     syncButton.setDisabled(plugin.syncing || !Platform.isDesktop);
+    };
+    this.refreshStatusControls();
+   } }]),
    group('Workbook', [
     { name: 'Cloud workbook link', desc: 'HTTPS download link to your XLSX. Nextcloud file shares are supported.', render: setting => {
      setting.settingEl.addClass('sports-source-setting');

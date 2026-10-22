@@ -47,7 +47,7 @@ imported plan. No external filesystem access is used by the plugin.
 
 Use the [example workbook](templates/Training-example.xlsx), or select **Download template**
 in Sports settings to save a generated copy through the browser. It uses **Strategy**, **Recurring**,
-and **Daily** tabs. The fixed example contains 12 weekly plans and 48 manual sessions;
+and **Daily** tabs, plus a **Scoring** sheet for editable performance metrics. The fixed example contains 12 weekly plans and 48 manual sessions;
 actual results are blank. Template download and note sync save `Guide/Workbook.md` inside the configured
 vault notes folder (by default `Sports/Guide/Workbook.md`), preserving an existing guide. No customization flow is required. Give the workbook and
 [Workbook.md](Workbook.md) to your own chatbot to adapt it safely.
@@ -70,7 +70,11 @@ unresolved. A new tracking-only plan uses the device timezone until strategy sup
 
 Sync creates ordinary Markdown files in the configured **Notes folder**:
 
-- `Plans.md`: starting levels, goals, weekly links, and upcoming manual sessions.
+- `Plans.md`: starting levels, goals, weekly links, and upcoming manual prescriptions.
+- `Analytics/Index.md`: navigation to Table, Daily, and Graph.
+- `Analytics/Table.md`: compact session results.
+- `Analytics/Daily.md`: individual sets and exercise comparisons.
+- `Analytics/Graph.md`: expected versus actual daily performance and effort trends.
 - `Log.md`: today and earlier manual sessions, newest first, with results and notes.
 - `Strategy.md`: goals, exercise blocks, and regular weekly activities.
 - `Weeks/YYYY-MM-DD.md`: weekly focus and targets, that week's schedule and results,
@@ -168,7 +172,10 @@ The technical `Sessions` table remains supported for existing workbooks, with re
 
 ### Sets and plan/result comparisons
 
-Log, Plans, and weekly notes include collapsed **sets and comparisons** cards.
+Analytics is a folder: Table holds session results, Daily holds collapsed
+**sets and comparisons** cards, and Graph compares daily performance and effort.
+Plans contains upcoming prescriptions without result columns or comparison cards.
+Log and weekly notes retain their contextual session comparisons.
 Open a card to see a four-column exercise table with the planned prescription,
 recorded total, and sets in order, plus paired plan/result bars. Overview tables
 keep results compact instead of listing all numbered workbook columns.
@@ -452,3 +459,40 @@ or durations displayed as `mm:ss`. Adjust the targets, then select TRUE under
 Done to record them. Core uses the same recording rule with an editable Rounds
 count. Whole-session Status is separate. The last three goal-result columns are
 blank manual inputs, with no formulas. See [Workbook.md](Workbook.md) for details.
+
+
+### Intensity, performance, and optional felt effort
+
+**Intensity** is how hard a session is planned to be. Enter **Planned intensity**
+as a whole-number rating from 1 (easy) to 5 (very hard). It is a planning input,
+not a result inferred from repetitions, duration, or performance.
+
+**Performance** compares actual results with targets. In Scoring, **Include**
+selects metrics and **Target** remains an explicit editable planning input. Each
+included positive target contributes 100 expected points. Actual points are
+`100 × actual / target` for **higher**, or `100 × target / actual` for **lower**.
+Session performance is the median of available included metric scores.
+Lower-direction zero actuals have no finite ratio and remain unscored. Units
+are normalized before combining scores; raw reps, time, and weight are never added.
+
+**Felt effort** is optional. After training, enter **Effort rating** from 1 (easy)
+to 5 (very hard), or leave it blank. It does not alter performance. Planned
+intensity and felt effort start blank and are never calculated from minutes × RPE.
+
+Daily adds six fields: Planned intensity, Effort rating, Expected performance,
+Actual performance, Scored metrics, and Planned metrics. Recalculate and save
+before syncing. Graph shows planned intensity versus optional felt effort on a
+fixed 1–5 scale, plus expected versus actual performance. Missing values leave
+gaps. A real zero performance remains zero; 0 is not a valid subjective rating.
+Coverage makes partially recorded performance visible. For several sessions on
+one date, graphs use medians of available session values and show how many
+sessions have a felt-effort rating. These are comparisons with a plan, not an
+absolute fitness or workout-quality score.
+
+Existing workbooks remain supported. Template downloads never change a live
+cloud workbook. Add equivalent score formulas to a copy preserving history,
+or start a new plan from the updated template. Keep selecting Daily as tracking;
+Scoring is only a formula source. Update its actual-cell references, explicit
+targets, and daily median/count ranges together when customizing workouts.
+Existing Analytics.md notes with a trusted baseline migrate to Analytics/Index.md,
+retaining reflections and generated-section edit protection.

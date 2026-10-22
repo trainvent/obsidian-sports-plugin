@@ -91,13 +91,16 @@ import limits or automatically resize a workbook.
 ### Where the changes appear
 
 Reload **Sports** under **Settings → Community plugins** after installing a build.
-Then open its dashboard and select **Open plans**, **Open weekly note**, or
+Then open its dashboard and select **Open analytics**, **Open plans**, **Open weekly note**, or
 **Open training log**. The dashboard also exposes **Tracking guide** and expandable
 **Sets and plan/result comparison** panels. Use **Sync now** to import workbook
 changes. Confirm **Settings → Sports → Tracking sheet** selects the intended tab.
 
-Upcoming manual sessions appear in **Plans**, not the past **Log**. In generated
-notes, expand a session's **sets and comparisons** card. It contains a four-column
+Upcoming manual prescriptions appear in **Plans**. Results and comparisons live
+in **Analytics**, available through **Open analytics** on the dashboard or the link
+in Plans. The folder contains **Table** (sessions and results), **Daily**
+(individual sets), and **Graph** (daily score trends). Analytics includes every
+imported date; Plans has no result columns or comparison cards. In Daily, expand a session's **sets and comparisons** card. It contains a four-column
 table and paired plan/result bars. Each exercise/metric uses its own scale.
 Missing targets and results stay missing; partial totals are labeled. Graphs use
 your selected aggregation (total by default); those totals are not a
@@ -107,3 +110,34 @@ available for meaningful interpretation.
 Charts render locally with the plugin enabled in reading view or Live Preview;
 plain source mode shows the readable `sports-compare` block. No network chart
 service is used. Existing notes and commentary retain their conflict protection.
+
+
+### Intensity, performance, and optional felt effort
+
+The template adds Scoring and six Daily fields: **Planned intensity**, **Effort
+rating**, **Expected performance**, **Actual performance**, **Scored metrics**,
+and **Planned metrics**.
+
+- **Intensity:** choose how hard the session should be before training, from
+  1 (easy) to 5 (very hard). Planned intensity is a whole-number planning input.
+- **Performance:** compare results with targets. Scoring's Include, Target, and
+  Direction choose the metrics. A higher-direction score is actual/target × 100;
+  lower-direction is target/actual × 100. Use positive targets and recorded
+  numeric actuals. Lower-direction zero actuals have no finite ratio. Performance
+  is the median of available included metric scores; 100 meets the target.
+  Review Scored metrics / Planned metrics because partial results can still score.
+- **Felt effort:** optionally rate how hard it felt after training, from 1 (easy)
+  to 5 (very hard), or leave Effort rating blank. It never changes performance.
+
+Both ratings start blank. Duration does not determine either rating. Recalculate
+and save the XLSX before syncing. Analytics/Graph separates target attainment
+from planned intensity and optional felt effort; subjective ratings use a fixed
+1–5 scale. For several sessions on a date, each trend uses available session
+medians. Rated-session counts show partial effort reporting. Missing values leave
+gaps. Zero is a valid performance result, but not a 1–5 rating.
+
+Scoring is not an extra import mapping; keep tracking on Daily or your chosen
+tracking tab. Customizing exercises means adapting Scoring's actual references,
+targets, and the session's median/count ranges too. Existing cloud workbooks are
+never overwritten by template downloads. Apply new formulas to a copy preserving
+recorded history, or use the template for a new plan.

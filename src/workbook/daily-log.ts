@@ -1,3 +1,4 @@
+import { scoreFields, SCORE_COLUMNS } from './score-fields';
 import { dailyHeaders } from './daily-headers';
 import { setLog } from './set-log';
 import type { SheetData } from 'read-excel-file/browser';
@@ -21,7 +22,7 @@ export function dailyLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bo
  const headers = dailyHeaders(rows, first);
  if (!headers.includes('Date') || !headers.includes('Block') || !headers.includes('Plan')) return null;
  if (headers.some(header => !header) || new Set(headers).size !== headers.length) throw new Error('Daily log: column headers must be nonempty and unique.');
- const structural = ['Date', 'Block', 'Plan', 'Notes', 'Session ID', 'Part version', 'Status', 'Sport', 'Planned minutes', 'Actual minutes', 'Title'];
+ const structural: string[] = [...SCORE_COLUMNS, 'Date', 'Block', 'Plan', 'Notes', 'Session ID', 'Part version', 'Status', 'Sport', 'Planned minutes', 'Actual minutes', 'Title'];
  for (const header of headers) if (!structural.includes(header) && !header.endsWith(' result') && !header.endsWith(' done')) throw new Error(`Daily log: name custom result columns "${header} result" or completion columns "${header} done".`);
  return rows.slice(first + 1).flatMap((row, index) => {
   if (!row.some(value => cellText(value))) return [];
@@ -56,7 +57,7 @@ export function dailyLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bo
     if (header.endsWith(' rounds result') && results[header] && (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)))) throw new Error(`${context}: ${header.replace(/ rounds result$/, '')} rounds must be a nonnegative whole number or blank.`);
    }
   }
-  const hasResults = Object.values(results).some(value => value !== '') || Object.values(checks).some(value => value === true);
+  const hasResults = Boolean(entry['Actual performance'] || entry['Actual effort'] || entry['Effort rating']) || Object.values(results).some(value => value !== '') || Object.values(checks).some(value => value === true);
   const status = entry.Status || (hasResults ? 'in-progress' : 'planned');
   if (!['planned', 'in-progress', 'completed', 'skipped', 'cancelled'].includes(status)) throw new Error(`${context}: invalid Status.`);
   const duration = (header: string): number | null => {
@@ -68,7 +69,7 @@ export function dailyLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bo
   };
   const result = [...Object.entries(checks).map(([name, value]) => `${name}: ${value === null ? 'unrecorded' : value ? 'yes' : 'no'}`), ...Object.entries(results).filter(([, value]) => value !== '').map(([name, value]) => `${name}: ${value}`)].join('; ');
   return [{ id: entry['Session ID'] || `daily:${date}:${encodeURIComponent(block)}`, date, sport: entry.Sport || 'training', title: entry.Title || (empty ? 'No manual training planned' : part?.title || block || 'Training'),
-   partId: part?.id ?? '', partVersion: part?.version ?? '', block, prescription: entry.Plan ?? '', checks, results,
+   partId: part?.id ?? '', partVersion: part?.version ?? '', scores: scoreFields(entry, context), block, prescription: entry.Plan ?? '', checks, results,
    plannedMinutes: duration('Planned minutes'), actualMinutes: duration('Actual minutes'), result, status, notes: entry.Notes ?? '' }];
  });
 }

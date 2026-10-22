@@ -20,8 +20,9 @@ export class SportsDashboard extends ItemView {
    .addButton(button => button.setButtonText(this.plugin.syncing ? 'Syncing…' : 'Sync now').setDisabled(this.plugin.syncing).onClick(() => this.plugin.sync(true)))
    .addButton(button => button.setButtonText('Open training log').onClick(() => this.plugin.openTrainingLog()));
   new Setting(root).setName('Sets and plan/result graphs')
-   .setDesc('Open upcoming sessions or the flexible daily tracking guide.')
+   .setDesc('Open plans, review results in analytics, or read the tracking guide.')
    .addButton(button => button.setButtonText('Open plans').onClick(() => this.plugin.openPlans()))
+   .addButton(button => button.setButtonText('Open analytics').onClick(() => this.plugin.openAnalytics()))
    .addButton(button => button.setButtonText('Tracking guide').onClick(() => this.plugin.openTrackingGuide()));
   root.createEl('p', { text: this.plugin.data.plan ? `${this.plugin.data.plan.name} · Last imported ${new Date(this.plugin.data.plan.importedAt).toLocaleString()}` : 'Set a workbook source and its sheets in Settings → Sports to get started.' });
   if (this.plugin.data.lastError) root.createEl('p', { text: this.plugin.data.lastError, cls: 'sports-error' });

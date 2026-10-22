@@ -1,3 +1,4 @@
+import { scoreFields, SCORE_COLUMNS } from './score-fields';
 import type { SheetData } from 'read-excel-file/browser';
 import type { Session, TrainingPart } from '../model/types';
 import type { ExerciseTracking } from '../model/exercise-tracking';
@@ -9,7 +10,7 @@ export function setLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bool
  if (first < 0) return null;
  const headers = rows[first]!.map(cellText);
  while (headers.length && !headers[headers.length - 1]) headers.pop();
- const allowed = ['Date', 'Exercise', 'Set', 'Unit', 'Target', 'Result', 'Done', 'Aggregate', 'Session ID', 'Block', 'Plan', 'Title', 'Sport', 'Status', 'Notes', 'Part version', 'Planned minutes', 'Actual minutes'];
+ const allowed: string[] = [...SCORE_COLUMNS, 'Date', 'Exercise', 'Set', 'Unit', 'Target', 'Result', 'Done', 'Aggregate', 'Session ID', 'Block', 'Plan', 'Title', 'Sport', 'Status', 'Notes', 'Part version', 'Planned minutes', 'Actual minutes'];
  if (headers.some(name => !name || (!allowed.includes(name) && !name.endsWith(' result'))) || new Set(headers).size !== headers.length) throw new Error('Daily sets: use unique supported headers.');
  const sessions = new Map<string, Session>();
  const metrics = new Map<string, Map<string, Map<number, { target: number | null; actual: number | null; done: boolean | null }>>>();
@@ -53,7 +54,7 @@ export function setLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bool
   }
   if (session.date !== date) throw new Error(`${context}: Session ID must refer to a single date.`);
   const shared = metadata.get(id)!;
-  for (const name of ['Block', 'Title', 'Sport', 'Plan', 'Status', 'Part version', 'Planned minutes', 'Actual minutes']) {
+  for (const name of [...SCORE_COLUMNS, 'Block', 'Title', 'Sport', 'Plan', 'Status', 'Part version', 'Planned minutes', 'Actual minutes']) {
    const value = entry[name] ?? '';
    if (!value) continue;
    if (shared[name] && shared[name] !== value) throw new Error(`${context}: conflicting ${name} for Session ID "${id}".`);
@@ -81,6 +82,7 @@ export function setLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bool
   // Metadata can be supplied once or repeated consistently on the session's rows.
   session.title = shared.Title || session.title; session.sport = shared.Sport || session.sport;
   session.prescription = shared.Plan || '';
+  session.scores = scoreFields(shared, `Daily sets session ${session.id}`);
   if ((shared.Block ?? '') !== (session.block ?? '') || (shared['Part version'] && shared['Part version'] !== session.partVersion && hasStrategy)) throw new Error(`Daily sets session ${session.id}: supply Block and Part version on its first row.`);
   for (const [header, field] of [['Planned minutes', 'plannedMinutes'], ['Actual minutes', 'actualMinutes']] as const) {
    if (shared[header]) {
@@ -95,7 +97,7 @@ export function setLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bool
    const exercise: ExerciseTracking = { group: name, name, unit, aggregation: aggregations.get(JSON.stringify([session.id, key])), targets: ordered.map(([, value]) => value.target), actual: ordered.map(([, value]) => value.actual), done: ordered.some(([, value]) => value.done === true) ? true : ordered.every(([, value]) => value.done === false) ? false : null, setNumbers: ordered.map(([number]) => number), setChecks: ordered.map(([, value]) => value.done) };
    session.tracking!.push(exercise);
   }
-  const hasResults = session.tracking!.some(exercise => exercise.actual.some(value => value !== null) || exercise.done === true) || Object.values(session.results!).some(Boolean);
+  const hasResults = typeof session.scores?.effortRating === 'number' || typeof session.scores?.actualPerformance === 'number' || typeof session.scores?.actualEffort === 'number' || session.tracking!.some(exercise => exercise.actual.some(value => value !== null) || exercise.done === true) || Object.values(session.results!).some(Boolean);
   session.status = shared.Status || (hasResults ? 'in-progress' : 'planned');
   if (!['planned', 'in-progress', 'completed', 'skipped', 'cancelled'].includes(session.status)) throw new Error(`Daily sets session ${session.id}: invalid Status.`);
   session.result = Object.entries(session.results!).map(([name, value]) => `${name}: ${value}`).join('; ');

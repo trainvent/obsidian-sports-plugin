@@ -71,3 +71,21 @@
 .sports-performance svg text { fill: var(--text-normal); font-size: 12px; }
 .sports-performance-plan { fill: var(--text-muted); opacity: .4; }
 .sports-performance-actual { fill: var(--interactive-accent); }
+
+.sports-settings .sports-sync-error {
+ border: 1px solid var(--text-error);
+ border-radius: var(--radius-m);
+ padding: 12px;
+ background: var(--background-primary-alt);
+}
+.sports-settings .sports-sync-error .setting-item-name { color: var(--text-error); }
+
+.sports-settings .sports-warning-empty { display: none; }
+
+.sports-score-chart svg { width: 100%; max-width: 960px; display: block; }
+.sports-score-chart text { fill: var(--text-muted); font-size: 12px; }
+.sports-score-grid { stroke: var(--background-modifier-border); stroke-width: 1; }
+.sports-score-expected { stroke: var(--text-muted); fill: var(--background-primary); stroke-width: 2; stroke-dasharray: 5 4; }
+.sports-score-actual { stroke: var(--interactive-accent); fill: var(--interactive-accent); stroke-width: 2; }
+
+.sports-score-chart circle.sports-score-expected { stroke-dasharray: none; }

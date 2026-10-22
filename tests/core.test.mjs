@@ -86,6 +86,18 @@ test('missing selected sheets and duplicate role selections fail explicitly', as
  await assert.rejects(parseWorkbook(workbook(), { strategySheet: '', trackingSheet: '' }), /at least one/);
  await assert.rejects(parseWorkbook(workbook(), { strategySheet: 'Strategy', trackingSheet: 'Strategy' }), /different sheets/);
 });
+test('missing sheet errors identify the setting and list available workbook tabs', async () => {
+ for (const [field, label] of [['strategySheet', 'Strategy sheet'], ['trackingSheet', 'Tracking sheet'], ['scheduleSheet', 'Weekly schedule sheet']]) {
+  const mapping = { strategySheet: '', trackingSheet: '', scheduleSheet: '', [field]: 'Old tab' };
+  await assert.rejects(parseWorkbook(workbook(), mapping), error => {
+   assert.ok(error.message.startsWith(`${label} "Old tab" was not found.`));
+   assert.ok(error.message.includes('Available sheets: "Strategy", "Daily".'));
+   assert.ok(error.message.includes('select Sync now'));
+   assert.ok(error.message.includes('Previously imported data is retained'));
+   return true;
+  });
+ }
+});
 test('offered daily template imports dates and separate results without inventing measurements', async () => {
  const saved = readFileSync('templates/Sports-template.xlsx');
  const buffer = saved.buffer.slice(saved.byteOffset, saved.byteOffset + saved.byteLength);

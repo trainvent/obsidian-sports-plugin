@@ -433,3 +433,52 @@ test('legacy sheet guide is renamed to Workbook without losing edits or overwrit
  assert.equal(files.get(other.path).content, 'Keep both');
  assert.equal(files.get('Sports/Guide/Workbook.md').content, 'My edited workbook guide');
 });
+
+
+test('Analytics owns comparisons, links from Plans, preserves reflections, and protects edited graphs', async () => {
+ const { plugin, plan, files } = fixture();
+ plan.sessions = [{ id: 'future', date: '2099-01-01', title: 'Practice', sport: 'training', partId: '', partVersion: '', prescription: 'Squat) Back squat: 3 x 5', checks: { 'Squat done': true }, results: { 'Squat 1 result': '4' }, plannedMinutes: 20, actualMinutes: 10, result: 'Recorded result', status: 'in-progress', notes: 'Session note' }];
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ const analytics = files.get('Sports/Analytics/Daily.md');
+ assert.ok(analytics.content.includes('sports-compare'));
+ assert.ok(analytics.content.includes('(reps)\t15\t4'));
+ const plans = files.get('Sports/Plans.md');
+ assert.ok(plans.content.includes('[[Sports/Analytics/Index|Analytics]]'));
+ assert.ok(!plans.content.includes('sports-compare'));
+ assert.ok(!plans.content.includes('Recorded result'));
+ assert.ok(!plans.content.includes('| Results |'));
+ analytics.content += '\nMy interpretation\n';
+ plan.sessions[0].results['Squat 1 result'] = '3';
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.ok(analytics.content.includes('(reps)\t15\t3'));
+ assert.ok(analytics.content.endsWith('My interpretation\n'));
+ analytics.content = analytics.content.replace('sports-compare', 'edited-graph');
+ const snapshot = analytics.content;
+ const issues = await syncNotes(plugin, plan);
+ assert.ok(issues.some(issue => issue.startsWith('Analytics/Daily.md:')));
+ assert.equal(analytics.content, snapshot);
+});
+
+
+test('Analytics folder separates table, daily details and score graphs, and migrates existing reflections', async () => {
+ const { plugin, plan, files } = fixture();
+ // First create the old single-page note with a trusted baseline.
+ const old = new TFile('Sports/Analytics.md');
+ old.content = '<!-- sports:begin analytics -->\nOld overview\n<!-- sports:end analytics -->\n\nMy existing analytics reflections\n';
+ files.set(old.path, old);
+ plugin.data.generatedBlocks['Sports/Analytics.md:analytics'] = '<!-- sports:begin analytics -->\nOld overview\n<!-- sports:end analytics -->';
+ plan.sessions = [{ id: 'scored', date: '2026-12-28', title: 'Skills', sport: 'training', partId: '', partVersion: '', status: 'in-progress', notes: '', result: '', plannedMinutes: 30, actualMinutes: 25, prescription: 'A) Pull-up: 3 x 5', checks: { 'A done': true }, results: { 'A 1 result': '4' }, scores: { expectedPerformance: 100, actualPerformance: 80, plannedIntensity: 3, effortRating: 4, scoredMetrics: 1, plannedMetrics: 3 } }];
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.ok(!files.has('Sports/Analytics.md'));
+ const index = files.get('Sports/Analytics/Index.md');
+ assert.ok(index.content.endsWith('My existing analytics reflections\n'));
+ for (const name of ['Table', 'Daily', 'Graph']) assert.ok(index.content.includes(`Sports/Analytics/${name}`));
+ assert.ok(!files.get('Sports/Analytics/Table.md').content.includes('sports-compare'));
+ assert.ok(files.get('Sports/Analytics/Daily.md').content.includes('sports-compare'));
+ const graph = files.get('Sports/Analytics/Graph.md');
+ assert.ok(graph.content.includes('2026-12-28\t100\t80'));
+ assert.ok(graph.content.includes('2026-12-28\t3\t4'));
+ graph.content += '\nGraph reflections\n';
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.ok(graph.content.endsWith('Graph reflections\n'));
+});

@@ -1,3 +1,4 @@
+import type { SessionScores } from '../workbook/score-fields';
 import type { ExerciseTracking } from './exercise-tracking';
 import type { CoachCache } from '../garmin/coach';
 import type { GarminCache } from '../garmin/types';
@@ -7,7 +8,7 @@ export interface TrainingPart { id: string; version: string; title: string; pres
 export interface Session {
  id: string; date: string; sport: string; title: string;
  partId: string; partVersion: string; plannedMinutes: number | null;
- tracking?: ExerciseTracking[];
+ tracking?: ExerciseTracking[]; scores?: SessionScores;
  block?: string; prescription?: string; checks?: Record<string, boolean | null>; results?: Record<string, string>;
  actualMinutes: number | null; result: string; status: string; notes: string;
 }

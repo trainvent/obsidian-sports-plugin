@@ -84,7 +84,7 @@ test('searchable settings enumerate every row without rendering or accessing sto
  const tab = new SportsSettingTab({}, plugin);
  const definitions = tab.getSettingDefinitions();
  assert.deepEqual(calls, []);
- assert.deepEqual(definitions.map(group => group.heading), ['Workbook','Garmin','Notes','Sync','Help','Advanced · recovery']);
+ assert.deepEqual(definitions.map(group => group.heading), ['Warnings','Workbook','Garmin','Notes','Sync','Help','Advanced · recovery']);
  assert.deepEqual(definitions.find(group => group.heading === 'Garmin').items.map(row => row.name), ['Connection','Import from','Show Garmin Coach plans']);
  const rows = definitions.flatMap(group => group.items);
  for (const name of ['Cloud workbook link','Tracking sheet','Sync interval','Recreate missing notes','Notes folder']) assert.ok(rows.some(row => row.name === name));
@@ -93,4 +93,59 @@ test('searchable settings enumerate every row without rendering or accessing sto
  await change(' My strategy ');
  assert.equal(plugin.data.strategySheet, 'My strategy');
  assert.deepEqual(calls, ['save','schedule']);
+});
+
+
+test('settings show persistent sync errors at the top and refresh in place after retry', async () => {
+ const calls = [];
+ const plugin = { data: { lastError: 'Tracking sheet "Log" was not found. Available sheets: "Daily".' }, syncing: false, sync: async force => calls.push(force) };
+ const tab = new SportsSettingTab({}, plugin);
+ const first = tab.getSettingDefinitions()[0];
+ assert.equal(first.heading, 'Warnings');
+ const attributes = {};
+ const classes = new Set();
+ let button;
+ const setting = {
+  settingEl: { setAttribute(key, value) { attributes[key] = value; }, toggleClass(name, enabled) { if (enabled) classes.add(name); else classes.delete(name); } },
+  setName(name) { this.name = name; return this; },
+  setDesc(desc) { this.desc = desc; return this; },
+  addButton(callback) {
+   button = { setButtonText(value) { this.text = value; return this; }, setDisabled(value) { this.disabled = value; return this; }, onClick(callback) { this.click = callback; return this; } };
+   callback(button); return this;
+  },
+ };
+ first.items[0].render(setting);
+ assert.equal(setting.name, 'Workbook sync needs attention');
+ assert.ok(setting.desc.includes('"Log" was not found'));
+ assert.ok(setting.desc.includes('"Daily"'));
+ assert.equal(attributes.role, 'alert');
+ assert.equal(attributes['aria-live'], 'polite');
+ assert.ok(classes.has('sports-sync-error'));
+ assert.ok(!classes.has('sports-warning-empty'));
+ await button.click();
+ assert.deepEqual(calls, [true]);
+ plugin.syncing = true;
+ tab.refreshGarmin();
+ assert.equal(button.disabled, true);
+ assert.ok(setting.desc.includes('was not found')); // Keep the failure until a successful retry.
+ plugin.syncing = false; plugin.data.lastError = '';
+ tab.refreshGarmin();
+ assert.equal(button.disabled, false);
+ assert.equal(setting.name, '');
+ assert.equal(setting.desc, '');
+ assert.equal(attributes.role, 'status');
+ assert.ok(!classes.has('sports-sync-error'));
+ assert.ok(classes.has('sports-warning-empty'));
+ plugin.syncing = true;
+ tab.refreshGarmin();
+ assert.equal(setting.desc, '');
+ assert.ok(classes.has('sports-warning-empty'));
+ plugin.data.lastError = 'Another failure';
+ tab.refreshGarmin();
+ assert.equal(setting.desc, 'Another failure');
+ assert.ok(!classes.has('sports-warning-empty'));
+ tab.hide();
+ plugin.data.lastError = 'New error';
+ tab.refreshGarmin();
+ assert.equal(setting.desc, 'Another failure');
 });

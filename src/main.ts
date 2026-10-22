@@ -1,3 +1,5 @@
+import { registerScoreCharts } from './ui/score-chart';
+import { analyticsNoteTasks } from './notes/analytics';
 import trackingGuide from '../Tracking.md';
 import { registerPerformanceCharts } from './ui/performance-chart';
 import { downloadWorkbook } from './workbook/download';
@@ -33,6 +35,7 @@ export default class SportsPlugin extends Plugin {
   this.data = Object.assign({}, DEFAULT_DATA, await this.loadData() as Partial<SportsData>);
   addIcon(SPORTS_ICON_ID, SPORTS_ICON_SVG);
   registerPerformanceCharts(this);
+  registerScoreCharts(this);
   this.registerView(SPORTS_VIEW, leaf => new SportsDashboard(leaf, this));
   this.addRibbonIcon(SPORTS_ICON_ID, 'Open dashboard', () => { void this.openDashboard(); });
   this.addCommand({ id: 'open-dashboard', name: 'Open dashboard', callback: () => this.openDashboard() });
@@ -44,6 +47,7 @@ export default class SportsPlugin extends Plugin {
   this.addCommand({ id: 'sync', name: 'Sync now', callback: () => this.sync(true) });
   this.addCommand({ id: 'open-week', name: 'Create or open weekly note', callback: () => this.openWeekly() });
   this.addCommand({ id: 'open-tracking-guide', name: 'Open flexible tracking guide', callback: () => this.openTrackingGuide() });
+  this.addCommand({ id: 'open-analytics', name: 'Open training analytics', callback: () => this.openAnalytics() });
   this.addCommand({ id: 'open-plans', name: 'Open upcoming plans', callback: () => this.openPlans() });
   this.addCommand({ id: 'open-log', name: 'Open training log', callback: () => this.openTrainingLog() });
   this.settingsTab = new SportsSettingTab(this.app, this);
@@ -121,6 +125,20 @@ export default class SportsPlugin extends Plugin {
   if (file) await this.app.workspace.getLeaf(false).openFile(file);
   else new Notice('Sync a workbook before opening plans.');
  }
+ async openAnalytics(): Promise<void> {
+  if (this.syncing || this.noteBusy) return;
+  this.noteBusy = true;
+  try {
+   const issues = await migrateNoteNames(this);
+   if (issues.length) throw new Error(issues[0]);
+   for (const task of analyticsNoteTasks(this.data.plan, this.data.notesFolder)) {
+    await updateNote(this, task.path, task.id, task.body, task.initial);
+   }
+   const file = this.app.vault.getFileByPath(`${this.data.notesFolder}/Analytics/Index.md`);
+   if (file) await this.app.workspace.getLeaf(false).openFile(file);
+  } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not open analytics.'); }
+  finally { this.noteBusy = false; }
+ }
  async openTrackingGuide(): Promise<void> {
   if (this.noteBusy || this.syncing) return;
   this.noteBusy = true;
@@ -137,7 +155,7 @@ export default class SportsPlugin extends Plugin {
   try {
    const issues = await migrateNoteNames(this);
    if (issues.length) throw new Error(issues[0]);
-   const file = await updateNote(this, 'Log.md', 'training-log', `${noteLink(this.data.notesFolder, 'Plans', 'Plans')}\n\n${combinedLogMarkdown(this.data.plan, this.data.garminCache)}`, '# Log\n\n## Commentary\n');
+   const file = await updateNote(this, 'Log.md', 'training-log', `${noteLink(this.data.notesFolder, 'Plans', 'Plans')} · ${noteLink(this.data.notesFolder, 'Analytics/Index', 'Analytics')}\n\n${combinedLogMarkdown(this.data.plan, this.data.garminCache)}`, '# Log\n\n## Commentary\n');
    await this.app.workspace.getLeaf(false).openFile(file);
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not update the training log.'); }
   finally { this.noteBusy = false; }
@@ -148,7 +166,7 @@ export default class SportsPlugin extends Plugin {
   this.noteBusy = true;
   try {
    const dates = weekDates(anchor);
-   const file = await updateNote(this, `Weeks/${dates[0]}.md`, `week:${dates[0]}`, `${noteLink(this.data.notesFolder, 'Plans', 'Plans')} · ${noteLink(this.data.notesFolder, 'Log', 'Log')}\n\n${weekMarkdown(this.data.plan, dates, this.data.showRegularActivities) + garminMarkdown(this.data.garminCache, dates)}`, `# Week of ${dates[0]}\n\n## Reflections\n\n### What improved\n\n### Recovery and comfort\n\n### What to adjust\n\n### Next week's focus\n`);
+   const file = await updateNote(this, `Weeks/${dates[0]}.md`, `week:${dates[0]}`, `${noteLink(this.data.notesFolder, 'Plans', 'Plans')} · ${noteLink(this.data.notesFolder, 'Log', 'Log')} · ${noteLink(this.data.notesFolder, 'Analytics/Index', 'Analytics')}\n\n${weekMarkdown(this.data.plan, dates, this.data.showRegularActivities) + garminMarkdown(this.data.garminCache, dates)}`, `# Week of ${dates[0]}\n\n## Reflections\n\n### What improved\n\n### Recovery and comfort\n\n### What to adjust\n\n### Next week's focus\n`);
    await this.app.workspace.getLeaf(false).openFile(file);
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not update the weekly note.'); }
   finally { this.noteBusy = false; }

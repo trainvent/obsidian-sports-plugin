@@ -34,5 +34,11 @@ export function startTemplateNextMonday(template: Uint8Array, now = new Date()):
   return `<${prefix}c${attributes} t="inlineStr"><${prefix}is><${prefix}t>${timezone}</${prefix}t></${prefix}is></${prefix}c>`;
  });
  files[strategyPath] = strToU8(strategy); files[logPath] = strToU8(log);
+ // Scoring dates reference Daily; keep their saved values aligned before Excel opens.
+ for (const path of Object.keys(files)) {
+  if (!/^xl\/worksheets\/sheet\d+\.xml$/.test(path) || [strategyPath, logPath].includes(path)) continue;
+  const xml = strFromU8(files[path]!);
+  files[path] = strToU8(xml.replace(cellPattern('A\\d+'), cell => /<(?:\w+:)?f\b[^>]*>(?:'Daily'|Daily)!A\d+<\//.test(cell) ? shift(cell) : cell));
+ }
  return Uint8Array.from(zipSync(files)).buffer;
 }

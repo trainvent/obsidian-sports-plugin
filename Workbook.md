@@ -163,6 +163,7 @@ Keep structural headers and each group's subcolumn alignment intact.
 | Z–AA | Done, Rounds | Core recording |
 | AB | Notes | Shared session notes |
 | AC–AE | Muscle-up result, HSPU result, Pistol result | Optional manual goal results |
+| AF–AK | Planned intensity, Effort rating, Expected performance, Actual performance, Scored metrics, Planned metrics | Separate ratings, performance formulas, and coverage |
 
 **Plan:** the A and B session blocks stack each A), B), C) exercise and Core on
 separate lines, just like Technique. The session's Block A/B and the exercise
@@ -242,3 +243,33 @@ sections against accidental edits; change plans in the workbook instead.
    duplicate IDs, unknown blocks/goals and commas or colons in arsenal names.
 6. In Obsidian, select the file and sheet names, then **Sync now**. Confirm the
    imported dates, prescriptions and recurring durations before relying on them.
+
+
+## Scoring and the Analytics folder
+
+The example includes a **Scoring** formula sheet. Keep the plugin's three import
+mappings on Strategy, Daily, and Recurring; Scoring feeds formulas on Daily and
+is not a fourth import selection.
+
+Scoring has Date, Session, Exercise, Unit, Include, Target, Actual, Expected score,
+Actual score, and Direction. Green Include/Target/Direction cells are editable.
+Actual links to explicit Done and result fields in Daily. Expected score is 100
+for an included positive target. Higher-direction Actual score is actual/target
+× 100; lower-direction is target/actual × 100. Lower-direction zero results remain
+unscored. Daily performance takes the median of the session's score rows, and
+Scored metrics / Planned metrics makes partial coverage visible.
+
+Enter **Planned intensity** (1–5, easy to very hard) before training. Optionally
+enter **Effort rating** (1–5) afterward to record how hard it felt, or leave it
+blank. These whole-number subjective ratings start blank and never affect the
+performance calculation. No duration × RPE score is required or inferred.
+When extending the workout layout, update Scoring's actual-cell references,
+explicit targets, and the Daily median/count ranges for that session.
+Recalculate and save the XLSX before syncing.
+
+The plugin's Analytics folder separates **Table**, **Daily**, and **Graph**.
+Graph separates expected/actual performance from planned intensity and optional
+felt effort on a fixed 1–5 scale. Missing values leave gaps. For multiple sessions
+per date, each trend uses the median of available session values, and the number
+of felt-effort ratings remains visible. A score measures target attainment,
+not absolute training quality. Keep commentary outside protected generated sections.

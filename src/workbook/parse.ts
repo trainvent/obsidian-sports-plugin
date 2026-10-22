@@ -66,13 +66,13 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
  if (buffer.byteLength > 5 * 1024 * 1024) throw new Error('Workbook exceeds the prototype limit of 5 MB.');
  checkWorkbookArchive(buffer);
  const sheets = await readXlsxFile(new Blob([buffer]));
- const selected = (name: string): SheetData => {
+ const selected = (name: string, setting: string): SheetData => {
   const sheet = sheets.find(sheet => sheet.sheet === name);
-  if (!sheet) throw new Error(`Selected sheet "${name}" was not found. Update the sheet selection in Sports settings.`);
+  if (!sheet) throw new Error(`${setting} "${name}" was not found. Available sheets: ${sheets.map(item => `"${item.sheet}"`).join(', ') || 'none'}. Update ${setting.toLowerCase()} in Sports settings, then select Sync now. Previously imported data is retained.`);
   return sheet.data;
  };
- const strategy = mapping.strategySheet ? tables(selected(mapping.strategySheet)) : null;
- const log = mapping.trackingSheet ? selected(mapping.trackingSheet) : null;
+ const strategy = mapping.strategySheet ? tables(selected(mapping.strategySheet, 'Strategy sheet')) : null;
+ const log = mapping.trackingSheet ? selected(mapping.trackingSheet, 'Tracking sheet') : null;
  const previous = mapping.previous;
  let id = previous?.id ?? 'sports-tracking-only';
  let name = previous?.name ?? 'Training log';
@@ -128,7 +128,7 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
  if (strategy.get('Exercises')?.length) throw new Error('Exercise-level tables are not supported in this prototype. Use the part prescription field.');
  }
  if (mapping.scheduleSheet) {
-  weeklySchedule = parseWeeklySchedule(table(tables(selected(mapping.scheduleSheet), true), 'Weekly schedule'));
+  weeklySchedule = parseWeeklySchedule(table(tables(selected(mapping.scheduleSheet, 'Weekly schedule sheet'), true), 'Weekly schedule'));
  } else if (mapping.scheduleSheet === undefined && strategy) {
   // Legacy API callers retain the previous two-sheet/automatic behavior.
   const recurring = sheets.find(sheet => sheet.sheet === 'Recurring');
