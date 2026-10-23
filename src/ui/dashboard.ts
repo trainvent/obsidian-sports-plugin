@@ -4,7 +4,7 @@ import { activityDetails } from '../garmin/activities';
 import { ItemView, WorkspaceLeaf, Setting } from 'obsidian';
 import { SPORTS_ICON_ID } from './icon';
 import type SportsPlugin from '../main';
-import { weekDates, scheduleOn } from '../model/calendar';
+import { localDate, scheduleOn } from '../model/calendar';
 export const SPORTS_VIEW = 'sports-dashboard';
 export class SportsDashboard extends ItemView {
  private anchor = new Date();
@@ -27,20 +27,21 @@ export class SportsDashboard extends ItemView {
   root.createEl('p', { text: this.plugin.data.plan ? `${this.plugin.data.plan.name} · Last imported ${new Date(this.plugin.data.plan.importedAt).toLocaleString()}` : 'Set a workbook source and its sheets in Settings → Sports to get started.' });
   if (this.plugin.data.lastError) root.createEl('p', { text: this.plugin.data.lastError, cls: 'sports-error' });
   root.createEl('p', { text: (this.plugin.data.strategySheet || this.plugin.data.trackingSheet || this.plugin.data.scheduleSheet) && this.plugin.data.syncMinutes ? `Automatic workbook sync every ${this.plugin.data.syncMinutes} minutes while Obsidian is running.` : 'Automatic sync is off. Use Sync now to import changes.' });
-  new Setting(root).setName('Week')
-   .addButton(button => button.setButtonText('Previous').onClick(() => { this.anchor.setDate(this.anchor.getDate() - 7); this.render(); }))
+  new Setting(root).setName('Day')
+   .addButton(button => button.setButtonText('Previous').onClick(() => { this.anchor.setDate(this.anchor.getDate() - 1); this.render(); }))
    .addButton(button => button.setButtonText('Today').onClick(() => { this.anchor = new Date(); this.render(); }))
-   .addButton(button => button.setButtonText('Next').onClick(() => { this.anchor.setDate(this.anchor.getDate() + 7); this.render(); }))
+   .addButton(button => button.setButtonText('Next').onClick(() => { this.anchor.setDate(this.anchor.getDate() + 1); this.render(); }))
    .addButton(button => button.setButtonText('Open weekly note').onClick(() => this.plugin.openWeekly(this.anchor)));
   const cache = this.plugin.data.garminCache;
-  if (cache) root.createEl('p', { text: `${cache.lastSuccess ? `Garmin last synced ${new Date(cache.lastSuccess).toLocaleString()}` : 'Garmin has not synced yet.'}${cache.error ? ` · ${cache.error}` : ''}` });
-  const dates = weekDates(this.anchor);
-  for (const date of dates) {
+  if (cache?.error) root.createEl('p', { text: cache.error, cls: 'sports-error' });
+  for (let offset = 0; offset <= 5; offset++) {
+   const day = new Date(this.anchor.getFullYear(), this.anchor.getMonth(), this.anchor.getDate() + offset, 12);
+   const date = localDate(day);
    const section = root.createDiv({ cls: 'sports-day' }); section.createEl('h3', { text: date });
    const sessions = this.plugin.data.plan?.sessions.filter(session => session.date === date) ?? [];
    const scheduled = this.plugin.data.showRegularActivities ? scheduleOn(this.plugin.data.plan, date) : [];
    const activities = cache?.activities.filter(activity => activity.date === date) ?? [];
-   if (!activities.length && !sessions.length && !scheduled.length) section.createEl('p', { text: 'No sessions planned.' });
+   if (!activities.length && !sessions.length && !scheduled.length) section.createEl('p', { text: 'No sessions planned or recorded.' });
    for (const activity of activities) {
     section.createEl('a', { text: activity.name, href: `https://connect.garmin.com/modern/activity/${activity.id}` });
     section.createEl('p', { text: `Recorded by Garmin · ${activityDetails(activity)}` });
