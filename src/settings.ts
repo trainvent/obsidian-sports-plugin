@@ -57,7 +57,8 @@ export class SportsSettingTab extends PluginSettingTab {
     sheet('Tracking sheet', 'Daily plans and results. Blank to disable.', 'trackingSheet', 'Daily'),
     sheet('Weekly schedule sheet', 'Recurring activities. Blank to disable.', 'scheduleSheet', 'Recurring'),
     { name: 'Example workbook', desc: 'Download a template starting next week, then upload it to your cloud storage.', render: setting => {
-     setting.addButton(button => button.setButtonText('Download template').onClick(() => plugin.createExample()));
+     setting.addButton(button => button.setButtonText('Download XLSX').onClick(() => plugin.createExample('xlsx')));
+     setting.addButton(button => button.setButtonText('Download ODS').onClick(() => plugin.createExample('ods')));
     } },
    ]),
    group('Garmin', garminItems),

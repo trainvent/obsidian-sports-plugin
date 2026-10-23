@@ -66,7 +66,7 @@ export function readOds(xml: string, selected: Set<string>): WorkbookSheet[] {
   if (stack.pop() !== name) fail();
   if (active && sheet) {
    if ((name === 'table:table-cell' || name === 'table:covered-table-cell') && cell && row) {
-    const value = cell.covered ? null : odsValue(cell.attrs, cell.text);
+    const value = cell.covered ? null : odsValue(cell.attrs, cell.text, cell.paragraphs > 0);
     if (row.length + emptyColumns + cell.repeat > MAX_COLUMNS) throw new Error('ODS sheet exceeds the supported column limit.');
     if (value === null || value === '') emptyColumns += cell.repeat;
     else {

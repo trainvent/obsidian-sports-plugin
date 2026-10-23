@@ -2,11 +2,11 @@ import type { SheetData } from './sheet-data';
 type Value = SheetData[number][number];
 
 /** Read stored values, never evaluate formulas or use localized display numbers. */
-export function odsValue(attrs: Record<string, string>, text: string): Value {
+export function odsValue(attrs: Record<string, string>, text: string, hasSavedText = false): Value {
  const type = attrs['office:value-type'];
  const formula = attrs['table:formula'];
  const invalid = (): never => { throw new Error('ODS cell has an invalid or missing saved value. Recalculate and save the workbook in your spreadsheet editor, then sync again.'); };
- if (formula && (!type || /^#(?:REF!|VALUE!|DIV\/0!|NAME\?|N\/A|NUM!|ERROR!)/.test(text))) invalid();
+ if (formula && ((!type && !hasSavedText) || /^#(?:REF!|VALUE!|DIV\/0!|NAME\?|N\/A|NUM!|ERROR!)/.test(text))) invalid();
  switch (type) {
   case 'float': case 'percentage': case 'currency': {
    const raw = attrs['office:value'];

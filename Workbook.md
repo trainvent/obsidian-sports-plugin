@@ -3,7 +3,7 @@
 This guide lives in `Guide/Workbook.md` under the configured Sports notes folder
 in your vault. Existing guide edits are preserved on template download and sync.
 
-Give this guide and a copy of `templates/Training-example.xlsx` to your chatbot.
+Give this guide and a copy of `templates/Training-example.xlsx` or `templates/Training-example.ods` to your chatbot.
 The example is a fixed starting point, not a personalized recommendation. Adapt
 its goals, exercises, prescriptions, schedule and training volume to your needs.
 Work on a copy. The plugin reads the workbook and never writes training results
@@ -375,4 +375,6 @@ ODS uses the same sheet mappings and training layouts as XLSX. In LibreOffice
 Calc, save a copy as `.ods`, recalculate and save, then update the plugin’s cloud
 workbook link. Sports imports saved cell values, including formula results; it
 does not evaluate formulas. Verify calculated intensity and Done values after
-conversion. Downloads still provide the XLSX template.
+conversion. Choose **Download XLSX** or **Download ODS** in settings. Both start next Monday.
+The ODS template uses TRUE/FALSE completion dropdowns; **All done** links the
+individual Done values.

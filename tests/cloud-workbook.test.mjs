@@ -69,7 +69,7 @@ test('template download uses a browser blob and disposes the link without select
  } finally { URL.createObjectURL = create; URL.revokeObjectURL = revoke; }
 });
 test('production bundle contains no runtime filesystem access', async () => {
- const output = await build({ entryPoints: ['src/main.ts'], bundle: true, write: false, metafile: true, platform: 'node', format: 'cjs', loader: { '.xlsx': 'binary', '.md': 'text', '.svg': 'text' }, external: ['obsidian'], plugins: [{ name: 'unused-sdk-imports', setup(builder) {
+ const output = await build({ entryPoints: ['src/main.ts'], bundle: true, write: false, metafile: true, platform: 'node', format: 'cjs', loader: { '.xlsx': 'binary', '.ods': 'binary', '.md': 'text', '.svg': 'text' }, external: ['obsidian'], plugins: [{ name: 'unused-sdk-imports', setup(builder) {
   builder.onResolve({ filter: /^(?:node:)?fs(?:\/promises)?$/ }, args => ({ path: args.path, external: true, sideEffects: false }));
  } }] });
  const imports = Object.values(output.metafile.outputs).flatMap(file => file.imports);
@@ -85,4 +85,23 @@ test('cloud ODS share links import without a filename extension', async () => {
  assert.equal(plan.sessions[0].date, '2026-10-26');
  assert.equal(plan.sessions[0].prescription, 'Practice');
  assert.equal(plan.sessions[0].status, 'planned');
+});
+
+
+test('ODS downloads use the ODS filename and MIME type', async () => {
+ const create = URL.createObjectURL, revoke = URL.revokeObjectURL;
+ let blob, revoked, clicked = false;
+ URL.createObjectURL = value => { blob = value; return 'blob:ods-template'; };
+ URL.revokeObjectURL = value => { revoked = value; };
+ try {
+  const doc = { body: { createEl(tag, options) {
+   assert.equal(tag, 'a');
+   assert.equal(options.attr.download, 'Training.ods');
+   return { click() { clicked = true; }, remove() {} };
+  } } };
+  const dispose = downloadWorkbook(bytes, doc, 'ods');
+  assert.equal(blob.type, 'application/vnd.oasis.opendocument.spreadsheet');
+  assert.equal(clicked, true);
+  dispose(); assert.equal(revoked, 'blob:ods-template');
+ } finally { URL.createObjectURL = create; URL.revokeObjectURL = revoke; }
 });

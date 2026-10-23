@@ -20,8 +20,8 @@ listed in Obsidian's community directory.
 ## Get started
 
 1. Build the plugin, reload Obsidian, and enable **Sports**.
-2. Select **Download template** in settings, or run **Sports: Download example workbook**.
-   Your browser saves the generated XLSX; the plugin does not choose a filesystem path.
+2. Select **Download XLSX** or **Download ODS** in settings, or run
+   **Sports: Download example workbook** and choose a format. Your browser saves it; the plugin does not choose a filesystem path.
 3. Upload it to Nextcloud or another cloud service. Paste its HTTPS download/share
    link into **Settings → Sports → Cloud workbook link**, then select **Sync now**.
 4. Edit the workbook in your cloud spreadsheet editor, or upload a revised copy,
@@ -64,10 +64,12 @@ Both **XLSX and ODS** imports are supported, with automatic format detection.
 Use the same sheet names and column layout in either format. To use ODS, save a
 copy in LibreOffice Calc, recalculate, save, and point **Cloud workbook link** at
 that file. Formula results are read as saved; Sports does not recalculate formulas.
-Password-protected workbooks are unsupported. Template downloads remain XLSX.
+Password-protected workbooks are unsupported. Templates are available in both formats. The ODS template uses TRUE/FALSE dropdowns
+for completion; **All done** also updates the individual Done values.
 
-Use the [example workbook](templates/Training-example.xlsx), or select **Download template**
-in Sports settings to save a generated copy through the browser. It uses **Strategy**, **Recurring**,
+Use the example workbook in [XLSX](templates/Training-example.xlsx) or
+[ODS](templates/Training-example.ods), or download either format in Sports settings
+to get a copy starting next Monday. It uses **Strategy**, **Recurring**,
 and **Daily** tabs, plus a **Scoring** sheet for editable performance metrics. The fixed example contains 12 weekly plans and 48 manual sessions;
 actual results are blank. Template download and note sync save `Guide/Workbook.md` inside the configured
 vault notes folder (by default `Sports/Guide/Workbook.md`), preserving an existing guide. No customization flow is required. Give the workbook and

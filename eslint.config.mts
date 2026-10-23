@@ -30,6 +30,6 @@ export default defineConfig(
 		},
 	},
 	...obsidianmd.configs.recommended,
- { rules: { 'obsidianmd/ui/sentence-case': ['warn', { brands: ['Nextcloud', 'Garmin Coach', 'Garmin', 'Obsidian', 'Markdown'], ignoreWords: ['YYYY-MM-DD'], ignoreRegex: ['^YYYY-MM-DD$'] }] } },
+ { rules: { 'obsidianmd/ui/sentence-case': ['warn', { brands: ['Nextcloud', 'Garmin Coach', 'Garmin', 'Obsidian', 'Markdown'], ignoreWords: ['YYYY-MM-DD', 'XLSX', 'ODS'], ignoreRegex: ['^YYYY-MM-DD$'] }] } },
  { files: ['tests/*.mjs'], languageOptions: { globals: globals.node }, rules: { 'obsidianmd/no-nodejs-modules': 'off', 'obsidianmd/no-global-this': 'off' } },
 );

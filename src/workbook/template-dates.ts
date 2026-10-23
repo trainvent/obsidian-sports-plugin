@@ -2,10 +2,15 @@ import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 
 const DAY = 86_400_000;
 
-/** Rebase our bundled template only. Imported user workbooks are never shifted. */
-export function startTemplateNextMonday(template: Uint8Array, now = new Date()): ArrayBuffer {
+export function nextTemplateMonday(now: Date): Date {
  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
  start.setDate(start.getDate() + ((8 - start.getDay()) % 7 || 7));
+ return start;
+}
+
+/** Rebase our bundled template only. Imported user workbooks are never shifted. */
+export function startTemplateNextMonday(template: Uint8Array, now = new Date()): ArrayBuffer {
+ const start = nextTemplateMonday(now);
  const serial = (Date.UTC(start.getFullYear(), start.getMonth(), start.getDate()) - Date.UTC(1899, 11, 30)) / DAY + 0.5;
  const files = unzipSync(template);
  const strategyPath = 'xl/worksheets/sheet1.xml';

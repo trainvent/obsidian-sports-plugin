@@ -3,7 +3,8 @@ import { registerScoreCharts } from './ui/score-chart';
 import { analyticsNoteTasks } from './notes/analytics';
 import trackingGuide from '../Tracking.md';
 import { registerPerformanceCharts } from './ui/performance-chart';
-import { downloadWorkbook } from './workbook/download';
+import { TemplateFormatModal } from './ui/template-format';
+import { downloadWorkbook, type WorkbookFormat } from './workbook/download';
 import { syncCoachOnlyPlans } from './notes/coach-plans';
 import { combinedLogMarkdown } from './notes/combined-log';
 import { Plugin, Notice, addIcon, Platform } from 'obsidian';
@@ -63,10 +64,11 @@ export default class SportsPlugin extends Plugin {
   });
  }
  onunload(): void { this.garminDialog?.close(); if (this.timer !== undefined) window.clearInterval(this.timer); }
- async createExample(): Promise<void> {
+ async createExample(format?: WorkbookFormat): Promise<void> {
+  if (!format) { new TemplateFormatModal(this).open(); return; }
   try {
    await ensureSheetGuide(this);
-   const revoke = downloadWorkbook(templateWorkbook());
+   const revoke = downloadWorkbook(templateWorkbook(new Date(), format), document, format);
    this.register(revoke);
    const timer = window.setTimeout(revoke, 60_000);
    this.register(() => window.clearTimeout(timer));

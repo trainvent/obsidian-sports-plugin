@@ -27,7 +27,7 @@ const context = await esbuild.context({
   // work to retain; referenced filesystem functions would still be emitted.
   build.onResolve({ filter: /^(?:node:)?fs(?:\/promises)?$/ }, args => ({ path: args.path, external: true, sideEffects: false }));
  } }],
-	loader: { '.xlsx': 'binary', '.svg': 'text', '.md': 'text' },
+	loader: { '.xlsx': 'binary', '.ods': 'binary', '.svg': 'text', '.md': 'text' },
 	external: [
 		'node:*',
 		'obsidian',

@@ -4,13 +4,13 @@ import { build } from 'esbuild';
 import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
-import { strToU8, zipSync } from 'fflate';
+import { strToU8, zipSync, unzipSync } from 'fflate';
 import { odsArchive, odsDocument, odsCell } from './ods-fixtures.mjs';
 const temp = mkdtempSync(`${tmpdir()}/sports-ods-`);
 process.on('exit', () => rmSync(temp, { recursive: true, force: true }));
-const output = await build({ stdin: { contents: "export { parseWorkbook } from './src/workbook/parse'; export { readWorkbookSheets } from './src/workbook/read-sheets'; export { readOds } from './src/workbook/ods';", resolveDir: process.cwd() }, bundle: true, format: 'cjs', platform: 'node', write: false });
+const output = await build({ stdin: { contents: "export { templateWorkbook } from './src/workbook/template-file'; export { parseWorkbook } from './src/workbook/parse'; export { readWorkbookSheets } from './src/workbook/read-sheets'; export { readOds } from './src/workbook/ods';", resolveDir: process.cwd() }, bundle: true, format: 'cjs', platform: 'node', write: false, loader: { '.xlsx': 'binary', '.ods': 'binary' } });
 writeFileSync(`${temp}/ods.cjs`, output.outputFiles[0].text);
-const { parseWorkbook, readWorkbookSheets, readOds } = createRequire(import.meta.url)(`${temp}/ods.cjs`);
+const { templateWorkbook, parseWorkbook, readWorkbookSheets, readOds } = createRequire(import.meta.url)(`${temp}/ods.cjs`);
 const mapping = { strategySheet: '', trackingSheet: 'Daily', scheduleSheet: '' };
 const raw = xml => ({ xml });
 const date = raw('<table:table-cell office:value-type="date" office:date-value="2026-10-26"/>');
@@ -105,4 +105,31 @@ test('ODS rejects invalid XML, unsupported archives, encrypted data, and oversiz
  await assert.rejects(readWorkbookSheets(encrypted, new Set(['Daily'])), /Password-protected/);
  const unsupported = zipSync({ 'content.xml': strToU8(xml) });
  await assert.rejects(readWorkbookSheets(unsupported.buffer, new Set(['Daily'])), /Unsupported workbook format/);
+});
+
+
+test('both downloadable templates start next Monday and import identical plans across year/DST boundaries', async () => {
+ const config = { strategySheet: 'Strategy', trackingSheet: 'Daily', scheduleSheet: 'Recurring' };
+ for (const now of [new Date(2026, 11, 31, 12), new Date(2027, 2, 27, 12), new Date(2027, 9, 30, 12), new Date(2026, 9, 26, 12)]) {
+  const xlsx = await parseWorkbook(templateWorkbook(now, 'xlsx'), config);
+  const odsBytes = templateWorkbook(now, 'ods');
+  const ods = await parseWorkbook(odsBytes, config);
+  assert.deepEqual(withoutStamp(ods), withoutStamp(xlsx));
+  assert.equal(ods.sessions.length, 48);
+  assert.equal(ods.weekPlans.length, 12);
+  assert.ok(ods.sessions.every(session => session.scores.actualPerformance === null));
+  const start = new Date(`${ods.sessions[0].date}T12:00:00`);
+  assert.equal(start.getDay(), 1);
+  assert.ok(start > now);
+  assert.deepEqual(unzipSync(new Uint8Array(templateWorkbook(now, 'ods'))), unzipSync(new Uint8Array(odsBytes)));
+  assert.equal(new DataView(odsBytes).getUint16(8, true), 0);
+ }
+});
+
+test('native Calc empty formula paragraphs stay missing rather than becoming zero', async () => {
+ const blank = raw('<table:table-cell table:formula="of:=IF(FALSE();1;&quot;&quot;)"><text:p/></table:table-cell>');
+ const data = [['Date', 'Block', 'Plan', 'Actual performance'], [date, 'A', 'Practice', blank]];
+ const plan = await parseWorkbook(odsArchive(simple(data)), mapping);
+ assert.equal(plan.sessions[0].status, 'planned');
+ assert.equal(plan.sessions[0].scores, undefined);
 });
