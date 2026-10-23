@@ -18,9 +18,9 @@ export class SportsDashboard extends ItemView {
   const actions = hero.createDiv({ cls: 'sports-dash-actions' });
   const sync = button(actions, this.plugin.syncing ? 'Syncing…' : 'Sync now', () => this.plugin.sync(true), 'mod-cta');
   sync.disabled = this.plugin.syncing;
+  button(actions, 'Stats', () => this.plugin.openAnalytics());
   button(actions, 'Training log', () => this.plugin.openTrainingLog());
-  button(actions, 'Analytics', () => this.plugin.openAnalytics());
-  button(actions, 'Plans', () => this.plugin.openPlans());
+  button(actions, 'Structure/Plans', () => this.plugin.openPlans());
   if (!this.plugin.data.plan) hero.createEl('p', { text: 'Add a workbook in the plugin settings to see your plan.', cls: 'sports-dash-muted' });
   if (this.plugin.data.lastError) root.createEl('p', { text: this.plugin.data.lastError, cls: 'sports-error' });
   const navigation = root.createDiv({ cls: 'sports-dash-navigation' });

@@ -66,8 +66,8 @@ test('daily notes follow the plan timezone and also support Garmin-only dates in
  const plan = { timezone: 'Europe/Berlin', parts: [], sessions };
  const now = new Date('2026-10-20T22:30:00Z');
  const tasks = dailyNoteTasks(plan, 'My sports', undefined, now);
- assert.deepEqual(tasks.map(t => t.path), ['Analytics/Daily/2026-10-21.md']);
- assert.ok(tasks[0].body.includes('[[My sports/Analytics/Daily/_Index|All days]]'));
+ assert.deepEqual(tasks.map(t => t.path), ['Days/2026-10-21.md']);
+ assert.ok(tasks[0].body.includes('[[My sports/Days/_Index|All days]]'));
  const cache = { lastSuccess: '', activities: [{ id: '1', date: '2020-01-01', time: '08:00', name: 'Only watch', type: 'running', duration: null, distance: null, average_hr: null }] };
  const watch = dailyNoteTasks(null, 'My sports', cache, now);
  assert.equal(watch.length, 1);
@@ -139,7 +139,7 @@ test('scoring workbook imports saved formulas, no invented actuals, and rebases 
 test('analytics pages separate their content and graph preserves missing values without plotting zeros', () => {
  const plan = { parts: [], sessions: [{ date: '2026-10-26', title: 'Training', result: '', status: 'planned', notes: '', sport: 'training', plannedMinutes: 30, actualMinutes: null, scores: { expectedPerformance: 100, actualPerformance: null, plannedIntensity: 3, effortRating: null, scoredMetrics: 0, plannedMetrics: 3 } }] };
  const pages = analyticsNoteTasks(plan, 'Custom sports');
- assert.deepEqual(pages.map(page => page.path), ['Analytics/_Index.md', 'Analytics/Daily/_Index.md', 'Analytics/Sheet.md', 'Analytics/Smartwatch.md', 'Analytics/Combined.md']);
+ assert.deepEqual(pages.map(page => page.path), ['Overview.md', 'Days/_Index.md', 'Analytics/Sheet.md', 'Analytics/Smartwatch.md', 'Stats.md']);
  const graph = analyticsGraphMarkdown(plan, 'Custom sports');
  assert.ok(graph.includes('2026-10-26\t—'));
  assert.equal((graph.match(/```sports-trend/g) ?? []).length, 3);
@@ -291,20 +291,20 @@ test('score charts break lines at missing measurements and retain recorded zero 
 
 test('Combined keeps source minutes separate and preserves missing measurements', () => {
  const plan = { timezone: 'UTC', sessions: [
-  { date: '2020-01-01', actualMinutes: 30, scores: { plannedIntensity: 6 } },
-  { date: '2020-01-01', actualMinutes: null, scores: { plannedIntensity: 8 } },
+  { date: '2020-01-01', actualMinutes: 30, scores: { plannedIntensity: 6, effortRating: 3 } },
+  { date: '2020-01-01', actualMinutes: null, scores: { plannedIntensity: 8, effortRating: 5 } },
   { date: '2020-01-02', actualMinutes: 0 },
   { date: '2019-12-01', actualMinutes: null },
   { date: '2099-01-01', actualMinutes: 50 },
  ] };
  const cache = { start: '2020-01-01', end: '2020-01-03', lastSuccess: '2020-01-04', activities: [
-  { date: '2020-01-01', duration: 600, average_hr: 140 },
-  { date: '2020-01-01', duration: 1200, average_hr: 160 },
+  { date: '2020-01-01', duration: 600, average_hr: 140, hr_zones: [60, 0, 0, 0, 0] },
+  { date: '2020-01-01', duration: 1200, average_hr: 160, hr_zones: [0, 0, 0, 0, 180] },
   { date: '2020-01-03', duration: null, average_hr: null },
  ] };
  const body = combinedAnalyticsMarkdown(plan, 'Custom', cache, new Date('2020-01-04T12:00:00Z'));
  assert.ok(body.includes('2020-01-01\t30\t30'));
- assert.ok(body.includes('2020-01-01\t7\t150'));
+ assert.ok(body.includes('2020-01-01\t4\t4'));
  assert.ok(body.includes('2020-01-02\t0\t0'));
  assert.ok(body.includes('2019-12-01\t—\t—'));
  assert.ok(body.includes('2020-01-03\t—\t—'));

@@ -1,3 +1,4 @@
+import { parseZones } from './zones';
 import { Garmin } from 'garminconnect-js';
 import { syncCoach } from './coach';
 import { Platform } from 'obsidian';
@@ -23,8 +24,16 @@ export async function syncGarmin(plugin: SportsPlugin, force = false, createClie
   if (start > end) throw new Error('Invalid history range.');
   const client = await createClient(plugin.app, plugin.data.garminSecretId);
   if (!await client.loadTokens()) throw new Error('Garmin sign-in required.');
-  const rows = await new Garmin(client).getActivitiesByDate(start, end);
+  const garmin = new Garmin(client);
+  const rows = await garmin.getActivitiesByDate(start, end);
   const activities = normalizeGarmin(rows, timezone, start, end);
+  const cached = new Map(previous.activities.map(a => [a.id, a]));
+  for (const activity of activities) {
+   const known = cached.get(activity.id);
+   if (known?.hr_zones && known.date < end) { activity.hr_zones = known.hr_zones; continue; }
+   try { activity.hr_zones = parseZones(await garmin.getActivityHrInTimezones(activity.id)); }
+   catch { activity.hr_zones = known?.hr_zones ?? null; }
+  }
   plugin.data.garminCache = { activities, lastAttempt: attempt, lastSuccess: new Date().toISOString(), start, end, error: '' };
  } catch {
   // API failures can include credentials or full responses. Never persist or display them.

@@ -1,9 +1,9 @@
 {
 	"id": "sports",
 	"name": "Sports",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"minAppVersion": "1.11.4",
-	"description": "Synchronize your training from spreadsheets and turn it into calendars, workout logs, and goal notes, with optional Garmin Connect support.",
+	"description": "Follow athletic, street workout, and calisthenics plans from spreadsheets, with workout logs, progress charts, and optional Garmin Connect support.",
 	"author": "Trainvent",
 	"authorUrl": "https://github.com/trainvent",
 	"isDesktopOnly": true,

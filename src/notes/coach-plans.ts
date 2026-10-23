@@ -20,6 +20,6 @@ export function coachPlansMarkdown(enabled: boolean | undefined, cache?: CoachCa
 /** Coach can have a Plans note even when no workbook is selected. */
 export async function syncCoachOnlyPlans(plugin: SportsPlugin, recreateMissing = false): Promise<void> {
  if (plugin.data.plan || (!plugin.data.showGarminCoachPlans && !plugin.data.garminCoachCache)) return;
- await updateNote(plugin, 'Calendar.md', 'calendar', calendarMarkdown(null, plugin.data.showGarminCoachPlans, plugin.data.garminCoachCache, new Date(), !!plugin.data.trackingSheet?.trim()), '\n\n## Reflections\n', recreateMissing);
- await updateNote(plugin, 'Plans.md', 'plan', `[[${plugin.data.notesFolder}/Calendar|Calendar]]\n\nNo workbook plan imported.${coachPlansMarkdown(plugin.data.showGarminCoachPlans, plugin.data.garminCoachCache)}`, '# Plans\n\n## Reflections\n', recreateMissing);
+ await updateNote(plugin, 'Structure/Calendar.md', 'calendar', calendarMarkdown(null, plugin.data.showGarminCoachPlans, plugin.data.garminCoachCache, new Date(), !!plugin.data.trackingSheet?.trim()), '\n\n## Reflections\n', recreateMissing);
+ await updateNote(plugin, 'Structure/Plans.md', 'plan', `[[${plugin.data.notesFolder}/Structure/Calendar|Calendar]]\n\nNo workbook plan imported.${coachPlansMarkdown(plugin.data.showGarminCoachPlans, plugin.data.garminCoachCache)}`, '# Plans\n\n## Reflections\n', recreateMissing);
 }

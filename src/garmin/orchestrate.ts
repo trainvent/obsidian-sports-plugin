@@ -21,7 +21,7 @@ export async function syncSources(plugin: SportsPlugin, forceGarmin: boolean): P
   const issues = plugin.data.plan ? await syncNotes(plugin, plugin.data.plan) : [];
   if (!plugin.data.plan) {
    issues.push(...await migrateNoteNames(plugin));
-   await updateNote(plugin, 'Log.md', 'training-log', combinedLogMarkdown(null, plugin.data.garminCache, new Date(), plugin.data.notesFolder), '# Log\n\n## Reflections\n');
+   await updateNote(plugin, 'Analytics/Log.md', 'training-log', combinedLogMarkdown(null, plugin.data.garminCache, new Date(), plugin.data.notesFolder), '# Log\n\n## Reflections\n');
    for (const task of analyticsNoteTasks(null, plugin.data.notesFolder, plugin.data.garminCache)) {
     if (issues.some(issue => issue.startsWith(`${task.path}:`))) continue;
     try { await updateNote(plugin, task.path, task.id, task.body, task.initial); }

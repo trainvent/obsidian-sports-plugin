@@ -1,7 +1,8 @@
+import { averageZone } from '../garmin/zones';
 import type { GarminActivity, GarminCache } from '../garmin/types';
 
 export interface VolumeChart { kind: 'volume'; groups: string[]; rows: { date: string; values: number[] }[] }
-export interface CardioChart { kind: 'cardio'; sport: 'running' | 'swimming'; rows: { date: string; time: string; name: string; pace: number | null; hr: number | null }[] }
+export interface CardioChart { kind: 'cardio'; sport: 'running' | 'swimming'; rows: { date: string; time: string; name: string; pace: number | null; zone: number | null }[] }
 export type WatchChart = VolumeChart | CardioChart;
 const DAY = 86_400_000;
 export function activitySport(type: string): string {
@@ -35,7 +36,7 @@ export function smartwatchCharts(cache?: GarminCache): { volume: VolumeChart; ru
  const cardio = (sport: 'running' | 'swimming'): CardioChart => ({ kind: 'cardio', sport, rows: activities.filter(a => activitySport(a.type).toLowerCase() === sport).map((a: GarminActivity) => ({
   date: a.date, time: a.time, name: a.name,
   pace: a.duration !== null && a.duration > 0 && a.distance !== null && a.distance > 0 ? a.duration / a.distance * (sport === 'running' ? 1000 : 100) : null,
-  hr: a.average_hr !== null && a.average_hr > 0 ? a.average_hr : null,
+  zone: averageZone([a]),
  })) });
  return { volume, running: cardio('running'), swimming: cardio('swimming'), missingDurations: activities.filter(a => a.duration === null).length };
 }

@@ -33,9 +33,9 @@ export function dailyIndexMarkdown(plan: TrainingPlan | null, folder: string, ca
  const links = dates.map(date => {
   const sessions = sheet.get(date)?.length ?? 0;
   const activities = watch.get(date)?.length ?? 0;
-  return `- ${noteLink(folder, `Analytics/Daily/${date}`, date)} — ${sessions} sheet session${sessions === 1 ? '' : 's'}, ${activities} smartwatch activit${activities === 1 ? 'y' : 'ies'}`;
+  return `- ${noteLink(folder, `Days/${date}`, date)} — ${sessions} sheet session${sessions === 1 ? '' : 's'}, ${activities} smartwatch activit${activities === 1 ? 'y' : 'ies'}`;
  });
- return `${noteLink(folder, 'Log', 'Log')} · ${noteLink(folder, 'Analytics/_Index', 'Analytics')}\n\n## Daily notes\n\n${links.join('\n') || 'No logged dates yet.'}\n\nEach day combines its sheet sessions, scores, sets, and recorded Garmin activities. Only today and earlier dates with source entries get notes; upcoming sessions remain in Plans. Reflections below stay here when this index refreshes.`;
+ return `${noteLink(folder, 'Analytics/Log', 'Log')} · ${noteLink(folder, 'Overview', 'Overview')}\n\n## Daily notes\n\n${links.join('\n') || 'No logged dates yet.'}\n\nEach day combines its sheet sessions, scores, sets, and recorded Garmin activities. Only today and earlier dates with source entries get notes; upcoming sessions remain in Plans. Reflections below stay here when this index refreshes.`;
 }
 
 export function dailyNoteTasks(plan: TrainingPlan | null, folder: string, cache?: GarminCache, now = new Date()): { path: string; id: string; body: string; initial: string }[] {
@@ -43,11 +43,11 @@ export function dailyNoteTasks(plan: TrainingPlan | null, folder: string, cache?
  return dates.map((date, i) => {
   const sessions = sheet.get(date) ?? [];
   const dayCache = cache ? { ...cache, activities: watch.get(date) ?? [] } : undefined;
-  const navigation = [noteLink(folder, 'Log', 'Log'), noteLink(folder, 'Analytics/Daily/_Index', 'All days'), noteLink(folder, 'Analytics/Smartwatch', 'Smartwatch graphs')];
-  if (dates[i + 1]) navigation.push(noteLink(folder, `Analytics/Daily/${dates[i + 1]}`, 'Older day'));
-  if (dates[i - 1]) navigation.push(noteLink(folder, `Analytics/Daily/${dates[i - 1]}`, 'Newer day'));
+  const navigation = [noteLink(folder, 'Analytics/Log', 'Log'), noteLink(folder, 'Days/_Index', 'All days'), noteLink(folder, 'Analytics/Smartwatch', 'Smartwatch graphs')];
+  if (dates[i + 1]) navigation.push(noteLink(folder, `Days/${dates[i + 1]}`, 'Older day'));
+  if (dates[i - 1]) navigation.push(noteLink(folder, `Days/${dates[i - 1]}`, 'Newer day'));
   return {
-   path: `Analytics/Daily/${date}.md`, id: `day:${date}`,
+   path: `Days/${date}.md`, id: `day:${date}`,
    body: `${navigation.join(' · ')}\n\n## Sheet sessions\n\n${sessions.map(s => sheetSession(s, plan)).join('\n\n') || 'No sheet sessions for this date.'}${garminMarkdown(dayCache) || '\n\n## Recorded Garmin activities\n\nNo smartwatch data imported.'}\n\nSheet completion and Garmin recordings remain independent.`,
    initial: `# ${date}\n\n## Reflections\n`,
   };

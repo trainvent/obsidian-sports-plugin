@@ -14,7 +14,7 @@ async function load(path) {
 const { smartwatchCharts } = await load('model/smartwatch');
 const { smartwatchMarkdown } = await load('notes/smartwatch');
 const { registerSmartwatchCharts } = await load('ui/smartwatch-chart');
-const activity = (id, date, type, duration, distance, average_hr, time = '08:00') => ({ id, date, time, type, name: type, duration, distance, average_hr });
+const activity = (id, date, type, duration, distance, average_hr, time = '08:00') => ({ id, date, time, type, name: type, duration, distance, average_hr, hr_zones: average_hr ? [0, 0, 60, 0, 0] : null });
 const cache = { start: '2026-12-28', end: '2027-01-24', lastSuccess: '2027-01-24T12:00:00Z', activities: [
  activity('1', '2026-12-28', 'running', 1800, 5000, 150),
  activity('2', '2026-12-28', 'trail_running', 600, 1000, null, '18:00'),
@@ -33,22 +33,22 @@ test('smartwatch totals use Monday weeks across year boundaries, deduplicate IDs
  assert.equal(data.running.rows.length, 3);
  assert.equal(data.running.rows[0].pace, 360);
  assert.equal(data.running.rows[1].pace, 600);
- assert.equal(data.running.rows[1].hr, null);
+ assert.equal(data.running.rows[1].zone, null);
  assert.equal(data.running.rows[2].pace, null);
- assert.equal(data.running.rows[2].hr, 140);
+ assert.equal(data.running.rows[2].zone, 3);
  assert.equal(data.swimming.rows[0].pace, 120);
 });
 
 test('zero or missing distance/duration never invents pace, and absent heart rate stays absent', () => {
  const data = smartwatchCharts({ activities: [activity('1', '2026-12-28', 'running', 0, 100, 0), activity('2', '2026-12-28', 'running', 60, 0, null)] });
- assert.ok(data.running.rows.every(r => r.pace === null && r.hr === null));
+ assert.ok(data.running.rows.every(r => r.pace === null && r.zone === null));
  assert.equal(smartwatchCharts().volume.rows.length, 0);
 });
 
 test('smartwatch note contains three chart blocks, cached-source status, and safe activity labels', () => {
  const body = smartwatchMarkdown({ ...cache, error: 'Refresh failed', activities: [{ ...cache.activities[0], name: '```\n<script>bad</script>' }] }, 'My sports');
  assert.equal((body.match(/```sports-watch/g) ?? []).length, 3);
- assert.ok(body.includes('[[My sports/Analytics/_Index|Analytics]]'));
+ assert.ok(body.includes('[[My sports/Overview|Overview]]'));
  assert.ok(body.includes('Cached activities remain visible'));
  assert.ok(!body.includes('```\\n<script>'));
  assert.ok(body.includes('\\u0060\\u0060\\u0060'));
@@ -84,4 +84,13 @@ test('watch renderers use independent axes, faster pace higher, missing-series g
   const invalid = new Element(); render('{"kind":"cardio","sport":"running","rows":[{"date":"bad"}]}', invalid);
   assert.equal(invalid.children[0].tag, 'pre');
  } finally { globalThis.document = previous; }
+});
+
+const { parseZones, averageZone } = await load('garmin/zones');
+test('zones use measured seconds, exclude below-zone time, and preserve missing data', () => {
+ assert.deepEqual(parseZones([{ zoneNumber: 1, secsInZone: 60 }, { zoneNumber: 5, secsInZone: 180 }]), [60, 0, 0, 0, 180]);
+ assert.equal(averageZone([{ hr_zones: [60, 0, 0, 0, 180] }]), 4);
+ assert.equal(averageZone([{ hr_zones: [0, 0, 0, 0, 0] }]), null);
+ assert.equal(averageZone([{}]), null);
+ for (const input of [null, [], [{ zoneNumber: 2, secsInZone: -1 }], [{ zoneNumber: 6, secsInZone: 1 }]]) assert.equal(parseZones(input), null);
 });

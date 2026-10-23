@@ -1,3 +1,4 @@
+import { averageZone } from './zones';
 import type { GarminActivity } from './types';
 import { validDate } from '../workbook/daily-log';
 
@@ -25,7 +26,7 @@ export function parseActivities(input: unknown, start: string, end: string): Gar
    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) throw new Error('Invalid Garmin measurement.');
    return value;
   };
-  const activity = { id: row.id, date: row.date, time: row.time, name: text('name', 'Activity'), type: text('type', 'activity'), duration: number('duration'), distance: number('distance'), average_hr: number('average_hr') };
+  const activity = { id: row.id, date: row.date, time: row.time, name: text('name', 'Activity'), type: text('type', 'activity'), duration: number('duration'), distance: number('distance'), average_hr: number('average_hr'), hr_zones: Array.isArray(row.hr_zones) && row.hr_zones.length === 5 && row.hr_zones.every(n => typeof n === 'number' && Number.isFinite(n) && n >= 0) ? row.hr_zones as number[] : null };
   if (activity.date >= start && activity.date <= end) activities.set(activity.id, activity);
  }
  return [...activities.values()].sort((a, b) => `${a.date} ${a.time} ${a.id}`.localeCompare(`${b.date} ${b.time} ${b.id}`));
@@ -34,6 +35,7 @@ export function activityDetails(activity: GarminActivity): string {
  const details = [activity.time, activity.type.replaceAll('_', ' ')];
  if (activity.duration !== null) details.push(`${(activity.duration / 60).toFixed(1)} min`);
  if (activity.distance !== null) details.push(`${(activity.distance / 1000).toFixed(2)} km`);
- if (activity.average_hr !== null) details.push(`${Math.round(activity.average_hr)} bpm avg`);
+ const zone = averageZone([activity]);
+ if (zone !== null) details.push(`Zone ${zone.toFixed(1)} avg`);
  return details.join(' · ');
 }

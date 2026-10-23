@@ -10,7 +10,7 @@ function valid(value: unknown): value is WatchChart {
  const c = value as WatchChart;
  if (!Array.isArray(c.rows) || c.rows.length > 50_000) return false;
  if (c.kind === 'volume') return Array.isArray(c.groups) && c.groups.length <= 6 && c.groups.every(g => typeof g === 'string') && c.rows.every(r => r && date(r.date) && Array.isArray(r.values) && r.values.length === c.groups.length && r.values.every(numeric));
- return c.kind === 'cardio' && ['running', 'swimming'].includes(c.sport) && c.rows.every(r => r && date(r.date) && /^([01]\d|2[0-3]):[0-5]\d$/.test(r.time) && typeof r.name === 'string' && (r.pace === null || (numeric(r.pace) && r.pace > 0)) && (r.hr === null || (numeric(r.hr) && r.hr > 0)));
+ return c.kind === 'cardio' && ['running', 'swimming'].includes(c.sport) && c.rows.every(r => r && date(r.date) && /^([01]\d|2[0-3]):[0-5]\d$/.test(r.time) && typeof r.name === 'string' && (r.pace === null || (numeric(r.pace) && r.pace > 0)) && (r.zone === null || (numeric(r.zone) && r.zone >= 1 && r.zone <= 5)));
 }
 function paceLabel(seconds: number): string {
  const rounded = Math.round(seconds); return `${Math.floor(rounded / 60)}:${String(rounded % 60).padStart(2, '0')}`;
@@ -26,10 +26,10 @@ export function registerSmartwatchCharts(plugin: Plugin): void {
   if (data.kind === 'volume') root.createEl('p', { text: 'Recorded minutes · stacked by sport', cls: 'sports-performance-legend' });
   else chartLegend(root, [
    { label: 'Pace · left axis (faster higher)', cls: 'sports-watch-pace' },
-   { label: 'Average heart rate · right axis', cls: 'sports-watch-heart' },
+   { label: 'Average HR zone · right axis', cls: 'sports-watch-heart' },
   ], 'Missing measurements leave gaps');
   const svg = root.createSvg('svg'); svg.setAttribute('viewBox', data.kind === 'volume' ? '0 0 820 340' : '0 0 820 310'); svg.setAttribute('role', 'img');
-  svg.setAttribute('aria-label', data.kind === 'volume' ? 'Weekly recorded training minutes, stacked by sport.' : `${data.sport} pace and average heart rate over time. Point labels identify each activity and its measurements.`);
+  svg.setAttribute('aria-label', data.kind === 'volume' ? 'Weekly recorded training minutes, stacked by sport.' : `${data.sport} pace and average HR zone over time. Point labels identify each activity and its measurements.`);
   const node = (tag: keyof SVGElementTagNameMap, attributes: Record<string, string>, text?: string): SVGElement => {
    const child = svg.createSvg(tag); for (const [key, value] of Object.entries(attributes)) child.setAttribute(key, value);
    if (text) child.textContent = text; return child;
@@ -61,23 +61,22 @@ export function registerSmartwatchCharts(plugin: Plugin): void {
    node('text', { x: '410', y: '315', 'text-anchor': 'middle' }, 'Week starting');
    return;
   }
-  const paces = data.rows.flatMap(r => r.pace === null ? [] : [r.pace]), heartRates = data.rows.flatMap(r => r.hr === null ? [] : [r.hr]);
+  const paces = data.rows.flatMap(r => r.pace === null ? [] : [r.pace]);
   const pMin = paces.length ? Math.max(0, Math.floor(Math.min(...paces) / 30) * 30 - 30) : 0;
   const pMax = paces.length ? Math.ceil(Math.max(...paces) / 30) * 30 + 30 : 600;
-  const hMin = heartRates.length ? Math.max(0, Math.floor(Math.min(...heartRates) / 10) * 10 - 10) : 0;
-  const hMax = heartRates.length ? Math.ceil(Math.max(...heartRates) / 10) * 10 + 10 : 200;
+  const hMin = 1, hMax = 5;
   const times = data.rows.map(r => Date.parse(`${r.date}T${r.time}:00Z`));
   const first = Math.min(...times), last = Math.max(...times);
   const x = (i: number): number => first === last ? 410 : 75 + (times[i]! - first) / (last - first) * 670;
   node('text', { x: '75', y: '20' }, `Pace (min/${data.sport === 'running' ? 'km' : '100 m'})`);
-  node('text', { x: '745', y: '20', 'text-anchor': 'end' }, 'Average heart rate (bpm)');
+  node('text', { x: '745', y: '20', 'text-anchor': 'end' }, 'Average HR zone (1–5)');
   for (const f of [0, .5, 1]) {
    const y = 250 - f * 200;
    node('line', { x1: '75', x2: '745', y1: String(y), y2: String(y), class: 'sports-score-grid' });
    node('text', { x: '65', y: String(y + 4), 'text-anchor': 'end' }, paceLabel(pMax - f * (pMax - pMin)));
    node('text', { x: '755', y: String(y + 4) }, String(Math.round(hMin + f * (hMax - hMin))));
   }
-  for (const metric of ['pace', 'hr'] as const) {
+  for (const metric of ['pace', 'zone'] as const) {
    let previous: { x: number; y: number } | null = null;
    data.rows.forEach((row, i) => {
     const value = row[metric]; if (value === null) { previous = null; return; }
@@ -85,7 +84,7 @@ export function registerSmartwatchCharts(plugin: Plugin): void {
     const cls = metric === 'pace' ? 'sports-watch-pace' : 'sports-watch-heart';
     if (previous) node('line', { x1: String(previous.x), x2: String(point.x), y1: String(previous.y), y2: String(point.y), class: cls });
     const circle = node('circle', { cx: String(point.x), cy: String(point.y), r: '4', class: cls, tabindex: '0' });
-    title(circle, `${row.date} ${row.time} · ${row.name} · ${metric === 'pace' ? `pace ${paceLabel(value)} min/${data.sport === 'running' ? 'km' : '100 m'}` : `average heart rate ${Math.round(value)} bpm`}`);
+    title(circle, `${row.date} ${row.time} · ${row.name} · ${metric === 'pace' ? `pace ${paceLabel(value)} min/${data.sport === 'running' ? 'km' : '100 m'}` : `average HR zone ${value.toFixed(1)}`}`);
     previous = point;
    });
   }

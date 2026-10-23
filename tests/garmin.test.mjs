@@ -23,7 +23,7 @@ const { parseActivities, normalizeGarmin, garminMarkdown, tokenStore, createDesk
 const nativeFetch = createDesktopFetch((url, init) => state.request({ ...init, url, headers: Object.fromEntries(init.headers) }));
 const newGarminClient = (app, id, store) => built.newGarminClient(app, id, store, nativeFetch);
 const syncGarmin = (plugin, force) => built.syncGarmin(plugin, force, newGarminClient);
-const activity = { id: '123', date: '2026-10-20', time: '20:00', name: 'Swimming', type: 'lap_swimming', duration: 3600, distance: 2000, average_hr: 130 };
+const activity = { id: '123', date: '2026-10-20', time: '20:00', name: 'Swimming', type: 'lap_swimming', duration: 3600, distance: 2000, average_hr: 130, hr_zones: null };
 const response = (body, headers = {}) => ({ status: 200, headers, arrayBuffer: new TextEncoder().encode(JSON.stringify(body)).buffer });
 function fixture() {
  const secrets = new Map(); let saves = 0;
@@ -71,13 +71,16 @@ test('Garmin sync replaces a successful snapshot, preserves manual status and th
  plugin.data.garminCache = { activities: [{ ...activity, id: 'deleted' }], lastSuccess: '', lastAttempt: '', start: '', end: '', error: '' };
  let calls = 0;
  state.request = async input => {
-  calls++; assert.ok(input.url.startsWith('https://connectapi.garmin.com/activitylist-service/activities/search/activities'));
+  calls++;
+  if (input.url.endsWith('/hrTimeInZones')) return response([{ zoneNumber: 2, secsInZone: 600 }, { zoneNumber: 4, secsInZone: 1800 }]);
+  assert.ok(input.url.startsWith('https://connectapi.garmin.com/activitylist-service/activities/search/activities'));
   if (new URL(input.url).searchParams.get('start') !== '0') return response([]);
   return response([{ activityId: 123, startTimeLocal: '2026-10-20 20:00:00', duration: 3600, activityName: 'Swimming' }]);
  };
  await syncGarmin(plugin);
  assert.equal(plugin.data.garminCache.activities.length, 1);
  assert.equal(plugin.data.garminCache.activities[0].id, '123');
+ assert.deepEqual(plugin.data.garminCache.activities[0].hr_zones, [0, 600, 0, 1800, 0]);
  assert.equal(plugin.data.plan.sessions[0].status, 'planned');
  const priorCalls = calls; await syncGarmin(plugin); assert.equal(calls, priorCalls);
  const snapshot = plugin.data.garminCache.activities;

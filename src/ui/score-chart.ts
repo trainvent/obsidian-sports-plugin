@@ -22,6 +22,7 @@ export function registerScoreCharts(plugin: Plugin): void {
   const ratingScale = headers[1] === 'Planned intensity';
   const scaledPerformance = headers[1] === 'Performance × intensity';
   const watchAxes = headers[1] === 'Planned intensity (0–10)' && headers[2] === 'Watch heart rate (bpm)';
+  const zoneComparison = headers[2] === 'Watch HR zone (1–5)';
   const dualAxis = watchAxes || headers[2] === 'Planned intensity (0–10)' && ['Felt effort (1–5)', 'Performance (%)'].includes(headers[1]!);
   chartLegend(root, performanceOnly ? [{ label: 'Actual performance (0–200%)', cls: 'sports-score-actual' }] : [
    { label: `${headers[1]}${ratingScale ? ' (0–10)' : ''}${dualAxis ? ' (left axis)' : ''}`, cls: 'sports-score-expected' },
@@ -30,10 +31,10 @@ export function registerScoreCharts(plugin: Plugin): void {
   const svg = root.createSvg('svg');
   svg.setAttribute('viewBox', '0 0 720 260'); svg.setAttribute('role', 'img');
   svg.setAttribute('aria-label', `${performanceOnly ? 'Actual performance on a 0–200% scale' : `${headers[1]} versus ${headers[2]}`} for ${rows.length} dates. Point labels contain dates and values.`);
-  const minimum = 0;
+  const minimum = zoneComparison ? 1 : 0;
   const leftValues = dualAxis ? rows.filter(row => row[1] !== '—').map(row => Number(row[1])) : values;
   const rightMax = watchAxes ? rows.reduce((maximum, row) => row[2] === '—' ? maximum : Math.max(maximum, Math.ceil(Number(row[2]) / 10) * 10), 200) : 10;
-  const max = watchAxes ? 10 : performanceOnly ? 200 : dualAxis && headers[1] === 'Felt effort (1–5)' ? 5 : ratingScale ? 10 : leftValues.reduce((maximum, value) => Math.max(maximum, value), scaledPerformance ? 10 : dualAxis ? 100 : 1);
+  const max = zoneComparison ? 5 : watchAxes ? 10 : performanceOnly ? 200 : dualAxis && headers[1] === 'Felt effort (1–5)' ? 5 : ratingScale ? 10 : leftValues.reduce((maximum, value) => Math.max(maximum, value), scaledPerformance ? 10 : dualAxis ? 100 : 1);
   const dates = rows.map(row => Date.parse(`${row[0]}T12:00:00Z`));
   const first = dates.length ? Math.min(...dates) : 0, last = dates.length ? Math.max(...dates) : 0;
   const x = (index: number): number => last === first ? 370 : 50 + (dates[index]! - first) / (last - first) * 620;

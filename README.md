@@ -1,6 +1,6 @@
 # Sports
 
-An Obsidian plugin developed by [Trainvent](https://github.com/trainvent).
+An Obsidian plugin tailored to athletic training, street workout, and calisthenics plans, developed by [Trainvent](https://github.com/trainvent).
 
 ## Alpha release
 
@@ -8,7 +8,7 @@ Plan training in spreadsheets and follow it in Obsidian: recurring schedules,
 a combined calendar, workout logs, and individual goal notes. Read an XLSX or ODS workbook from a downloadable
 cloud link, with optional Garmin activity and Coach imports.
 
-Version 0.3.0 is an early alpha. Obsidian 1.11.4 or later is required. Sports is desktop-only because workbook and Garmin connections use Node.js APIs.
+Version 0.4.0 is an early alpha. Obsidian 1.11.4 or later is required. Sports is desktop-only because workbook and Garmin connections use Node.js APIs.
 Garmin uses unofficial endpoints and Coach integration still needs live account
 verification. Keep a backup of your workbook and vault when trying the alpha.
 
@@ -37,7 +37,7 @@ and intervals of five, ten, or fifteen minutes, or one hour. Startup sync is on
 and the interval is ten minutes by default. Select **Manual only** to disable periodic sync.
 Scheduling runs inside Obsidian; closed apps and mobile suspension stop or delay it. No external scheduler or Python installation is required.
 
-Generated notes default to `Sports/Strategy.md` and `Sports/Weeks/YYYY-MM-DD.md`
+Generated notes default to `Sports/Structure/Strategy.md` and `Sports/Weeks/YYYY-MM-DD.md`
 inside the user's vault. Sync refreshes the strategy and previously generated weekly
 notes. Edit recurring activities in the workbook, then sync to refresh the dashboard
 and weekly notes.
@@ -99,12 +99,14 @@ unresolved. A new tracking-only plan uses the device timezone until strategy sup
 Sync creates ordinary Markdown files in the configured **Notes folder**:
 
 - `Plans.md`: starting levels, goals, weekly links, and upcoming manual prescriptions.
-- `Analytics/_Index.md`: navigation to Daily, Sheet, Smartwatch, and Combined. Session results live in Log and dated day notes; the old Table note is retired.
-- `Analytics/Daily/_Index.md`: date index, preserving reflections from the previous all-days note.
-- `Analytics/Daily/YYYY-MM-DD.md`: one combined day note with sheet sessions,
+- `Overview.md`: starting page with Stats, today, the current week, routines and planning links.
+- `Structure/Plans.md`, `Structure/Strategy.md`, `Structure/Calendar.md`: planning and program structure.
+- `Analytics/Log.md`: detailed reference entries and exercise comparisons.
+- `Days/_Index.md`: date index, preserving reflections from the previous all-days note.
+- `Days/YYYY-MM-DD.md`: one combined day note with sheet sessions,
   scores, individual sets, exercise comparisons, Garmin activities, and reflections.
 - `Analytics/Sheet.md`: sheet intensity, performance, and felt-effort trends.
-- `Analytics/Combined.md`: separate source totals over time, plus intensity and heart rate on independent axes.
+- `Stats.md`: separate source totals over time, plus intensity and heart rate on independent axes.
 - `Analytics/Smartwatch.md`: weekly volume, running pace/heart rate, and swimming pace/heart rate.
 - `Log.md`: today and earlier manual sessions, newest first, with results and notes.
 - `Strategy.md`: goals, exercise blocks, and regular weekly activities.
@@ -407,7 +409,7 @@ Multiple sessions and activities stay together in their date's row. Manual statu
 actual minutes and result fields remain independent from recorded Garmin measurements.
 Upcoming manual sessions stay in Plans.
 
-Log dates link to their notes in `Analytics/Daily/`. Sync creates a note for each
+Log dates link to their notes in `Days/`. Sync creates a note for each
 date up to today that has a sheet session or Garmin activity, including days with
 only one source. Per-day reflections stay outside the protected generated block.
 
@@ -518,8 +520,8 @@ uses the shared Library work/rest definition. See [Workbook.md](Workbook.md) for
 ### Intensity, performance, and optional felt effort
 
 **Analytics → Smartwatch** provides separate Garmin graphs: weekly recorded
-minutes stacked by sport, running pace with average heart rate, and swimming
-pace with average heart rate. Pace uses minutes/km for running and minutes/100 m
+minutes stacked by sport, running pace with average HR zone, and swimming
+pace with average HR zone. Pace uses minutes/km for running and minutes/100 m
 for swimming, with faster pace higher on the left axis and bpm on the right.
 Missing measurements leave gaps; Garmin minutes are not added to workbook
 minutes. The note refreshes from cached Garmin data during sync, including when
@@ -557,5 +559,7 @@ cloud workbook. Add equivalent score formulas to a copy preserving history,
 or start a new plan from the updated template. Keep selecting Daily as tracking;
 Keep the Scoring tab name. Update its result-cell references, explicit targets
 and session summary ranges together when customizing workouts.
-Existing Analytics.md notes with a trusted baseline migrate to Analytics/_Index.md,
+Existing Analytics.md notes with a trusted baseline migrate to _Index.md,
 retaining reflections and generated-section edit protection.
+
+Garmin HR zones use a time-weighted average: `sum(zone × seconds) / sum(seconds)` for zones 1–5. Stats compares this with the sheet’s felt effort on the same 1–5 scale; these remain distinct measurements. Missing zone data stays blank. Zone summaries are fetched during Garmin sync and cached locally.

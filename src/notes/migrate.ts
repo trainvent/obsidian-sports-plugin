@@ -7,7 +7,13 @@ export async function migrateNoteNames(plugin: SportsPlugin): Promise<string[]> 
  const folder = plugin.data.notesFolder;
  if (!folder || folder.startsWith('/') || folder.split(/[\\/]/).some(part => part === '..' || part.startsWith('.'))) throw new Error('Choose a normal vault folder for Sports notes.');
  const issues: string[] = [];
- for (const [oldName, name, id] of NOTE_RENAMES) {
+ const days: [string,string,string][] = Object.keys(plugin.data.generatedBlocks).flatMap(key => {
+  const prefix = `${folder}/Analytics/Daily/`;
+  if (!key.startsWith(prefix)) return [];
+  const match = /^(\d{4}-\d{2}-\d{2})\.md:day:\1$/.exec(key.slice(prefix.length));
+  return match ? [[`Analytics/Daily/${match[1]}.md`, `Days/${match[1]}.md`, `day:${match[1]}`]] : [];
+ });
+ for (const [oldName, name, id] of [...NOTE_RENAMES, ...days]) {
   const oldPath = normalizePath(`${plugin.data.notesFolder}/${oldName}`);
   const path = normalizePath(`${plugin.data.notesFolder}/${name}`);
   const oldKey = `${oldPath}:${id}`;
