@@ -29,6 +29,9 @@ listed in Obsidian's community directory.
 5. Edit recurring activities in the workbook **Recurring** tab. Select **Open weekly
    note** to create or refresh that week's note.
 
+For everyday edits to your **Daily** sheet, try [Calcrow](https://calcrow.com/),
+also developed by Trainvent. Save your changes to the cloud workbook, then sync Sports.
+
 **Settings → Sports** offers a cloud workbook link, notes folder, startup sync,
 and intervals of five, ten, or fifteen minutes, or one hour. Startup sync is on
 and the interval is ten minutes by default. Select **Manual only** to disable periodic sync.
@@ -42,6 +45,18 @@ and weekly notes.
 Only HTTPS cloud sources are supported. Old local paths are rejected with guidance
 to upload the workbook and paste its share link. Failed downloads retain the last
 imported plan. No external filesystem access is used by the plugin.
+
+## Add today to your own dashboard
+
+Paste this into any note:
+
+```sports-today
+```
+
+In Reading view or Live Preview, it shows today’s sheet sessions, Garmin activities,
+and enabled recurring activities, with an **Open weekly note** button. On Sundays,
+**Reflect on the week** jumps to the weekly review. It refreshes after sync and when
+the date changes, using cached data.
 
 ## Workbook format (prototype schema 1)
 

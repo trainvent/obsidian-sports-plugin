@@ -19,7 +19,7 @@ export function plannedWeeks(plan: TrainingPlan, anchor = new Date()): string[] 
 export function weeklyStrategy(plan: TrainingPlan | null, start: string): string {
  const week = plan?.weekPlans?.find(week => week.start === start);
  if (!week) return '';
- return `## Week ${week.week} · ${cell(week.phase)}\n\n**Focus:** ${cell(week.focus)}\n\n**Targets:** ${cell(week.targets) || 'Not set'}\n\n**Advance when:** ${cell(week.advanceWhen) || 'Review before progressing'}\n\n**Time budget:** ${cell(week.minutes)} min\n\n${Object.entries(week.blocks ?? {}).map(([block, prescription]) => `**${cell(block)}:** ${cell(prescription)}\n\n`).join('')}`;
+ return `## Week ${week.week} · ${cell(week.phase)}\n\n**Focus:** ${cell(week.focus)}\n\n**Targets:** ${cell(week.targets) || 'Not set'}\n\n**Time budget:** ${cell(week.minutes)} min\n\n${Object.entries(week.blocks ?? {}).map(([block, prescription]) => `**${cell(block)}:** ${cell(prescription)}\n\n`).join('')}`;
 }
 
 export function planMarkdown(plan: TrainingPlan, folder: string, weeks: string[]): string {

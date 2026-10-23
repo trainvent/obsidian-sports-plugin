@@ -1,8 +1,8 @@
 import { sessionDetails, safeText, compactResults } from './performance';
 import type { TrainingPlan } from '../model/types';
-import { scheduleOn } from '../model/calendar';
 import { groupedGoals } from './goals';
-import { weeklyStrategy } from './plan';
+import { weekMarkdown } from './week';
+export { weekMarkdown };
 import { cell } from './blocks';
 
 export function strategyMarkdown(plan: TrainingPlan, folder?: string): string {
@@ -12,13 +12,6 @@ export function strategyMarkdown(plan: TrainingPlan, folder?: string): string {
  const schedule = (plan.weeklySchedule ?? []).map(item => `| ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][item.weekday]} | ${cell(item.time)} | ${cell(item.title)} | ${cell(item.minutes)} | ${cell(item.recordedBy)} | ${cell(item.notes)} |`).join('\n');
  return `## ${cell(plan.name)}\n\n${goals}\n\n${parts}\n\n### Weekly schedule — no manual results\n\n| Day | Time | Activity | Minutes | Recorded by | Notes |\n| --- | --- | --- | --- | --- | --- |\n${schedule || "No regular activities entered yet."}${arsenal ? `\n\n### Exercise arsenal\n\n| Group | Exercise |\n| --- | --- |\n${arsenal}` : ''}`;
 }
-export function weekMarkdown(plan: TrainingPlan | null, dates: string[], showRegularActivities = false): string {
- const sessions = (plan?.sessions ?? []).filter(session => dates.includes(session.date));
- const selected = plan ? { ...plan, sessions } : null;
- const regular = showRegularActivities ? dates.flatMap(date => scheduleOn(plan, date).map(item => `- ${date} · ${safeText(item.time)} ${safeText(item.title)} · ${cell(item.minutes)} min · ${safeText(item.recordedBy)}${item.notes ? ` · ${safeText(item.notes)}` : ''}`)) : [];
- return `${weeklyStrategy(plan, dates[0] ?? '')}## Training overview\n\n${trainingLogMarkdown(selected)}${regular.length ? `\n\n### Weekly schedule · Planned\n\n${regular.join('\n')}` : ''}\n\nTimes follow the source schedule. Manual completion is recorded separately from tracker activities.`;
-}
-
 /** Four columns retain the full source schedule; exercise detail grows vertically. */
 export function trainingLogMarkdown(plan: TrainingPlan | null, planningOnly = false, includeDetails = true): string {
  const sessions = [...(plan?.sessions ?? [])].sort((left, right) => left.date.localeCompare(right.date));

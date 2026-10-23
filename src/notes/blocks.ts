@@ -22,8 +22,18 @@ export function mergeBlock(existing: string, id: string, body: string, previous?
   /(^## Recorded Garmin activities\r?\n\r?\n)Last successful sync: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z\. (?=Imported )/gm, '$1');
  const recovered = previous === undefined && withoutRefreshTime(current) === withoutRefreshTime(block);
  const rewrittenLinks = previous !== undefined && folder !== undefined && canonicalNoteLinks(current, folder) === canonicalNoteLinks(previous, folder);
- if (!recovered && !rewrittenLinks && (previous === undefined || current !== previous)) throw new Error('The generated section was edited or has no trusted baseline. The note was preserved.');
+ // Obsidian's table editor pads cells and expands separator dashes. Compare
+ // Calendar tables semantically against the trusted baseline, never new output.
+ const formattedCalendar = id === 'calendar' && previous !== undefined && calendarFormatting(current, folder) === calendarFormatting(previous, folder);
+ if (!recovered && !rewrittenLinks && !formattedCalendar && (previous === undefined || current !== previous)) throw new Error('The generated section was edited or has no trusted baseline. The note was preserved.');
  return existing.slice(0, start) + block + existing.slice(finish + end.length);
+}
+function calendarFormatting(content: string, folder?: string): string {
+ const linked = folder === undefined ? content : canonicalNoteLinks(content, folder);
+ return linked.split('\n').map(line => {
+  if (!line.startsWith('|') || !line.endsWith('|')) return line;
+  return line.split(/(?<!\\)\|/).map(cell => cell.trim().replace(/^(:?)-{3,}(:?)$/, '$1---$2')).join('|');
+ }).join('\n');
 }
 export function generatedBlock(id: string, body: string): string {
  return `<!-- sports:begin ${id} -->\n${body.trim()}\n<!-- sports:end ${id} -->`;

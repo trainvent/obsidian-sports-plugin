@@ -8,7 +8,7 @@ export function safeText(value: string | number): string {
 function number(value: number): string { return String(Math.round(value * 100) / 100); }
 
 /** A small table holds the sets; the graph compares totals within each exercise's own unit. */
-export function performanceMarkdown(session: Session): string {
+export function performanceMarkdown(session: Session, explain = true): string {
  const exercises = exerciseTracking(session);
  if (!exercises.length) return '';
  const graph: string[] = [];
@@ -31,7 +31,7 @@ export function performanceMarkdown(session: Session): string {
   const setLabels = exercise.setNumbers ? `Set ${exercise.setNumbers.join(' / ')}: ` : '';
   return `| ${safeText(exercise.group === exercise.name ? exercise.name : `${exercise.group} · ${exercise.name}`)} | ${prescription} ${safeText(exercise.unit)} | ${safeText(result)} | ${setLabels}${sets} |`;
  });
- return `\n\n\`\`\`sports-compare\nExercise\tPlan\tResult\n${graph.join('\n')}\n\`\`\`\n\n| Exercise | Plan | Result | Sets in order |\n| --- | --- | --- | --- |\n${rows.join('\n')}\n\nEach bar uses its own exercise/metric scale. — means unrecorded; zero is a recorded result. Timed sets use seconds. Comparisons use numeric recorded sets only (total unless another aggregation is named); text results remain in the sets table; unchecked inputs are never results.`;
+ return `\n\n\`\`\`sports-compare\nExercise\tPlan\tResult\n${graph.join('\n')}\n\`\`\`\n\n| Exercise | Plan | Result | Sets in order |\n| --- | --- | --- | --- |\n${rows.join('\n')}${explain ? '\n\nEach bar uses its own exercise/metric scale. — means unrecorded; zero is a recorded result. Timed sets use seconds. Comparisons use numeric recorded sets only (total unless another aggregation is named); text results remain in the sets table; unchecked inputs are never results.' : ''}`;
 }
 
 export function sessionDetails(session: Session): string {

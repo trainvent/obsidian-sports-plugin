@@ -660,3 +660,23 @@ test('Analytics folder separates table, daily details and score graphs, and migr
  assert.ok(graph.content.endsWith('Graph reflections\n'));
  assert.ok(watch.content.endsWith('Watch reflections\n'));
 });
+
+test('Calendar table editor formatting survives source changes while real edits stay protected', async () => {
+ const { plugin, plan, files } = fixture();
+ await syncNotes(plugin, plan);
+ const calendar = files.get('Sports/Calendar.md');
+ calendar.content += '\nMy calendar reflections\n';
+ calendar.content = calendar.content.split('\n').map(line => line.startsWith('|') ? line.split('|').map(cell => cell.trim() === '---' ? ' ---------------- ' : `  ${cell.trim()}  `).join('|').trim() : line).join('\n');
+ // A source change must refresh the formatted table against its old baseline.
+ plan.weeklySchedule = [{ weekday: 2, time: '18:00', title: 'Recurring training', minutes: 30, recordedBy: 'Tracker', notes: '' }];
+ plugin.data.showRegularActivities = true;
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.ok(calendar.content.includes('Recurring training'));
+ assert.ok(calendar.content.endsWith('My calendar reflections\n'));
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ calendar.content = calendar.content.replace('Recurring training', 'My manual calendar edit');
+ const edited = calendar.content;
+ assert.ok((await syncNotes(plugin, plan)).some(issue => issue.startsWith('Calendar.md:')));
+ assert.equal(calendar.content, edited);
+ assert.throws(() => mergeBlock('<!-- sports:begin calendar -->\n| A |\n| ------ |\n<!-- sports:end calendar -->', 'calendar', '| B |\n| --- |'), /trusted baseline/);
+});

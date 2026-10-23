@@ -1,3 +1,4 @@
+import { registerTodayWidget } from './ui/today-widget';
 import { registerScoreCharts } from './ui/score-chart';
 import { analyticsNoteTasks } from './notes/analytics';
 import trackingGuide from '../Tracking.md';
@@ -28,6 +29,7 @@ export default class SportsPlugin extends Plugin {
  data!: SportsData;
  syncing = false;
  private timer: number | undefined;
+ private refreshWidgets?: () => void;
  private noteBusy = false;
  private settingsTab: SportsSettingTab | undefined;
  get garminConnecting(): boolean { return this.garminDialog !== undefined; }
@@ -37,6 +39,7 @@ export default class SportsPlugin extends Plugin {
   addIcon(SPORTS_ICON_ID, SPORTS_ICON_SVG);
   registerPerformanceCharts(this);
   registerScoreCharts(this);
+  this.refreshWidgets = registerTodayWidget(this);
   this.registerView(SPORTS_VIEW, leaf => new SportsDashboard(leaf, this));
   this.addRibbonIcon(SPORTS_ICON_ID, 'Open dashboard', () => { void this.openDashboard(); });
   this.addCommand({ id: 'open-dashboard', name: 'Open dashboard', callback: () => this.openDashboard() });
@@ -117,6 +120,7 @@ export default class SportsPlugin extends Plugin {
   this.refreshViews();
  }
  refreshViews(): void {
+  this.refreshWidgets?.();
   this.settingsTab?.refreshGarmin();
   for (const leaf of this.app.workspace.getLeavesOfType(SPORTS_VIEW)) if (leaf.view instanceof SportsDashboard) leaf.view.render();
  }
@@ -168,14 +172,19 @@ export default class SportsPlugin extends Plugin {
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not update the training log.'); }
   finally { this.noteBusy = false; }
  }
- async openWeekly(anchor = new Date()): Promise<void> {
+ async openWeekly(anchor = new Date(), review = false): Promise<void> {
   if (this.noteBusy) return;
   if (this.data.resetNoteBaselines && !this.data.plan) { new Notice('Sync the workbook before opening generated notes.'); return; }
   this.noteBusy = true;
   try {
    const dates = weekDates(anchor);
-   const file = await updateNote(this, `Weeks/${dates[0]}.md`, `week:${dates[0]}`, `${noteLink(this.data.notesFolder, 'Plans', 'Plans')} · ${noteLink(this.data.notesFolder, 'Log', 'Log')} · ${noteLink(this.data.notesFolder, 'Analytics/Index', 'Analytics')}\n\n${weekMarkdown(this.data.plan, dates, this.data.showRegularActivities) + garminMarkdown(this.data.garminCache, dates)}`, `# Week of ${dates[0]}\n\n## Reflections\n\n### What improved\n\n### Recovery and comfort\n\n### What to adjust\n\n### Next week's focus\n`);
-   await this.app.workspace.getLeaf(false).openFile(file);
+   const file = await updateNote(this, `Weeks/${dates[0]}.md`, `week:${dates[0]}`, `${noteLink(this.data.notesFolder, 'Plans', 'Plans')} · ${noteLink(this.data.notesFolder, 'Log', 'Log')} · ${noteLink(this.data.notesFolder, 'Analytics/Index', 'Analytics')}\n\n${weekMarkdown(this.data.plan, dates, this.data.showRegularActivities) + garminMarkdown(this.data.garminCache, dates)}`, `# Week of ${dates[0]}\n\n## Reflections\n\n### What improved\n\n- \n\n### Recovery and comfort\n\n- \n\n### What to adjust\n\n- \n\n### Next week's focus\n\n- \n`);
+   if (review) {
+    const content = await this.app.vault.read(file);
+    const personal = content.slice(content.indexOf(`<!-- sports:end week:${dates[0]} -->`) + `<!-- sports:end week:${dates[0]} -->`.length);
+    const heading = /^## (Weekly review|Reflections)\s*$/m.exec(personal)?.[1];
+    await this.app.workspace.openLinkText(`${file.path}${heading ? `#${heading}` : ''}`, '', false);
+   } else await this.app.workspace.getLeaf(false).openFile(file);
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not update the weekly note.'); }
   finally { this.noteBusy = false; }
  }

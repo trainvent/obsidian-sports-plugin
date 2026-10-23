@@ -202,7 +202,8 @@ test('explicit weekly plans create future weeks and show strategy without claimi
  assert.equal(new Set(dates).size, dates.length);
  const markdown = weekMarkdown(plan, ['2026-12-28']);
  assert.ok(markdown.includes('Establish starting level'));
- assert.ok(markdown.includes('Review then progress'));
+ assert.ok(!markdown.includes('Advance when'));
+ assert.ok(!markdown.includes('Review then progress'));
  assert.ok(markdown.includes('120 min'));
  assert.ok(!markdown.includes('completed'));
  assert.ok(planMarkdown(plan, 'Sports', dates).includes('[[Sports/Weeks/2026-12-28\\|2026-12-28]]'));
@@ -457,4 +458,21 @@ test('example iteration inputs use numbers and Excel times, and recorded times i
  assert.equal(plan.sessions[0].results['A 1 result'], '');
  // The previously verbose negative-rep cells are stored as numeric counts.
  assert.match(sheet, /r="O21"[^>]*>\s*<(?:\w+:)?v>2<\/(?:\w+:)?v>/);
+});
+
+test('weekly layout groups workouts by day, folds comparisons, and retains partial planned durations', () => {
+ const dates = ['2026-10-26', '2026-10-27'];
+ const plan = { sessions: [
+  { date: dates[0], title: 'Strength', sport: 'training', status: 'planned', plannedMinutes: 30, actualMinutes: null, prescription: 'A) Squat: 3 x 5', notes: 'Controlled pace', result: '' },
+  { date: dates[0], title: 'Mobility', sport: 'training', status: 'planned', plannedMinutes: null, actualMinutes: null, prescription: '', notes: '', result: '' },
+ ], parts: [], weekPlans: [], weeklySchedule: [] };
+ const text = weekMarkdown(plan, dates);
+ assert.ok(text.includes('[[#2026-10-26\\|Mon 26 Oct]]'));
+ assert.ok(text.includes('| 30 + ? |'));
+ assert.ok(text.includes('> [!note] Strength'));
+ assert.ok(text.includes('> [!example-] Sets and comparisons'));
+ assert.ok(text.includes('Controlled pace'));
+ assert.ok(text.includes('### 2026-10-27'));
+ assert.ok(!text.includes('Each bar uses its own'));
+ assert.ok(!text.includes('## Imported schedule'));
 });

@@ -1,3 +1,4 @@
+import { starterBullets } from './writing-prompts';
 import { initialNoteTitle, withoutNoteTitle } from './titles';
 import { normalizePath, TFile } from 'obsidian';
 import type SportsPlugin from '../main';
@@ -43,7 +44,7 @@ async function writeNote(plugin: SportsPlugin, relativePath: string, id: string,
    await backupBeforeReset(plugin, path, snapshot);
    await plugin.app.vault.process(existing, content => {
     if (content !== snapshot) throw new Error(`${path} changed during recovery. Retry sync.`);
-    return removeGeneratedHeading(restored);
+    return starterBullets(removeGeneratedHeading(restored));
    });
    plugin.data.generatedBlocks[key] = generatedBlock(id, body);
    await plugin.save();
@@ -51,19 +52,19 @@ async function writeNote(plugin: SportsPlugin, relativePath: string, id: string,
   }
   await plugin.app.vault.process(existing, content => {
    if (/<!-- complete-(?:log|plans):start -->/.test(content)) throw new Error(`${path} is managed by the existing Fitness refresh scripts. Choose a separate notes folder to avoid mixing generators.`);
-   return removeGeneratedHeading(mergeBlock(content, id, body, plugin.data.generatedBlocks[key], folder));
+   return starterBullets(removeGeneratedHeading(mergeBlock(content, id, body, plugin.data.generatedBlocks[key], folder)));
   });
   file = existing;
  } else if (existing) throw new Error(`A folder occupies ${path}.`);
  else {
   if (plugin.data.generatedBlocks[key] !== undefined && !recreateMissing) throw new Error(`Previously generated note ${path} was removed. Use Recreate missing notes in Sports settings to restore it.`);
   // Put the generated overview after the title, with personal sections below it.
-  const cleanInitial = expectedTitle ? withoutNoteTitle(initial, expectedTitle) : initial;
+  const cleanInitial = starterBullets(expectedTitle ? withoutNoteTitle(initial, expectedTitle) : initial);
  const frontmatterEnd = cleanInitial.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n/)?.[0] ?? '';
  const boundary = frontmatterEnd ? frontmatterEnd.length : 0;
   const title = cleanInitial.slice(0, boundary);
   const commentary = cleanInitial.slice(boundary).trim();
-  file = await plugin.app.vault.create(path, `${mergeBlock(title, id, body)}${commentary ? `\n${commentary}\n` : ''}`);
+  file = await plugin.app.vault.create(path, starterBullets(`${mergeBlock(title, id, body)}${commentary ? `\n${commentary}\n` : ''}`));
  }
  plugin.data.generatedBlocks[key] = generatedBlock(id, body);
  await plugin.save();

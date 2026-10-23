@@ -1,10 +1,7 @@
-import { renderPerformanceChart } from './performance-chart';
-import { performanceMarkdown, compactResults } from '../notes/performance';
-import { activityDetails } from '../garmin/activities';
-import { ItemView, WorkspaceLeaf, Setting } from 'obsidian';
+import { renderDashboardDay, dashboardButton as button } from './dashboard-day';
+import { ItemView, WorkspaceLeaf } from 'obsidian';
 import { SPORTS_ICON_ID } from './icon';
 import type SportsPlugin from '../main';
-import { localDate, scheduleOn } from '../model/calendar';
 export const SPORTS_VIEW = 'sports-dashboard';
 export class SportsDashboard extends ItemView {
  private anchor = new Date();
@@ -15,56 +12,40 @@ export class SportsDashboard extends ItemView {
  async onOpen(): Promise<void> { this.render(); }
  render(): void {
   const root = this.contentEl; root.empty(); root.addClass('sports-dashboard');
-  root.createEl('h1', { text: 'Sports' });
-  new Setting(root).setName('Training overview')
-   .addButton(button => button.setButtonText(this.plugin.syncing ? 'Syncing…' : 'Sync now').setDisabled(this.plugin.syncing).onClick(() => this.plugin.sync(true)))
-   .addButton(button => button.setButtonText('Open training log').onClick(() => this.plugin.openTrainingLog()));
-  new Setting(root).setName('Sets and plan/result graphs')
-   .setDesc('Open plans, review results in analytics, or read the tracking guide.')
-   .addButton(button => button.setButtonText('Open plans').onClick(() => this.plugin.openPlans()))
-   .addButton(button => button.setButtonText('Open analytics').onClick(() => this.plugin.openAnalytics()))
-   .addButton(button => button.setButtonText('Tracking guide').onClick(() => this.plugin.openTrackingGuide()));
-  root.createEl('p', { text: this.plugin.data.plan ? `${this.plugin.data.plan.name} · Last imported ${new Date(this.plugin.data.plan.importedAt).toLocaleString()}` : 'Set a workbook source and its sheets in Settings → Sports to get started.' });
+  const hero = root.createDiv({ cls: 'sports-dash-hero' });
+  hero.createSpan( { text: 'Your training', cls: 'sports-dash-eyebrow' });
+  hero.createEl('h1', { text: this.plugin.data.plan?.name || 'Sports' });
+  const actions = hero.createDiv({ cls: 'sports-dash-actions' });
+  const sync = button(actions, this.plugin.syncing ? 'Syncing…' : 'Sync now', () => this.plugin.sync(true), 'mod-cta');
+  sync.disabled = this.plugin.syncing;
+  button(actions, 'Training log', () => this.plugin.openTrainingLog());
+  button(actions, 'Analytics', () => this.plugin.openAnalytics());
+  button(actions, 'Plans', () => this.plugin.openPlans());
+  if (!this.plugin.data.plan) hero.createEl('p', { text: 'Add a workbook in the plugin settings to see your plan.', cls: 'sports-dash-muted' });
   if (this.plugin.data.lastError) root.createEl('p', { text: this.plugin.data.lastError, cls: 'sports-error' });
-  root.createEl('p', { text: (this.plugin.data.strategySheet || this.plugin.data.trackingSheet || this.plugin.data.scheduleSheet) && this.plugin.data.syncMinutes ? `Automatic workbook sync every ${this.plugin.data.syncMinutes} minutes while Obsidian is running.` : 'Automatic sync is off. Use Sync now to import changes.' });
-  new Setting(root).setName('Day')
-   .addButton(button => button.setButtonText('Previous').onClick(() => { this.anchor.setDate(this.anchor.getDate() - 1); this.render(); }))
-   .addButton(button => button.setButtonText('Today').onClick(() => { this.anchor = new Date(); this.render(); }))
-   .addButton(button => button.setButtonText('Next').onClick(() => { this.anchor.setDate(this.anchor.getDate() + 1); this.render(); }))
-   .addButton(button => button.setButtonText('Open weekly note').onClick(() => this.plugin.openWeekly(this.anchor)));
+  const navigation = root.createDiv({ cls: 'sports-dash-navigation' });
+  button(navigation, '← Previous', () => { this.anchor.setDate(this.anchor.getDate() - 1); this.render(); });
+  button(navigation, 'Today', () => { this.anchor = new Date(); this.render(); });
+  button(navigation, 'Next →', () => { this.anchor.setDate(this.anchor.getDate() + 1); this.render(); });
+  button(navigation, 'Open weekly note', () => this.plugin.openWeekly(this.anchor), 'sports-dash-week');
+  const rail = root.createDiv({ cls: 'sports-dash-days' });
+  const timeline = root.createDiv({ cls: 'sports-dash-timeline' });
   const cache = this.plugin.data.garminCache;
   if (cache?.error) root.createEl('p', { text: cache.error, cls: 'sports-error' });
   for (let offset = 0; offset <= 5; offset++) {
    const day = new Date(this.anchor.getFullYear(), this.anchor.getMonth(), this.anchor.getDate() + offset, 12);
-   const date = localDate(day);
-   const section = root.createDiv({ cls: 'sports-day' }); section.createEl('h3', { text: date });
-   const sessions = this.plugin.data.plan?.sessions.filter(session => session.date === date) ?? [];
-   const scheduled = this.plugin.data.showRegularActivities ? scheduleOn(this.plugin.data.plan, date) : [];
-   const activities = cache?.activities.filter(activity => activity.date === date) ?? [];
-   if (!activities.length && !sessions.length && !scheduled.length) section.createEl('p', { text: 'No sessions planned or recorded.' });
-   for (const activity of activities) {
-    section.createEl('a', { text: activity.name, href: `https://connect.garmin.com/modern/activity/${activity.id}` });
-    section.createEl('p', { text: `Recorded by Garmin · ${activityDetails(activity)}` });
-   }
-   for (const session of sessions) {
-    section.createEl('strong', { text: session.title });
-    const part = this.plugin.data.plan?.parts.find(part => part.id === session.partId && part.version === session.partVersion);
-    section.createEl('p', { text: `${session.sport} · ${session.status} · Planned ${session.plannedMinutes ?? '—'} min · Actual ${session.actualMinutes ?? '—'} min` });
-    if (session.prescription) section.createEl('p', { text: session.prescription });
-    if (part) { const details = section.createEl('details'); details.createEl('summary', { text: `${part.title} · v${part.version}` }); details.createEl('p', { text: part.prescription }); }
-    if (session.notes) section.createEl('p', { text: session.notes });
-    if (compactResults(session)) section.createEl('p', { text: compactResults(session) });
-    const graph = /```sports-compare\n([\s\S]*?)\n```/.exec(performanceMarkdown(session));
-    if (graph) {
-     const comparison = section.createEl('details');
-     comparison.createEl('summary', { text: 'Sets and plan/result comparison' });
-     renderPerformanceChart(graph[1]!, comparison.createDiv());
-    }
-   }
-   for (const item of scheduled) {
-    section.createEl('p', { text: `${item.time} ${item.title} · ${item.minutes ?? '—'} min · ${item.recordedBy} · Planned, no manual results` });
-    if (item.notes) section.createEl('p', { text: item.notes });
-   }
+   const { section, isToday, sessions, scheduled, activities } = renderDashboardDay(timeline, this.plugin, day);
+   const dayButton = button(rail, '', () => section.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }), 'sports-dash-day-button');
+   if (isToday) dayButton.addClass('sports-dash-day-current');
+   dayButton.setAttribute('aria-label', `${day.toLocaleDateString()} · ${sessions.length + scheduled.length} sessions · ${activities.length} Garmin activities`);
+   dayButton.createSpan({ text: day.toLocaleDateString(undefined, { weekday: 'short' }), cls: 'sports-dash-muted' });
+   dayButton.createEl('strong', { text: String(day.getDate()) });
+   dayButton.createSpan({ text: sessions.length + scheduled.length ? `${sessions.length + scheduled.length} sessions` : 'No sessions', cls: 'sports-dash-day-count' });
+   if (activities.length) dayButton.createSpan({ text: `${activities.length} Garmin`, cls: 'sports-dash-day-count' });
+   if (day.getDay() === 0) dayButton.createSpan({ text: 'Reflect on the week', cls: 'sports-dash-day-count' });
+
   }
+  const footer = root.createDiv({ cls: 'sports-dash-footer' });
+  button(footer, 'Tracking guide', () => this.plugin.openTrackingGuide());
  }
 }
