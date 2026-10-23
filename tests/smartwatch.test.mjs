@@ -58,6 +58,7 @@ test('smartwatch note contains three chart blocks, cached-source status, and saf
 class Element {
  constructor(tag = 'div', options = {}) { this.tag = tag; this.children = []; this.attributes = {}; this.textContent = options.text; this.namespaceURI = 'http://www.w3.org/2000/svg'; }
  createEl(tag, options) { const child = new Element(tag, options); this.children.push(child); return child; }
+ createSpan(options) { return this.createEl('span', options); }
  createDiv(options) { return this.createEl('div', options); }
  createSvg(tag) { return this.createEl(tag); }
  setAttribute(key, value) { this.attributes[key] = value; }

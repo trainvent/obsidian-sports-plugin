@@ -92,3 +92,7 @@
 .sports-watch-pace { stroke: var(--interactive-accent); fill: var(--interactive-accent); stroke-width: 2; }
 .sports-watch-heart { stroke: #D6A45B; fill: #D6A45B; stroke-width: 2; stroke-dasharray: 5 4; }
 .sports-smartwatch-chart circle { stroke-dasharray: none; }
+
+.sports-chart-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; }
+.sports-chart-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.sports-score-chart .sports-chart-legend-sample { display: inline-block; width: 40px; height: 12px; flex: 0 0 40px; }

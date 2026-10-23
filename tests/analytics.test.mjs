@@ -176,6 +176,7 @@ test('scatter correlation requires variable paired samples', () => {
 
 class Element {
  constructor(tag = 'div', options = {}) { this.tag = tag; this.children = []; this.attributes = {}; this.textContent = options.text; this.namespaceURI = 'http://www.w3.org/2000/svg'; }
+ createSpan(options) { return this.createEl('span', options); }
  createDiv(options) { return this.createEl('div', options); }
  createEl(tag, options) { const child = new Element(tag, options); this.children.push(child); return child; }
  createSvg(tag) { return this.createEl(tag); }
@@ -244,8 +245,8 @@ test('score charts break lines at missing measurements and retain recorded zero 
   render('Date\tFelt effort (1–5)\tPlanned intensity (0–10)\n2026-10-26\t5\t10\n2026-10-27\t—\t0', dual);
   const dualSvg = dual.children[0].children[1];
   assert.deepEqual(dualSvg.children.filter(c => c.tag === 'circle').map(c => c.attributes.cy), ['35', '35', '210']);
-  assert.ok(dual.children[0].children[0].textContent.includes('left axis'));
-  assert.ok(dual.children[0].children[0].textContent.includes('right axis'));
+  assert.ok(dual.children[0].children[0].children[0].children[1].textContent.includes('left axis'));
+  assert.ok(dual.children[0].children[0].children[1].children[1].textContent.includes('right axis'));
   assert.ok(dualSvg.children.some(c => c.tag === 'text' && c.attributes.x === '680' && c.textContent === '10'));
   const intensity = new Element();
   render('Date\tPerformance (%)\tPlanned intensity (0–10)\n2026-10-26\t—\t5', intensity);

@@ -1,4 +1,5 @@
 import type { Plugin } from 'obsidian';
+import { chartLegend } from './chart-legend';
 import type { WatchChart } from '../model/smartwatch';
 
 const COLORS = ['#4C9EC9', '#71B59B', '#D6A45B', '#AF92CE', '#D67E88', '#8795A8'];
@@ -22,7 +23,11 @@ export function registerSmartwatchCharts(plugin: Plugin): void {
   if (!valid(data)) { element.createEl('pre', { text: source }); return; }
   if (!data.rows.length) { element.createEl('p', { text: 'No recorded activities for this chart yet. Sync Garmin to add data.' }); return; }
   const root = element.createDiv({ cls: 'sports-score-chart sports-smartwatch-chart' });
-  root.createEl('p', { text: data.kind === 'volume' ? 'Recorded minutes · stacked by sport · weeks start Monday' : 'Pace: solid, left axis (faster higher) · average heart rate: dashed, right axis · missing measurements leave gaps', cls: 'sports-performance-legend' });
+  if (data.kind === 'volume') root.createEl('p', { text: 'Recorded minutes · stacked by sport', cls: 'sports-performance-legend' });
+  else chartLegend(root, [
+   { label: 'Pace · left axis (faster higher)', cls: 'sports-watch-pace' },
+   { label: 'Average heart rate · right axis', cls: 'sports-watch-heart' },
+  ], 'Missing measurements leave gaps');
   const svg = root.createSvg('svg'); svg.setAttribute('viewBox', data.kind === 'volume' ? '0 0 820 340' : '0 0 820 310'); svg.setAttribute('role', 'img');
   svg.setAttribute('aria-label', data.kind === 'volume' ? 'Weekly recorded training minutes, stacked by sport.' : `${data.sport} pace and average heart rate over time. Point labels identify each activity and its measurements.`);
   const node = (tag: keyof SVGElementTagNameMap, attributes: Record<string, string>, text?: string): SVGElement => {

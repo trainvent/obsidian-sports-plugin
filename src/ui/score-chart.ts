@@ -1,4 +1,5 @@
 import type { Plugin } from 'obsidian';
+import { chartLegend } from './chart-legend';
 import { registerScoreScatter } from './score-scatter';
 import { registerSmartwatchCharts } from './smartwatch-chart';
 
@@ -22,7 +23,10 @@ export function registerScoreCharts(plugin: Plugin): void {
   const scaledPerformance = headers[1] === 'Performance × intensity';
   const watchAxes = headers[1] === 'Planned intensity (0–10)' && headers[2] === 'Watch heart rate (bpm)';
   const dualAxis = watchAxes || headers[2] === 'Planned intensity (0–10)' && ['Felt effort (1–5)', 'Performance (%)'].includes(headers[1]!);
-  root.createEl('p', { text: performanceOnly ? `Actual performance · 0–200% scale · ${values.length ? 'missing values leave gaps' : 'no results recorded yet'}${values.some(value => value > 200) ? ' · values above 200% marked at the top; point labels retain actual values' : ''}` : `${headers[1]}${ratingScale ? ' (0–10)' : ''}${dualAxis ? ' (left axis)' : ''}: dashed · ${headers[2]}${ratingScale ? ' (1–5)' : ''}${dualAxis ? ' (right axis)' : ''}: solid · missing values leave gaps`, cls: 'sports-performance-legend' });
+  chartLegend(root, performanceOnly ? [{ label: 'Actual performance (0–200%)', cls: 'sports-score-actual' }] : [
+   { label: `${headers[1]}${ratingScale ? ' (0–10)' : ''}${dualAxis ? ' (left axis)' : ''}`, cls: 'sports-score-expected' },
+   { label: `${headers[2]}${ratingScale ? ' (1–5)' : ''}${dualAxis ? ' (right axis)' : ''}`, cls: 'sports-score-actual' },
+  ], `${values.length ? 'Missing values leave gaps' : 'No results recorded yet'}${performanceOnly && values.some(value => value > 200) ? ' · values above 200% marked at the top; point labels retain actual values' : ''}`);
   const svg = root.createSvg('svg');
   svg.setAttribute('viewBox', '0 0 720 260'); svg.setAttribute('role', 'img');
   svg.setAttribute('aria-label', `${performanceOnly ? 'Actual performance on a 0–200% scale' : `${headers[1]} versus ${headers[2]}`} for ${rows.length} dates. Point labels contain dates and values.`);
