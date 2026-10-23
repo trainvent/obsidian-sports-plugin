@@ -70,8 +70,13 @@ for completion; **All done** also updates the individual Done values.
 Use the example workbook in [XLSX](templates/Training-example.xlsx) or
 [ODS](templates/Training-example.ods), or download either format in Sports settings
 to get a copy starting next Monday. It uses **Strategy**, **Recurring**,
-and **Daily** tabs, plus a **Scoring** sheet for editable performance metrics. The fixed example contains 12 weekly plans and 48 manual sessions;
-actual results are blank. Template download and note sync save `Guide/Workbook.md` inside the configured
+and **Daily** tabs, plus **Scoring** for calculations, **Library** for exercises
+and equipment, and a compact **Loads** sheet for weighted exercises. The fixed example contains 12 weekly plans and 48 manual sessions;
+actual results are blank. Three sessions pair 6 kg vest pull-ups and dips before the unweighted circuit.
+Loads records planned and actual kg without adding columns to Daily. Exercise-specific
+growth per kg adjusts planned intensity, capped at 10. A recap at the bottom of
+Strategy collects the end-of-plan review. Library and Loads are imported automatically
+by name; keep those tab names. Template download and note sync save `Guide/Workbook.md` inside the configured
 vault notes folder (by default `Sports/Guide/Workbook.md`), preserving an existing guide. No customization flow is required. Give the workbook and
 [Workbook.md](Workbook.md) to your own chatbot to adapt it safely.
 
@@ -149,7 +154,7 @@ The optional Goals `category` is `milestone` for a new capability or `maintenanc
 for an ability to maintain or improve. Blank or missing categories default to
 `milestone`, keeping older workbooks compatible. Strategy and Plans notes display
 **Aspiration** and **Maintenance** separately. The example
-classifies the three skills as milestones and running as maintenance. Its Core
+classifies the three skills as milestones and running as maintenance. Its Cal-Intervals
 part links to all three skill goals through PartGoals, shown as **Supports** in
 the strategy note. Add goal links to any training part in the same way.
 
@@ -170,7 +175,7 @@ adjusting a week. Weekly targets and dated session plans are separately editable
 changing a target does not silently rewrite daily sessions or shift dates.
 
 The offered **Daily** sheet has two header rows: wide A/B/C exercise headings
-above Done and numbered rep/time fields 1–5, followed by Core Done/Rounds, All done, Notes and
+above Done and numbered rep/time fields 1–5, followed by Cal-Intervals Done/Rounds, All done, Notes and
 three optional manual goal-result columns. Plan stacks the exercises on separate
 lines. Green cells are editable; both green and neutral areas alternate row tones.
 Older **Training log** sheets with a single flat header row remain supported.
@@ -186,7 +191,7 @@ Use `Empty` or an empty block for a day without a manual prescription.
 - Use a unique `Session ID` for every row when several sessions share a date and block.
   Keep IDs unchanged when adjusting plans so imported sessions retain their identity.
 - Customize skill columns using the suffix ` result`, such as `Squat result`.
-- Completion flags use ` done`, such as `Core done`, with TRUE, FALSE, or blank.
+- Completion flags use ` done`, such as `Cal-Intervals done`, with TRUE, FALSE, or blank.
 - `Notes` is optional. Additional optional fields are `Sport`, `Status`, `Session ID`,
   and `Part version`.
 - Results and completion flags remain separate. An entered result or a TRUE flag
@@ -205,19 +210,19 @@ The technical `Sessions` table remains supported for existing workbooks, with re
 ### Sets and plan/result comparisons
 
 Log provides the session overview. Analytics contains dated Daily notes with
-sets and exercise comparisons, while Graph compares performance and effort.
+sets and exercise comparisons, while Sheet compares performance and effort.
 Plans contains upcoming prescriptions without result columns or comparison cards.
 Log and weekly notes retain their contextual session comparisons.
 Open a card to see a four-column exercise table with the planned prescription,
-recorded total, and sets in order, plus paired plan/result bars. Overview tables
+recorded total, and sets in order, plus a compact plan/result pipe chart. Overview tables
 keep results compact instead of listing all numbered workbook columns.
 
 The chart reads only explicit lines such as `A) Pull-up: 3 x 5`,
 `B) Wall hold: 3 x 20 sec`, `C) Pistol: 3 x 5/leg`, `A) Mobility: 2 min`,
-and `Core: 5 rounds`. Custom group names and set counts, `x` or `×`, and explicit metric units are
+and `Cal-Intervals: 5 rounds`. Custom group names and set counts, `x` or `×`, and explicit metric units are
 supported. For variable targets and multiple metrics, see [Flexible Daily tracking](Tracking.md). Other plan wording remains visible without a numeric comparison.
-Each exercise has its own scale and unit; reps, seconds, reps per leg, and rounds
-are never added together. More training is not automatically a better result.
+Exercises run along the x-axis, with reps/rounds on the left and time on the right.
+Purple outlines show the plan; green bars fill them with recorded results. Other units use separate charts. More training is not automatically a better result.
 
 Mark the exercise's **Done** flag TRUE after recording its set values. Prefilled
 inputs with FALSE or blank Done flags remain unrecorded. Blank sets stay missing,
@@ -495,11 +500,11 @@ Settings use the searchable declarative API on Obsidian 1.13 or later, with the
 same controls rendered through the legacy API on Obsidian 1.11.4–1.12.
 
 The current template defines `max_sets = 3` (exercise groups A, B, C) and
-`max_reps = 5` (the numbered rep fields), plus Core separately. These metadata
+`max_reps = 5` (the numbered rep fields), plus Cal-Intervals separately. These metadata
 values do not automatically resize the layout. Rep cells contain plain numbers
 or durations displayed as `mm:ss`. Adjust the targets, then select TRUE under
-Done to record them. Core uses the same recording rule with an editable Rounds
-count. **All done**, after Core, records every group together when TRUE; FALSE
+Done to record them. Cal-Intervals uses the same recording rule with an editable Rounds
+count. **All done**, after Cal-Intervals, records every group together when TRUE; FALSE
 or blank uses the individual Done fields. Adjust result values before confirming.
 Whole-session Status is separate. The three goal-result columns are
 blank manual inputs, with no formulas. See [Workbook.md](Workbook.md) for details.
@@ -515,26 +520,23 @@ Missing measurements leave gaps; Garmin minutes are not added to workbook
 minutes. The note refreshes from cached Garmin data during sync, including when
 no workbook is selected, and preserves reflections outside its generated block.
 
-**Intensity** is how hard a session is planned to be, on a whole-number **0–10**
+**Intensity** is how hard a session is planned to be, on a **0–10**
 scale. The example calculates **Planned intensity** from the exercise arsenal's
 base values and Scoring's planned sets and amounts (reps, reps/leg, or seconds).
 Update these numeric inputs when changing the written plan. See
 [the formula in Workbook.md](Workbook.md#exercise-based-planned-intensity-formula).
 
-**Performance** compares actual results with targets. In Scoring, **Include**
-selects metrics and **Target** remains an explicit editable planning input. Each
-included positive target contributes 100 expected points. Actual points are
-`100 × actual / target` for **higher**, or `100 × target / actual` for **lower**.
-Session performance is the median of available included metric scores.
-Lower-direction zero actuals have no finite ratio and remain unscored. Units
-are normalized before combining scores; raw reps, time, and weight are never added.
+**Performance** compares recorded results with targets: `100 × result / target`.
+The unified XLSX Scoring table combines exercise performance and intensity,
+with a session summary on its first row. Session performance is the median
+of available metric scores; coverage shows how many results are recorded.
 
 **Felt effort** is optional. After training, enter **Effort rating** from 1 (easy)
 to 5 (very hard), or leave it blank. Felt effort starts blank and does not alter
 performance. No minutes × RPE calculation is used.
 
-Daily adds six fields: Planned intensity, Effort rating, Expected performance,
-Actual performance, Scored metrics, and Planned metrics. Recalculate and save
+Daily keeps Planned intensity and Effort rating. Performance and coverage stay
+in Scoring and are imported automatically alongside Daily. Recalculate and save
 before syncing. Sheet shows three charts with dates on the horizontal axis:
 performance versus intensity, effort versus intensity, and actual daily performance on a fixed 0–200% scale (100% centered). The first plots intensity × performance / 100 alongside intensity on one
 shared scale: 100% follows intensity, 80% is 20% lower, and values can exceed
@@ -548,7 +550,7 @@ different units; matching heights do not imply equal values.
 Existing workbooks remain supported. Template downloads never change a live
 cloud workbook. Add equivalent score formulas to a copy preserving history,
 or start a new plan from the updated template. Keep selecting Daily as tracking;
-Scoring is only a formula source. Update its actual-cell references, explicit
-targets, and daily median/count ranges together when customizing workouts.
+Keep the Scoring tab name. Update its result-cell references, explicit targets
+and session summary ranges together when customizing workouts.
 Existing Analytics.md notes with a trusted baseline migrate to Analytics/Index.md,
 retaining reflections and generated-section edit protection.

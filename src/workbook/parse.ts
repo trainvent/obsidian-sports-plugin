@@ -1,3 +1,6 @@
+import { parseArsenal, parseEquipment } from './reference-data';
+import { attachAddedLoads } from './added-load';
+import { attachSessionScoring } from './session-scoring';
 import { dailyHeaders } from './daily-headers';
 import { parseWeeklySchedule } from './weekly-schedule';
 import { parseWeekPlans } from './week-plans';
@@ -20,7 +23,7 @@ function tables(rows: SheetData, allowBlankRows = false): Map<string, RecordRow[
   while (values.length && !values[values.length - 1]) values.pop();
   if (!values.some(Boolean)) { if (!allowBlankRows) { name = ''; headers = []; } continue; }
   const first = values[0] ?? '';
-  if (['Plan', 'Goals', 'Parts', 'PartGoals', 'Exercises', 'Sessions', 'Weekly schedule', 'Week plans', 'Exercise arsenal'].includes(first) && values.slice(1).every(value => !value)) {
+  if (['Plan', 'Goals', 'Parts', 'PartGoals', 'Exercises', 'Sessions', 'Weekly schedule', 'Week plans', 'Exercise arsenal', 'Equipment', 'Added load', 'Plan summary', 'Plan recap', 'Cal-Intervals'].includes(first) && values.slice(1).every(value => !value)) {
    if (result.has(first)) throw new Error(`Duplicate table: ${first}`);
    name = first; headers = []; result.set(name, []); continue;
   }
@@ -65,6 +68,8 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
  if (mapping.trackingSheet && [mapping.strategySheet, mapping.scheduleSheet].includes(mapping.trackingSheet)) throw new Error('Choose different sheets for tracking and the other imports.');
  if (buffer.byteLength > 5 * 1024 * 1024) throw new Error('Workbook exceeds the prototype limit of 5 MB.');
  const selectedNames = new Set([mapping.strategySheet, mapping.trackingSheet, mapping.scheduleSheet].filter((name): name is string => !!name));
+ if (mapping.strategySheet || mapping.trackingSheet) selectedNames.add('Library');
+ if (mapping.trackingSheet) { selectedNames.add('Loads'); selectedNames.add('Scoring'); }
  if (mapping.scheduleSheet === undefined && mapping.strategySheet) selectedNames.add('Recurring');
  const sheets = await readWorkbookSheets(buffer, selectedNames);
  const selected = (name: string, setting: string): SheetData => {
@@ -83,6 +88,8 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
  let weeklySchedule = previous?.weeklySchedule ?? [];
  let weekPlans = previous?.weekPlans ?? [];
  let exerciseArsenal = previous?.exerciseArsenal ?? [];
+ let equipment = previous?.equipment ?? [];
+ let recap = previous?.recap ?? [];
  if (strategy) {
  const metadata = table(strategy, 'Plan');
  if (metadata.length !== 1) throw new Error('Plan must contain exactly one metadata row.');
@@ -118,15 +125,15 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
   if (!part.goalIds.includes(row.goal_id!)) part.goalIds.push(row.goal_id!);
  }
  weekPlans = parseWeekPlans(strategy.get('Week plans') ?? []);
- let group = '';
- exerciseArsenal = (strategy.get('Exercise arsenal') ?? []).map(row => {
-  group = row.Group || group;
-  if (!group || !row.Exercise) throw new Error('Exercise arsenal: supply a Group and one Exercise per row.');
-  if (row.Exercise.includes(',') || row.Exercise.includes(':')) throw new Error('Exercise arsenal: exercise names must not contain commas or colons.');
-  return { group, exercise: row.Exercise };
- });
- unique(exerciseArsenal.map(item => item.exercise), 'Exercise arsenal');
+ exerciseArsenal = parseArsenal(strategy.get('Exercise arsenal') ?? []);
+ recap = (strategy.get('Plan recap') ?? []).map(row => ({ prompt: row.Prompt || '', response: row.Response || '' }));
  if (strategy.get('Exercises')?.length) throw new Error('Exercise-level tables are not supported in this prototype. Use the part prescription field.');
+ }
+ const library = sheets.find(sheet => sheet.sheet === 'Library');
+ if (library && (mapping.strategySheet || mapping.trackingSheet)) {
+  const reference = tables(library.data);
+  exerciseArsenal = parseArsenal(table(reference, 'Exercise arsenal'));
+  equipment = parseEquipment(reference.get('Equipment') ?? []);
  }
  if (mapping.scheduleSheet) {
   weeklySchedule = parseWeeklySchedule(table(tables(selected(mapping.scheduleSheet, 'Weekly schedule sheet'), true), 'Weekly schedule'));
@@ -155,5 +162,9 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
    plannedMinutes: minutes(row.planned_minutes, context), actualMinutes: minutes(row.actual_minutes, context), result: row.result ?? '', status, notes: row.notes ?? '' };
  }) : previous?.sessions ?? []);
  unique(sessions.map(session => session.id), 'Sessions');
- return { id, name, timezone, goals, parts, weeklySchedule, weekPlans, exerciseArsenal, sessions, importedAt: new Date().toISOString() };
+ const scoring = sheets.find(sheet => sheet.sheet === 'Scoring');
+ if (scoring && mapping.trackingSheet) attachSessionScoring(sessions, scoring.data);
+ const loads = sheets.find(sheet => sheet.sheet === 'Loads');
+ if (loads && mapping.trackingSheet) attachAddedLoads(sessions, table(tables(loads.data), 'Added load'), equipment, exerciseArsenal);
+ return { id, name, timezone, goals, parts, weeklySchedule, weekPlans, exerciseArsenal, equipment, recap, sessions, importedAt: new Date().toISOString() };
 }

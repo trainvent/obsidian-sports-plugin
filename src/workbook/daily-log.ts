@@ -61,7 +61,7 @@ export function dailyLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bo
     if (header.endsWith(' rounds result') && results[header] && (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)))) throw new Error(`${context}: ${header.replace(/ rounds result$/, '')} rounds must be a nonnegative whole number or blank.`);
    }
   }
-  const hasResults = Boolean(entry['Actual performance'] || entry['Actual effort'] || entry['Effort rating']) || Object.values(results).some(value => value !== '') || Object.values(checks).some(value => value === true);
+  const hasResults = Boolean(entry.Performance || entry['Actual performance'] || entry['Actual effort'] || entry['Effort rating']) || Object.values(results).some(value => value !== '') || Object.values(checks).some(value => value === true);
   const status = entry.Status || (hasResults ? 'in-progress' : 'planned');
   if (!['planned', 'in-progress', 'completed', 'skipped', 'cancelled'].includes(status)) throw new Error(`${context}: invalid Status.`);
   const duration = (header: string): number | null => {

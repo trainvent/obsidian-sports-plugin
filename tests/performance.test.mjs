@@ -97,33 +97,52 @@ test('graphs reach Analytics, Log and weekly notes while Plans only shows upcomi
 
 class Element {
  constructor(tag = 'div', options = {}) { this.tag = tag; this.children = []; this.attributes = {}; this.textContent = options.text; }
+ createSpan(options) { return this.createEl('span', options); }
  createDiv(options) { const child = new Element('div', options); this.children.push(child); return child; }
  createEl(tag, options) { const child = new Element(tag, options); this.children.push(child); return child; }
  createSvg(tag) { const child = new Element(tag); child.namespaceURI = 'http://www.w3.org/2000/svg'; this.children.push(child); return child; }
  setAttribute(key, value) { this.attributes[key] = value; }
  appendChild(child) { this.children.push(child); }
 }
-test('chart renderer provides accessible finite SVG bars and rejects malformed source safely', () => {
+test('exercise chart uses shared count/time scales, outlined target pipes and recorded fills', () => {
  let render;
  registerPerformanceCharts({ registerMarkdownCodeBlockProcessor: (name, callback) => { assert.equal(name, 'sports-compare'); render = callback; } });
- const previous = globalThis.document;
- globalThis.document = { createElementNS: (_, tag) => new Element(tag) };
- try {
-  const root = new Element();
-  render('Exercise\tPlan\tResult\nPull-up (reps)\t15\t20\nHold (seconds)\t60\t—\nCore\t0\t0', root);
-  const svgs = root.children[0].children.slice(1).map(row => row.children[1]);
-  assert.equal(svgs.length, 3);
-  assert.ok(svgs[1].attributes['aria-label'].includes('unrecorded'));
-  assert.ok(svgs[2].attributes['aria-label'].includes('result 0'));
-  const bars = svgs.flatMap(svg => svg.children.filter(child => child.tag === 'rect'));
-  assert.equal(bars.length, 5);
-  for (const bar of bars) assert.ok(Number(bar.attributes.width) >= 0 && Number(bar.attributes.width) <= 280);
-  const flexible = new Element();
-  render('Exercise\tPlan\tResult\n' + Array.from({ length: 8 }, (_, i) => `Metric ${i}\t—\t0`).join('\n'), flexible);
-  assert.equal(flexible.children[0].children.length, 9);
-  assert.ok(flexible.children[0].children[1].children[1].attributes['aria-label'].includes('plan unspecified'));
-  const invalid = new Element();
-  render('Exercise\tPlan\tResult\n<script>\tInfinity\t0', invalid);
-  assert.equal(invalid.children[0].tag, 'pre');
- } finally { globalThis.document = previous; }
+ const root = new Element();
+ render('Exercise\tPlan\tResult\nPull-up (reps)\t15\t20\nHold (seconds)\t60\t—\nCore (rounds)\t0\t0', root);
+ const container = root.children[0];
+ const svg = container.children[1].children[0];
+ assert.equal(svg.tag, 'svg');
+ const bars = svg.children.filter(c => c.tag === 'rect' || c.tag === 'path');
+ const plans = bars.filter(c => c.attributes.class === 'sports-compare-plan');
+ const results = bars.filter(c => c.attributes.class === 'sports-compare-result');
+ assert.equal(plans.length, 3);
+ assert.equal(results.length, 2); // Missing hold result remains an empty pipe.
+ assert.equal(svg.children.filter(c => c.tag === 'circle').length, 0);
+ assert.ok(svg.children.some(c => c.textContent === 'Time (min:ss)'));
+ assert.ok(svg.children.some(c => c.textContent === 'Reps / rounds'));
+ assert.match(plans[0].attributes.d, /^M [\d.]+ 73 V 184 M [\d.]+ 73 V 184$/);
+ assert.ok(plans.every(plan => !/[HZ]/.test(plan.attributes.d)));
+ assert.equal(results[0].attributes.y, '36'); // Overshoot extends above the target.
+ assert.ok(plans[1].attributes.d.includes(' 36 V 184')); // Independent time scale.
+ assert.equal(results[1].attributes.height, '2'); // Explicit zero remains visible.
+ assert.ok(Number(results[0].attributes.height) > 111);
+ assert.equal(results[0].attributes.width, '30');
+ const rails = plans[0].attributes.d.match(/^M ([\d.]+) [\d.]+ V [\d.]+ M ([\d.]+)/);
+ assert.equal(Number(results[0].attributes.x), Number(rails[1]));
+ assert.ok(Math.abs(Number(results[0].attributes.x) + Number(results[0].attributes.width) - Number(rails[2])) < 1e-9);
+ for (const mark of bars) {
+  if (mark.tag === 'rect') {
+   assert.ok(Number.isFinite(Number(mark.attributes.y)));
+   assert.ok(Number(mark.attributes.height) >= 0);
+  }
+  assert.ok(mark.attributes['aria-label']);
+ }
+ const flexible = new Element();
+ render('Exercise\tPlan\tResult\n' + Array.from({ length: 8 }, (_, i) => `Exercise ${i} (reps)\t—\t0`).join('\n'), flexible);
+ assert.equal(flexible.children[0].children[1].children[0].children.filter(c => c.tag === 'rect').length, 8);
+ const custom = new Element();
+ render('Exercise\tPlan\tResult\nHold (minutes)\t1\t2\nWeight (kg)\t80\t85', custom);
+ assert.equal(custom.children[0].children.length, 3); // legend plus two unit-safe plots
+ const invalid = new Element(); render('Exercise\tPlan\tResult\n<script>\tInfinity\t0', invalid);
+ assert.equal(invalid.children[0].tag, 'pre');
 });

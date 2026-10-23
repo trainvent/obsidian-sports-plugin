@@ -1,5 +1,5 @@
 import readXlsxFile from 'read-excel-file/browser';
-import { unzipSync, strFromU8 } from 'fflate';
+import { unzipSync, zipSync, strFromU8 } from 'fflate';
 import { checkWorkbookArchive } from './zip-safety';
 import { readOds } from './ods';
 import type { WorkbookSheet } from './sheet-data';
@@ -16,6 +16,10 @@ export async function readWorkbookSheets(buffer: ArrayBuffer, selected: Set<stri
   return readOds(strFromU8(files['content.xml']), selected);
  }
  if (!files['xl/workbook.xml']) throw new Error('Unsupported workbook format. Use an XLSX or ODS spreadsheet.');
+ // The reader's async inflater creates workers by serializing functions, which
+ // breaks after bundling on larger sheets. Bounded synchronous decompression
+ // followed by a stored archive keeps its public reader on the safe path.
+ const stored = Uint8Array.from(zipSync(unzipSync(new Uint8Array(buffer)), { level: 0 }));
  // The XLSX library's declaration uses typeof Date; its runtime returns Date instances.
- return await readXlsxFile(new Blob([buffer])) as unknown as WorkbookSheet[];
+ return await readXlsxFile(new Blob([stored])) as unknown as WorkbookSheet[];
 }

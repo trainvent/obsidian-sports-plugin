@@ -329,7 +329,7 @@ test('goal categories separate new skills from maintenance and core supports all
  await assert.rejects(parseWorkbook(zipSync(files).buffer, { strategySheet: 'Strategy', trackingSheet: 'Training log' }), /category must be/);
 });
 
-test('new three-sheet example imports and rebases Daily without changing Recurring', async () => {
+test('template imports and rebases Daily without changing Recurring', async () => {
  const source = new Uint8Array(readFileSync('templates/Training-example.xlsx'));
  const plan = await parseWorkbook(startTemplateNextMonday(source, new Date(2026, 11, 31, 12)));
  assert.equal(plan.sessions.length, 48);
@@ -346,8 +346,11 @@ test('new three-sheet example imports and rebases Daily without changing Recurri
  const files = unzipSync(source);
  const strings = strFromU8(files['xl/sharedStrings.xml']);
  const invalid = strings.replaceAll('Easy scapular pull-up', 'Easy, scapular pull-up');
- assert.notEqual(invalid, strings);
  files['xl/sharedStrings.xml'] = strToU8(invalid);
+ const library = strFromU8(files['xl/worksheets/sheet5.xml']);
+ const invalidLibrary = library.replaceAll('Easy scapular pull-up', 'Easy, scapular pull-up');
+ assert.ok(invalid !== strings || invalidLibrary !== library);
+ files['xl/worksheets/sheet5.xml'] = strToU8(invalidLibrary);
  await assert.rejects(parseWorkbook(zipSync(files).buffer), /must not contain commas/);
 });
 

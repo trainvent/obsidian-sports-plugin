@@ -9,14 +9,19 @@ export interface Session {
  id: string; date: string; sport: string; title: string;
  partId: string; partVersion: string; plannedMinutes: number | null;
  tracking?: ExerciseTracking[]; scores?: SessionScores;
+ loads?: { exercise: string; group: string; equipment: string; plannedKg: number; actualKg: number | null; notes: string }[];
  block?: string; prescription?: string; checks?: Record<string, boolean | null>; results?: Record<string, string>;
  actualMinutes: number | null; result: string; status: string; notes: string;
 }
 export interface WeeklyScheduleItem { id: string; weekday: number; time: string; minutes: number | null; title: string; recordedBy: string; notes: string }
 export interface WeekPlan { week: number; start: string; phase: string; focus: string; targets: string; advanceWhen: string; minutes: number | null; blocks?: Record<string, string> }
+export interface ExerciseArsenalItem { group: string; exercise: string; unit?: string; baseIntensity?: number; growthPerKg?: number }
+export interface EquipmentItem { name: string; minKg: number; maxKg: number | null; notes: string }
 export interface TrainingPlan {
  id: string; name: string; timezone: string; goals: Goal[];
- exerciseArsenal?: { group: string; exercise: string }[];
+ exerciseArsenal?: ExerciseArsenalItem[];
+ equipment?: EquipmentItem[];
+ recap?: { prompt: string; response: string }[];
  weeklySchedule?: WeeklyScheduleItem[];
  weekPlans?: WeekPlan[];
  parts: TrainingPart[]; sessions: Session[]; importedAt: string;

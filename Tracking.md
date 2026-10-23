@@ -1,6 +1,6 @@
 ## Flexible Daily tracking
 
-A/B/C, Core, and five set columns describe the example workbook only. They are
+A/B/C, Cal-Intervals, and five set columns describe the example workbook only. They are
 not required exercises or limits. Choose either format below. The plugin reads
 your selected tracking tab; its name does not have to be Daily.
 
@@ -57,7 +57,7 @@ These rows are illustrative, not imported training achievements.
 - Keep goal measurements in custom ` result` columns with the same exact names
   used by Strategy's goal mappings. They are independent of set metrics.
 
-There is no fixed exercise count, no mandatory Core, and no five-set limit in
+There is no fixed exercise count, no mandatory Cal-Intervals, and no five-set limit in
 this format. It supports numeric measurements for varied regimes; the plugin
 does not infer exercise relationships or automatically score a regime.
 
@@ -72,7 +72,7 @@ Do not merge two exercise groups under the same name.
 Flat equivalents are `Squat done`, `Squat 1 result`, `Squat 2 result`, etc.
 `Circuit done` with `Circuit rounds result` also works. Numbered inputs and rounds
 remain gated by the corresponding Done flag. The example's **All done** column,
-immediately after Core, records all groups together when TRUE. Adjust the result
+immediately after Cal-Intervals, records all groups together when TRUE. Adjust the result
 values first. FALSE or blank returns to individual Done controls. The master
 control affects import and workbook performance scoring; individual cells retain
 their values. Whole-session Status stays separate.
@@ -109,7 +109,9 @@ individual sets, and Garmin activities. Log dates link there too. Only today and
 earlier dates with source entries receive day notes; upcoming sessions stay in
 Plans. Existing Daily reflections stay on the index. Each day has a protected
 generated section and a separate reflections area. Exercise details contain a
-four-column table and paired plan/result bars. Each exercise/metric uses its own scale.
+four-column table and a compact pipe chart: exercises along the x-axis,
+reps/rounds on the left and time on the right. Purple hollow points show the plan;
+green points show results. Other units use separate charts.
 Missing targets and results stay missing; partial totals are labeled. Graphs use
 your selected aggregation (total by default); those totals are not a
 training score, and larger values are not automatically better. Set values remain
@@ -122,19 +124,16 @@ service is used. Existing notes and commentary retain their conflict protection.
 
 ### Intensity, performance, and optional felt effort
 
-The template adds Scoring and six Daily fields: **Planned intensity**, **Effort
-rating**, **Expected performance**, **Actual performance**, **Scored metrics**,
-and **Planned metrics**.
+The XLSX template keeps **Planned intensity** and **Effort rating** in Daily.
+Its unified Scoring table holds performance and coverage, imported automatically.
 
 - **Intensity:** the example calculates planned intensity from 0 to 10 using
   the exercise arsenal's base values and Scoring's planned sets and amounts.
   Update those numeric inputs when changing the written plan. See
   [Workbook.md](Workbook.md#exercise-based-planned-intensity-formula) for the formula.
-- **Performance:** compare results with targets. Scoring's Include, Target, and
-  Direction choose the metrics. A higher-direction score is actual/target × 100;
-  lower-direction is target/actual × 100. Use positive targets and recorded
-  numeric actuals. Lower-direction zero actuals have no finite ratio. Performance
-  is the median of available included metric scores; 100 meets the target.
+- **Performance:** compare recorded results with positive targets using
+  result/target × 100. Performance is the median of available metric scores;
+  100 meets the target. Session summaries appear on the first exercise row.
   Review Scored metrics / Planned metrics because partial results can still score.
 - **Felt effort:** optionally rate how hard it felt after training, from 1 (easy)
   to 5 (very hard), or leave Effort rating blank. It never changes performance.
@@ -157,3 +156,14 @@ tracking tab. Customizing exercises means adapting Scoring's actual references,
 targets, and the session's median/count ranges too. Existing cloud workbooks are
 never overwritten by template downloads. Apply new formulas to a copy preserving
 recorded history, or use the template for a new plan.
+
+
+## Added weights without widening Daily
+
+Use the **Loads** tab only for weighted exercises. Each row identifies a date,
+session, exercise and equipment, with planned and actual kg side by side.
+Bodyweight sessions need no rows. Exercise ratings and growth per kg live in
+**Library**, alongside equipment limits. Actual kg stays blank until recorded;
+Done does not copy planned kg into it. Added load appears in a separate kg chart.
+The weighted intensity formula and the end-of-plan recap are described in
+[Workbook.md](Workbook.md).

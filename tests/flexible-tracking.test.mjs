@@ -4,7 +4,7 @@ import { build } from 'esbuild';
 import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
-import { zipSync, unzipSync, strToU8 } from 'fflate';
+import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
 const temp = mkdtempSync(`${tmpdir()}/sports-flexible-`);
 process.on('exit', () => rmSync(temp, { recursive: true, force: true }));
 const require = createRequire(import.meta.url);
@@ -118,6 +118,9 @@ test('row-based format imports through actual XLSX selection and keeps custom go
  const data = [['Date', 'Exercise', 'Set', 'Unit', 'Target', 'Result', 'Done', 'Jump result'], [date, 'Jump', 1, 'cm', 40, 35, true, '35 cm']];
  const letter = i => { let value = ''; for (let n = i + 1; n > 0; n = Math.floor((n - 1) / 26)) value = String.fromCharCode(65 + (n - 1) % 26) + value; return value; };
  files['xl/worksheets/sheet3.xml'] = strToU8(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${data.map((row, r) => `<row r="${r + 1}">${row.map((value, c) => `<c r="${letter(c)}${r + 1}" t="inlineStr"><is><t>${String(value)}</t></is></c>`).join('')}</row>`).join('')}</sheetData></worksheet>`);
+ // Replace the stock load entries alongside the replaced Daily schedule.
+ files['xl/worksheets/sheet6.xml'] = strToU8(strFromU8(files['xl/worksheets/sheet6.xml']).replace(/<(?:\w+:)?row\b[^>]*r="([0-9]+)"[^>]*>[\s\S]*?<\/(?:\w+:)?row>/g, (row, number) => Number(number) >= 3 ? '' : row));
+ files['xl/worksheets/sheet4.xml'] = strToU8(strFromU8(files['xl/worksheets/sheet4.xml']).replace(/<(?:\w+:)?row\b[^>]*r="([0-9]+)"[^>]*>[\s\S]*?<\/(?:\w+:)?row>/g, (row, number) => Number(number) >= 5 ? '' : row));
  const plan = await parseWorkbook(zipSync(files).buffer, { strategySheet: '', trackingSheet: 'Daily', scheduleSheet: '' });
  assert.equal(plan.sessions[0].tracking[0].actual[0], 35);
  assert.equal(plan.sessions[0].results['Jump result'], '35 cm');

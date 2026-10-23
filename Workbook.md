@@ -20,7 +20,7 @@ back to it.
 Both editable and reference areas alternate row tones to help you follow a session
 across the sheet. Colors are cues, not access restrictions.
 
-In **Daily**, actual minutes, status, A/B/C entries, Core, Notes and the final three
+In **Daily**, actual minutes, status, A/B/C entries, Cal-Intervals, Notes and the final three
 manual result columns are green. Dates, plans, titles and planned minutes stay
 neutral. In **Recurring**, start/end times, activity, recorded-by and notes are
 green; the calculated Minutes column stays neutral. Strategy's `max_sets` and
@@ -56,7 +56,8 @@ Keep the following sections and headers:
 | Goals | `goal_id`, `title`, `benchmark`, `baseline`, `test`, `category`, `result_column`, `garmin_types` |
 | Parts | `part_id`, `version`, `title`, `prescription`, `goal_ids` |
 | Week plans | `Week`, `Start`, `Phase`, `Focus`, `Targets`, `Advance when`, `Minutes`, `A`, `B` |
-| Exercise arsenal | `Group`, `Exercise` |
+| Plan summary | `Metric`, `Value` |
+| Plan recap | `Prompt`, `Response` |
 
 **Plan:** exactly one row. Keep `schema_version` equal to `1`. Use a valid IANA
 timezone, such as `Europe/Berlin`. Choose a stable `plan_id`; switching an imported
@@ -65,7 +66,7 @@ Monday before recording history. Plugin-created workbooks start next Monday in
 the user's local calendar and use the user's local timezone.
 
 The template's `max_sets` and `max_reps` cells describe its example layout only.
-They do not impose an exercise count, require A/B/C/Core, or limit set counts.
+They do not impose an exercise count, require A/B/C/Cal-Intervals, or limit set counts.
 Changing these cells does not automatically resize the workbook.
 
 **Goals:** use `milestone` for skills to achieve or `maintenance` for abilities to
@@ -143,14 +144,14 @@ notes. Keep the weekly schedule in Recurring only. For legacy workbooks with a `
 
 ## Daily
 
-Daily supports custom exercise groups and set counts. **A/B/C/Core and five
+Daily supports custom exercise groups and set counts. **A/B/C/Cal-Intervals and five
 numbered fields are only the example layout**, not required names or limits.
 For maximum flexibility, use one row per set/measurement with the headers
 `Date`, `Session ID`, `Exercise`, `Set`, `Unit`, `Target`, `Result`, `Done`.
 See [Flexible Daily tracking](Tracking.md) or **Guide/Tracking** in your vault for
 examples, multiple metrics, variable set targets, and recording rules.
 
-The existing example uses two header rows with A/B/C/Core exercise groups.
+The existing example uses two header rows with A/B/C/Cal-Intervals exercise groups.
 Rename, add, or remove these groups and their numbered set subcolumns as needed.
 Keep structural headers and each group's subcolumn alignment intact.
 
@@ -160,13 +161,13 @@ Keep structural headers and each group's subcolumn alignment intact.
 | H–M | Done, 1, 2, 3, 4, 5 | A rep fields |
 | N–S | Done, 1, 2, 3, 4, 5 | B rep fields |
 | T–Y | Done, 1, 2, 3, 4, 5 | C rep fields |
-| Z–AA | Done, Rounds | Core recording |
+| Z–AA | Done, Rounds | Cal-Intervals recording |
 | AB | All done | Record every exercise group in the row at once |
 | AC | Notes | Shared session notes |
 | AD–AF | Muscle-up result, HSPU result, Pistol result | Optional manual goal results |
-| AG–AL | Planned intensity, Effort rating, Expected performance, Actual performance, Scored metrics, Planned metrics | Separate ratings, performance formulas, and coverage |
+| AG–AH | Planned intensity, Effort rating | Session ratings (XLSX); performance and coverage live in Scoring |
 
-**Plan:** the A and B session blocks stack each A), B), C) exercise and Core on
+**Plan:** the A and B session blocks stack each A), B), C) exercise and Cal-Intervals on
 separate lines, just like Technique. The session's Block A/B and the exercise
 groups A/B/C are separate labels. Keep tempo, rest, per-leg instructions and other
 details in Plan; the rep entry cells contain no explanatory words.
@@ -181,13 +182,13 @@ to record them. A group left FALSE or blank does not import its prefilled values
 as actual results. For a partial attempt, adjust the values first and use TRUE
 to record that attempt; this does not complete the whole session.
 
-**Rounds groups (Core in the example):** Rounds starts with the day's planned round count; Technique days without
-a Core prescription leave it blank. Adjust it to the actual nonnegative whole
-number of rounds (including zero), then select TRUE in Core Done to record it.
+**Rounds groups (Cal-Intervals in the example):** Rounds starts with the day's planned round count; Technique days without
+a Cal-Intervals prescription leave it blank. Adjust it to the actual nonnegative whole
+number of rounds (including zero), then select TRUE in Cal-Intervals Done to record it.
 Unrecorded round targets are ignored during import.
 
-**All done:** select TRUE in **AB**, immediately after Core, to record all exercise
-groups at once. First adjust the numbered results and Core rounds to what you
+**All done:** select TRUE in **AB**, immediately after Cal-Intervals, to record all exercise
+groups at once. First adjust the numbered results and Cal-Intervals rounds to what you
 actually did. The master control overrides individual Done fields during import
 and performance calculation and highlights those fields; their stored values
 stay available for individual recording. Select FALSE or clear All done to return
@@ -257,19 +258,18 @@ sections against accidental edits; change plans in the workbook instead.
 ## Scoring and the Analytics folder
 
 The example includes a **Scoring** formula sheet. Keep the plugin's three import
-mappings on Strategy, Daily, and Recurring; Scoring feeds formulas on Daily and
-is not a fourth import selection.
+mappings on Strategy, Daily, and Recurring. The XLSX template uses one Scoring
+table for exercise targets, results, intensity and performance. Scoring is read
+automatically alongside Daily; keep its tab name.
 
-Scoring has Date, Session, Exercise, Unit, Include, Target, Actual, Expected score,
-Actual score, and Direction. Green Include/Target/Direction cells are editable.
-Actual links to explicit Done and result fields in Daily. Expected score is 100
-for an included positive target. Higher-direction Actual score is actual/target
-× 100; lower-direction is target/actual × 100. Lower-direction zero results remain
-unscored. Daily performance takes the median of the session's score rows, and
-Scored metrics / Planned metrics makes partial coverage visible.
+Result links to explicit Done and result fields in Daily. Exercise performance
+is result / target × 100. The first row of each session contains its planned
+intensity, median Performance, Scored metrics and Planned metrics. Coverage
+makes partial results visible. Cal-Intervals occupies one row per session, scoring
+completed rounds and using its shared Library definition for intensity.
 
-The example calculates **Planned intensity** on a whole-number **0–10** scale
-from exercise assumptions and planned volume (0 means no planned demand,
+The example calculates **Planned intensity** from exercise assumptions and planned
+volume, rounded to one decimal on a **0–10** scale (0 means no planned demand,
 10 means highest planned demand). Optionally enter **Effort rating** (1–5)
 afterward to record how hard it felt, or leave it blank. Neither rating affects
 the performance calculation. No duration × RPE score is required or inferred.
@@ -277,71 +277,99 @@ When extending the workout layout, update Scoring's actual-cell references,
 explicit targets, and the Daily median/count ranges for that session.
 Recalculate and save the workbook before syncing.
 
-### Exercise-based planned intensity formula
+### Exercise library and added load
 
-The **Exercise arsenal** has **Base intensity** (0–10) in **C36:C90** and
-**Unit** in **D36:D90**. Base intensity means the difficulty of one rep, or one
-second of a timed exercise. It is a rating, not additive intensity points.
-There are no per-exercise reference sets or reference amounts.
+**Library** holds the reference data. Keep this tab name: it is imported
+automatically alongside Strategy or Daily.
 
-Daily's session rating is a **volume-weighted average** of those base values:
+| Table | Headers |
+| --- | --- |
+| Exercise arsenal | `Group`, `Exercise`, `Base intensity (0–10)`, `Unit`, `Growth per kg` |
+| Equipment | `Equipment`, `Min kg`, `Max kg`, `Notes` |
+
+The XLSX arsenal occupies **Library!A2:E58**. Base intensity is in **C**, units in
+**D**, and growth per kg in **E**. Growth is an editable relative multiplier:
+4% means each added kg increases the exercise rating by 4% of its base rating.
+The seeded rates are planning estimates, not measured physiological effects.
+Pulling and muscle-up exercises start at 4%/kg; upright band transition drills
+and pistol variations at 3%/kg; push-ups, squats and dips at 2%/kg.
+Pike push-ups, handstands/HSPU, low-bar drills, inverted work and mobility
+leave this field blank. A blank rate leaves the base intensity unchanged.
+Rates do not prescribe vest use: only entries in Loads add planned weight.
+Weighted and unweighted work share the same exercise entry; there are no separate
+vest variants. The Cal-Intervals definition supplies its own work seconds.
+
+**Loads** is a sparse table, not a second full training log. Add a row only for
+an exercise with added weight; Daily gains no extra columns. Keep its tab name.
+
+| Table | Headers |
+| --- | --- |
+| Added load | `Date`, `Session`, `Exercise`, `Equipment`, `Planned kg`, `Actual kg`, `Notes` |
+
+Date and Session must identify one Daily session; Exercise must match its
+prescription or a Cal-Intervals exercise in Library. Only one load row per exercise per
+session is supported. Copy a row and edit it to add another weighted exercise.
+The lookup ranges cover rows 3–1000. To increase that capacity, extend the
+ranges in Scoring too.
+
+The template lists your **6–10 kg weight vest**. Three sessions pair **3 × 3
+vest pull-ups** and **3 × 5 vest dips** at 6 kg, then remove the vest before the
+unweighted Cal-Intervals circuit. Your best single sets at 10 kg (5 pull-ups / 8 dips)
+are recorded as context, not repeated-set targets.
+Set planned kg to 0 or remove the load row for bodyweight. Leave actual kg blank
+until recorded; **All done does not invent an actual weight**. Actual 0 means
+bodyweight. A Done flag is still required before a load appears as a recorded
+result in the exercise comparison.
+
+### Load-adjusted intensity formula
 
 ```text
+loaded_intensity_i = MIN(10, base_intensity_i × (1 + planned_kg_i × growth_per_kg_i))
 planned_amount_i = sets_i × reps_or_seconds_per_set_i
-weight_i = planned_amount_i                         for reps
-weight_i = 2 × planned_amount_i                     for reps per leg
-weight_i = planned_amount_i / seconds_per_rep        for timed work
-session_intensity = ROUND(SUM(base_intensity_i × weight_i) / SUM(weight_i), 0)
+volume_weight_i = planned_amount_i                 for reps
+volume_weight_i = 2 × planned_amount_i             for reps per leg
+volume_weight_i = planned_amount_i / seconds_per_rep for timed work
+session_intensity = ROUND(SUM(loaded_intensity_i × volume_weight_i)
+                          / SUM(volume_weight_i), 1)
 ```
 
-The result stays between 0 and 10 without capping a sum. More work at a higher
-base intensity pulls the session average up; more work at a lower intensity
-pulls it down. Doubling every exercise's sets leaves intensity unchanged and
-increases volume. All zero base values or all zero sets give a rating of zero.
-Missing inputs leave the rating blank.
+For example, a base rating of 5 at 2%/kg becomes **5.6 at 6 kg**. With no load row,
+planned kg is 0 and the base rating is unchanged. Ratings are capped at 10 before
+averaging. More sets changes volume weighting, rather than summing ratings.
 
-To combine rep and timed exercises, **Scoring!O1** holds one editable weighting
-assumption: **3 seconds per rep equivalent**, initially. This is a planning
-conversion, not a measured rep tempo. Per-leg amounts count both legs. Unlike
-units are converted before weighting. Adjust this assumption to change the
-relative weight of timed work; no exercise-specific reference prescriptions
-are needed.
-
-The calculation is visible in **Scoring → N:Y**. Green **P:S** cells contain
-Exercise, Unit, Planned sets, and Amount per set. **T** looks up Base intensity,
-**U** calculates the total amount, **V** calculates its volume weight, **W**
-checks the arsenal unit, and **X** calculates base intensity × volume weight.
-For example, **X5** uses:
+The **Assumptions** table below the Scoring calculations holds the editable
+timed-work conversion: **Scoring!B177**, initially 3 seconds per rep equivalent.
+In the unified XLSX table, **C:F** holds exercise, unit, sets and amount per set;
+**G:I** holds target, result and exercise performance; **J:M** holds base intensity,
+planned kg, growth and loaded intensity. **N:O** holds volume and contribution.
+**P:S** contains the session summary on its first row. For example:
 
 ```excel
-=IF(OR(COUNT(T5:V5)<>3,Q5<>W5,T5<0,T5>10),"",T5*V5)
+=MIN(10,J5*(1+K5*L5))
 ```
 
-**Daily!AG3** combines the first session's exercise rows:
+**Scoring!P5** combines its session rows; **Daily!AG3** links to that result:
 
 ```excel
-=IF(COUNT(Scoring!X5:X11)<>ROWS(Scoring!X5:X11),"",IF(SUM(Scoring!V5:V11)=0,0,ROUND(SUM(Scoring!X5:X11)/SUM(Scoring!V5:V11),0)))
+=IF(COUNT(O5:O8)<>COUNT(N5:N8),"",IF(SUM(N5:N8)=0,0,ROUND(SUM(O5:O8)/SUM(N5:N8),1)))
 ```
 
-Every Daily row has its own session range; all 48 sessions are populated. Missing
-or duplicate exercise names, unit mismatches, invalid sets, or incomplete inputs
-leave the rating blank. Sets must be nonnegative whole numbers; amounts and the
-seconds-per-rep assumption must be positive. Zero sets omits an exercise.
+Changing plan prose does not rewrite Scoring’s sets or amounts. Update them and
+the performance targets together. **Library!A65:F70** defines Cal-Intervals once:
+four exercises, each with editable work and rest seconds. The initial timing is
+30 seconds work + 20 seconds rest. The single Scoring row multiplies per-round
+volume and contribution by its planned rounds; rest is excluded from intensity.
+Missing or duplicate exercise matches and invalid inputs
+leave intensity unavailable. Rep/time performance and felt effort remain
+separate; added kg is shown as its own comparison metric, not added to reps.
 
-For example, 20 reps at base intensity 8 and 40 reps at base intensity 2 give
-`(20 × 8 + 40 × 2) / (20 + 40) = 4`. The exercise base values remain 8 and 2;
-the session's volume determines their weights.
+### End-of-plan recap
 
-The numeric volume inputs are initialized from the written Daily plan.
-**Changing the plan text does not rewrite these inputs.** Update Scoring's sets
-and amounts alongside the plan and the separate performance targets in **F**.
-Each Core round includes four 30-second work intervals, with rest excluded.
-Clusters count both reps; lowering tempo does not add separate hold time.
-Ranges and tests use their stated upper bounds, and optional work is included
-until its sets are zero. Scoring's Prescription note records these assumptions.
-The seeded base values are editable difficulty estimates; the four Core
-exercises start at 6, 4, 5, and 5. Optional felt effort and actual/target
-performance remain separate from planned intensity.
+At the bottom of Strategy, **Plan summary** shows planned/completed sessions,
+recorded manual minutes, and median recorded performance. **Plan recap** has six
+short response fields for goal progress, what worked, changes, recovery, load
+observations, and the next plan. Completion still uses the explicit Daily Status;
+tracker imports and exercise Done flags do not mark a whole session completed.
 
 The plugin's Analytics folder separates **Daily**, **Sheet**, and
 **Smartwatch**, plus **Combined** for source totals and intensity/heart-rate timelines. `Daily/Index.md` is the date index; `Daily/YYYY-MM-DD.md` holds that day's

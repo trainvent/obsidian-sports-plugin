@@ -13,7 +13,7 @@ export function resultKey(exercise: ExerciseTracking, index: number): string {
 
 /** Structured set rows are authoritative. Prose supplies explicit targets only. */
 export function exerciseTracking(session: Session): ExerciseTracking[] {
- if (session.tracking) return session.tracking;
+ if (session.tracking) return withLoads(session, session.tracking);
  const exercises: ExerciseTracking[] = [];
  for (const line of (session.prescription ?? '').split(/\r?\n|,\s*/)) {
   const match = /^(?:([^):]+)\)\s*)?(.+):\s*(?:(\d+)\s*[x×]\s*)?(\d+(?:\.\d+)?)\s*(.*?)\s*$/i.exec(line.trim());
@@ -47,7 +47,16 @@ export function exerciseTracking(session: Session): ExerciseTracking[] {
   });
   exercises.push({ group, name: match[2]!, unit: rounds ? 'rounds' : timed ? 'seconds' : suffix === '/leg' ? 'reps/leg' : suffix || 'reps', targets: Array<number>(count).fill(target), actual, done, resultKeys });
  }
- return exercises;
+ return withLoads(session, exercises);
+}
+
+/** Load is a separate kg metric, never summed with reps or seconds. */
+function withLoads(session: Session, exercises: ExerciseTracking[]): ExerciseTracking[] {
+ const loads: ExerciseTracking[] = (session.loads ?? []).filter(load => load.plannedKg > 0 || load.actualKg !== null).map(load => {
+  const done = session.checks?.[`${load.group} done`] ?? exercises.find(item => item.group === load.group)?.done ?? null;
+  return { group: `${load.group} load`, name: `${load.exercise} · added load`, unit: 'kg', targets: [load.plannedKg], actual: [done === true ? load.actualKg : null], done, aggregation: 'last' };
+ });
+ return loads.length ? [...exercises, ...loads] : exercises;
 }
 
 /** Explicit aggregation makes a load or effort comparison meaningful without mixing metrics. */

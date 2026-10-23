@@ -31,7 +31,7 @@ export function performanceMarkdown(session: Session, explain = true): string {
   const setLabels = exercise.setNumbers ? `Set ${exercise.setNumbers.join(' / ')}: ` : '';
   return `| ${safeText(exercise.group === exercise.name ? exercise.name : `${exercise.group} · ${exercise.name}`)} | ${prescription} ${safeText(exercise.unit)} | ${safeText(result)} | ${setLabels}${sets} |`;
  });
- return `\n\n\`\`\`sports-compare\nExercise\tPlan\tResult\n${graph.join('\n')}\n\`\`\`\n\n| Exercise | Plan | Result | Sets in order |\n| --- | --- | --- | --- |\n${rows.join('\n')}${explain ? '\n\nEach bar uses its own exercise/metric scale. — means unrecorded; zero is a recorded result. Timed sets use seconds. Comparisons use numeric recorded sets only (total unless another aggregation is named); text results remain in the sets table; unchecked inputs are never results.' : ''}`;
+ return `\n\n\`\`\`sports-compare\nExercise\tPlan\tResult\n${graph.join('\n')}\n\`\`\`\n\n| Exercise | Plan | Result | Sets in order |\n| --- | --- | --- | --- |\n${rows.join('\n')}${explain ? '\n\nReps use the left axis; time uses the right. Other units have separate charts. Comparisons use recorded totals unless another aggregation is named. Missing results stay unplotted; partial and text results remain in the sets table.' : ''}`;
 }
 
 export function sessionDetails(session: Session): string {

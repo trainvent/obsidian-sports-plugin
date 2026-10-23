@@ -15,11 +15,27 @@ async function load(path) {
 }
 const { dailyScores, median } = await load('model/daily-scores');
 const { scoreFields } = await load('workbook/score-fields');
+const { attachSessionScoring } = await load('workbook/session-scoring');
 const { dailyLog } = await load('workbook/daily-log');
 const { parseWorkbook } = await load('workbook/parse');
 const { startTemplateNextMonday } = await load('workbook/template-dates');
 const { analyticsNoteTasks, analyticsGraphMarkdown } = await load('notes/analytics');
 const { registerScoreCharts } = await load('ui/score-chart');
+
+test('Scoring summaries preserve zero, missing values and Daily effort; invalid matches fail', () => {
+ const session = { id: 'one', date: '2026-10-26', title: 'Training', scores: scoreFields({ 'Planned intensity': '4.5', 'Effort rating': '3' }, 'test') };
+ const header = ['Date', 'Session', 'Exercise', 'Performance', 'Scored metrics', 'Planned metrics'];
+ const row = [new Date('2026-10-26T12:00:00Z'), 'Training', 'Pull-up', 0, 1, 4];
+ attachSessionScoring([session], [header, row, ['2026-10-26', 'Training', 'Dip']]);
+ assert.equal(session.scores.actualPerformance, 0);
+ assert.equal(session.scores.effortRating, 3);
+ assert.equal(session.scores.plannedIntensity, 4.5);
+ assert.equal(session.scores.plannedMetrics, 4);
+ assert.throws(() => attachSessionScoring([session], [header, row, row]), /duplicate/);
+ assert.throws(() => attachSessionScoring([], [header, row]), /exactly one/);
+ attachSessionScoring([session], [header, ['2026-10-26', 'Training', 'Pull-up', null, 0, 4]]);
+ assert.equal(session.scores.actualPerformance, null);
+});
 const { registerScoreScatter, correlation } = await load('ui/score-scatter');
 const { combinedAnalyticsMarkdown } = await load('notes/combined-analytics');
 const { dailyNoteTasks, dailyIndexMarkdown } = await load('notes/daily');
@@ -64,8 +80,8 @@ test('score import validates numbers and coverage, retains explicit zeros and le
  assert.equal(scoreFields({}, 'test'), undefined);
  const scores = scoreFields({ 'Planned intensity': '3', 'Effort rating': '5', 'Actual performance': '0', 'Actual effort': '0', 'Expected RPE': '5', 'Actual RPE': '7', 'Scored metrics': '1', 'Planned metrics': '3' }, 'test');
  assert.equal(scores.plannedIntensity, 3); assert.equal(scores.effortRating, 5); assert.equal(scores.actualPerformance, 0); assert.equal(scores.actualEffort, 0); assert.equal(scores.expectedPerformance, null);
- for (const intensity of [0, 6, 10]) assert.equal(scoreFields({ 'Planned intensity': String(intensity) }, 'test').plannedIntensity, intensity);
- for (const entry of [{ 'Planned intensity': '-1' }, { 'Planned intensity': '11' }, { 'Planned intensity': '2.5' }, { 'Effort rating': '0' }, { 'Effort rating': '6' }, { 'Effort rating': '2.5' }, { 'Effort rating': '-1' }, { 'Expected RPE': '11' }, { 'Actual effort': '-1' }, { 'Scored metrics': '1.5' }, { 'Scored metrics': '4', 'Planned metrics': '3' }]) assert.throws(() => scoreFields(entry, 'test'));
+ for (const intensity of [0, 2.5, 6, 10]) assert.equal(scoreFields({ 'Planned intensity': String(intensity) }, 'test').plannedIntensity, intensity);
+ for (const entry of [{ 'Planned intensity': '-1' }, { 'Planned intensity': '11' }, { 'Planned intensity': 'NaN' }, { 'Effort rating': '0' }, { 'Effort rating': '6' }, { 'Effort rating': '2.5' }, { 'Effort rating': '-1' }, { 'Expected RPE': '11' }, { 'Actual effort': '-1' }, { 'Scored metrics': '1.5' }, { 'Scored metrics': '4', 'Planned metrics': '3' }]) assert.throws(() => scoreFields(entry, 'test'));
  const rows = [['Date', 'Block', 'Plan', 'Expected performance', 'Actual performance'], ['2026-10-26', '', 'Free text', 100, 0]];
  assert.equal(dailyLog(rows, [], false)[0].scores.actualPerformance, 0);
  assert.equal(dailyLog(rows, [], false)[0].status, 'in-progress');
@@ -98,10 +114,10 @@ test('all done records exercise targets together while preserving individual con
 test('scoring workbook imports saved formulas, no invented actuals, and rebases linked Scoring dates', async () => {
  const bytes = new Uint8Array(readFileSync('templates/Training-example.xlsx'));
  const plan = await parseWorkbook(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
- assert.equal(plan.sessions[0].scores.expectedPerformance, 100);
+ assert.equal(plan.sessions[0].scores.expectedPerformance, null);
  assert.equal(plan.sessions[0].scores.actualPerformance, null);
- assert.equal(plan.sessions[0].scores.plannedIntensity, 5);
- assert.ok(plan.sessions.every(session => Number.isInteger(session.scores.plannedIntensity) && session.scores.plannedIntensity >= 0 && session.scores.plannedIntensity <= 10));
+ assert.equal(plan.sessions[0].scores.plannedIntensity, 4.5);
+ assert.ok(plan.sessions.every(session => Number.isFinite(session.scores.plannedIntensity) && session.scores.plannedIntensity >= 0 && session.scores.plannedIntensity <= 10));
  assert.equal(plan.sessions[0].scores.effortRating, null);
  assert.equal(plan.sessions[0].scores.plannedMetrics, 4);
  assert.equal(plan.sessions[0].scores.scoredMetrics, 0);
@@ -111,11 +127,10 @@ test('scoring workbook imports saved formulas, no invented actuals, and rebases 
  const log = strFromU8(files['xl/worksheets/sheet3.xml']);
  const cellValue = (xml, address) => xml.match(new RegExp(`<(?:(?:\\w+):)?c\\b(?![^>]*\\/>)[^>]*r="${address}"[^>]*>[\\s\\S]*?<\\/(?:(?:\\w+):)?c>`))?.[0].match(/<(?:\w+:)?v>([^<]+)<\/(?:\w+:)?v>/)?.[1];
  assert.equal(cellValue(scoring, 'A5'), cellValue(log, 'A3'));
- assert.equal(cellValue(scoring, 'N5'), cellValue(log, 'A3'));
- // Import cached zero results from the selected Daily sheet; unrelated Scoring is not an importer role.
- let xml = log;
- for (const address of ['AJ3']) xml = xml.replace(new RegExp(`<((?:\\w+:)?)c\\b[^>]*r="${address}"[^>]*>[\\s\\S]*?<\\/\\1c>`), (_, p) => `<${p}c r="${address}"><${p}v>0</${p}v></${p}c>`);
- files['xl/worksheets/sheet3.xml'] = strToU8(xml);
+ // Performance now imports from the unified Scoring session summary.
+ let xml = scoring;
+ for (const address of ['Q5']) xml = xml.replace(new RegExp(`<((?:\\w+:)?)c\\b[^>]*r="${address}"[^>]*>[\\s\\S]*?<\\/\\1c>`), (_, p) => `<${p}c r="${address}"><${p}v>0</${p}v></${p}c>`);
+ files['xl/worksheets/sheet4.xml'] = strToU8(xml);
  const recorded = await parseWorkbook(zipSync(files).buffer);
  assert.equal(recorded.sessions[0].scores.actualPerformance, 0);
  assert.equal(recorded.sessions[0].scores.effortRating, null);

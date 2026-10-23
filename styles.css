@@ -65,12 +65,8 @@
 
 .sports-performance { padding: 12px; border: 1px solid var(--background-modifier-border); border-radius: 8px; }
 .sports-performance-legend { color: var(--text-muted); font-size: var(--font-smallest); margin: 0 0 12px; }
-.sports-performance-row + .sports-performance-row { margin-top: 12px; }
-.sports-performance-label { font-size: var(--font-small); margin-bottom: 4px; overflow-wrap: anywhere; }
 .sports-performance svg { display: block; width: 100%; max-width: 600px; }
 .sports-performance svg text { fill: var(--text-normal); font-size: 12px; }
-.sports-performance-plan { fill: var(--text-muted); opacity: .4; }
-.sports-performance-actual { fill: var(--interactive-accent); }
 
 .sports-settings .sports-sync-error {
  border: 1px solid var(--text-error);
@@ -139,3 +135,10 @@
 .sports-dash-widget-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
 .sports-today-widget { margin: 16px 0; }
 .sports-today-widget .sports-day { margin-bottom: 0; }
+
+.sports-exercise-plot { overflow-x: auto; margin-top: 8px; }
+.sports-performance .sports-exercise-plot svg { width: 100%; max-width: none; display: block; }
+.sports-compare-plan { fill: none; stroke: var(--color-purple, #a882e6); stroke-width: 2; }
+.sports-compare-result { fill: var(--color-green, #62b58a); stroke: var(--color-green, #62b58a); stroke-width: 2; }
+.sports-compare-axis { font-weight: 600; }
+.sports-exercise-plot [tabindex]:focus { outline: none; stroke: var(--text-normal); stroke-width: 3; }

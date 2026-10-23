@@ -30,7 +30,7 @@ export function startTemplateNextMonday(template: Uint8Array, now = new Date()):
  strategy = strategy.replace(startCell, shift(startCell));
  // Week-start and session-date formulas keep referring to the fixed start cell.
  // Update their saved values too, so the workbook imports before Excel opens it.
- strategy = strategy.replace(cellPattern('B\\d+'), cell => /<(?:\w+:)?f\b/.test(cell) ? shift(cell) : cell);
+ strategy = strategy.replace(cellPattern('B\\d+'), cell => /<(?:\w+:)?f\b[^>]*>[^<]*\$E\$3/.test(cell) ? shift(cell) : cell);
  const log = strFromU8(files[logPath]!).replace(cellPattern('A\\d+'), cell => /<(?:\w+:)?f\b/.test(cell) ? shift(cell) : cell);
  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
  strategy = strategy.replace(cellPattern('D3'), cell => {
