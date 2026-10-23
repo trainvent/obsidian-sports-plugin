@@ -28,7 +28,7 @@ green; the calculated Minutes column stays neutral. Strategy's `max_sets` and
 
 ## Keep the workbook contract
 
-- Save as `.xlsx`, under 5 MB. Do not add macros or external workbook links.
+- Save as `.xlsx` or `.ods`, under 5 MB. Do not add macros or external workbook links.
 - Keep the tabs **Strategy**, **Recurring**, **Daily**. In Sports settings select
   **Strategy** as the strategy sheet and **Daily** as the tracking sheet.
   Select **Recurring** as the weekly schedule sheet. Each mapping accepts an exact
@@ -248,7 +248,7 @@ sections against accidental edits; change plans in the workbook instead.
 3. Update goal links, arsenal names, weekly prescriptions and Daily consistently.
 4. Preserve recorded history. Leave future actual minutes and manual results blank;
    prefilled rep/round targets must have FALSE or blank Done flags.
-5. Recalculate and save the XLSX. Check for formula errors, broken references,
+5. Recalculate and save the workbook. Check for formula errors, broken references,
    duplicate IDs, unknown blocks/goals and commas or colons in arsenal names.
 6. In Obsidian, select the file and sheet names, then **Sync now**. Confirm the
    imported dates, prescriptions and recurring durations before relying on them.
@@ -275,7 +275,7 @@ afterward to record how hard it felt, or leave it blank. Neither rating affects
 the performance calculation. No duration × RPE score is required or inferred.
 When extending the workout layout, update Scoring's actual-cell references,
 explicit targets, and the Daily median/count ranges for that session.
-Recalculate and save the XLSX before syncing.
+Recalculate and save the workbook before syncing.
 
 ### Exercise-based planned intensity formula
 
@@ -367,3 +367,12 @@ they are not plotted as zero. Session coverage and felt-effort ratings remain in
 The separate axes compare trends across different units, not equal values.
 A score measures target attainment, not absolute training quality. Keep
 commentary outside protected generated sections.
+
+
+## ODS imports
+
+ODS uses the same sheet mappings and training layouts as XLSX. In LibreOffice
+Calc, save a copy as `.ods`, recalculate and save, then update the plugin’s cloud
+workbook link. Sports imports saved cell values, including formula results; it
+does not evaluate formulas. Verify calculated intensity and Done values after
+conversion. Downloads still provide the XLSX template.

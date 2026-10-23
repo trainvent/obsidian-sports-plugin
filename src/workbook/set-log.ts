@@ -1,5 +1,5 @@
 import { scoreFields, SCORE_COLUMNS } from './score-fields';
-import type { SheetData } from 'read-excel-file/browser';
+import type { SheetData } from './sheet-data';
 import type { Session, TrainingPart } from '../model/types';
 import type { ExerciseTracking } from '../model/exercise-tracking';
 import { cellText, validDate } from './daily-log';

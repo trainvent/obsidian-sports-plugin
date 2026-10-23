@@ -44,7 +44,7 @@ export class SportsSettingTab extends PluginSettingTab {
     this.refreshStatusControls();
    } }]),
    group('Workbook', [
-    { name: 'Cloud workbook link', desc: 'HTTPS download link to your XLSX. Nextcloud file shares are supported.', render: setting => {
+    { name: 'Cloud workbook link', desc: 'HTTPS download link to your XLSX or ODS. Nextcloud file shares are supported.', render: setting => {
      setting.settingEl.addClass('sports-source-setting');
      setting.addText(input => input.setPlaceholder('HTTPS workbook share link').setValue(plugin.data.workbookPath).onChange(async value => {
       plugin.data.workbookPath = value.trim(); await plugin.save();

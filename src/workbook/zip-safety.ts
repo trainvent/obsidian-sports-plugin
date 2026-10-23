@@ -1,4 +1,4 @@
-/** Inspect the central directory before the XLSX reader decompresses any entries. */
+/** Inspect the central directory before a workbook reader decompresses any entries. */
 export function checkWorkbookArchive(buffer: ArrayBuffer): void {
  const view = new DataView(buffer);
  let end = -1;

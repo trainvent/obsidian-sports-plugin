@@ -1,4 +1,4 @@
-import type { SheetData } from 'read-excel-file/browser';
+import type { SheetData } from './sheet-data';
 import { cellText } from './daily-log';
 
 /** A heading only applies to the consecutive tracking subcolumns beneath it. */

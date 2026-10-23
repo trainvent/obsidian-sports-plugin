@@ -4,14 +4,15 @@ import { build } from 'esbuild';
 import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
+import { odsArchive } from './ods-fixtures.mjs';
 const temp = mkdtempSync(`${tmpdir()}/sports-cloud-tests-`);
 process.on('exit', () => rmSync(temp, { recursive: true, force: true }));
-const result = await build({ stdin: { contents: "export { cloudWorkbookUrl, readCloudWorkbook } from './src/workbook/cloud'; export { readWorkbookSource } from './src/workbook/source'; export { downloadWorkbook } from './src/workbook/download';", resolveDir: process.cwd() }, bundle: true, format: 'cjs', platform: 'node', write: false, plugins: [{ name: 'platform', setup(builder) {
+const result = await build({ stdin: { contents: "export { parseWorkbook } from './src/workbook/parse'; export { cloudWorkbookUrl, readCloudWorkbook } from './src/workbook/cloud'; export { readWorkbookSource } from './src/workbook/source'; export { downloadWorkbook } from './src/workbook/download';", resolveDir: process.cwd() }, bundle: true, format: 'cjs', platform: 'node', write: false, plugins: [{ name: 'platform', setup(builder) {
  builder.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'obsidian', namespace: 'stub' }));
  builder.onLoad({ filter: /.*/, namespace: 'stub' }, () => ({ contents: 'export const Platform = { isDesktop: true };' }));
 } }] });
 writeFileSync(`${temp}/cloud.cjs`, result.outputFiles[0].text);
-const { cloudWorkbookUrl, readCloudWorkbook, readWorkbookSource, downloadWorkbook } = createRequire(import.meta.url)(`${temp}/cloud.cjs`);
+const { parseWorkbook, cloudWorkbookUrl, readCloudWorkbook, readWorkbookSource, downloadWorkbook } = createRequire(import.meta.url)(`${temp}/cloud.cjs`);
 const file = readFileSync('templates/Training-example.xlsx');
 const bytes = file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength);
 const ok = { status: 200, contentType: 'application/octet-stream', bytes };
@@ -74,4 +75,14 @@ test('production bundle contains no runtime filesystem access', async () => {
  const imports = Object.values(output.metafile.outputs).flatMap(file => file.imports);
  assert.deepEqual(imports.filter(item => /^(?:node:)?fs(?:\/|$)/.test(item.path)), []);
  assert.doesNotMatch(output.outputFiles[0].text, /FileTokenStore|require\(["'](?:node:)?fs(?:\/promises)?["']\)/);
+});
+
+
+test('cloud ODS share links import without a filename extension', async () => {
+ const bytes = odsArchive([{ sheet: 'Daily', data: [['Date', 'Block', 'Plan'], ['2026-10-26', 'A', 'Practice']] }]);
+ const downloaded = await readCloudWorkbook('https://cloud.example/s/token', async () => ({ status: 200, contentType: 'application/vnd.oasis.opendocument.spreadsheet', bytes }));
+ const plan = await parseWorkbook(downloaded, { strategySheet: '', trackingSheet: 'Daily', scheduleSheet: '' });
+ assert.equal(plan.sessions[0].date, '2026-10-26');
+ assert.equal(plan.sessions[0].prescription, 'Practice');
+ assert.equal(plan.sessions[0].status, 'planned');
 });

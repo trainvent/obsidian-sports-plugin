@@ -1,7 +1,7 @@
 import { scoreFields, SCORE_COLUMNS } from './score-fields';
 import { dailyHeaders } from './daily-headers';
 import { setLog } from './set-log';
-import type { SheetData } from 'read-excel-file/browser';
+import type { SheetData } from './sheet-data';
 import type { Session, TrainingPart } from '../model/types';
 
 export function cellText(value: unknown): string {

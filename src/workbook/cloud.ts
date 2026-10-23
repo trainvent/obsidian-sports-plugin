@@ -20,7 +20,7 @@ export type WorkbookDownload = (url: URL) => Promise<Download>;
 const download: WorkbookDownload = async url => {
  if (!Platform.isDesktop) throw new Error('Cloud workbook sync currently requires Obsidian desktop.');
  return new Promise((resolve, reject) => {
-  const req = https.get(url, { headers: { accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'accept-encoding': 'identity' } }, res => {
+  const req = https.get(url, { headers: { accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.oasis.opendocument.spreadsheet', 'accept-encoding': 'identity' } }, res => {
    if (Number(res.headers['content-length']) > MAX_BYTES) { res.destroy(); reject(new Error('Cloud workbook exceeds the limit of 5 MB.')); return; }
    const chunks: Uint8Array[] = []; let size = 0;
    res.on('data', (chunk: Uint8Array) => {
@@ -56,7 +56,7 @@ export async function readCloudWorkbook(input: string, fetchFile: WorkbookDownlo
   if (result.status !== 200) throw new Error('Cloud workbook is unavailable. Check that the share has not expired and allows downloading without a login or password.');
   if (result.bytes.byteLength > MAX_BYTES) throw new Error('Cloud workbook exceeds the limit of 5 MB.');
   const bytes = new Uint8Array(result.bytes);
-  if (/text\/html/i.test(result.contentType) || bytes[0] !== 0x50 || bytes[1] !== 0x4b || bytes[2] !== 3 || bytes[3] !== 4) throw new Error('The link did not return an XLSX file. Share the workbook file itself, allow downloads, and use a link without login or password protection.');
+  if (/text\/html/i.test(result.contentType) || bytes[0] !== 0x50 || bytes[1] !== 0x4b || bytes[2] !== 3 || bytes[3] !== 4) throw new Error('The link did not return an XLSX or ODS file. Share the workbook file itself, allow downloads, and use a link without login or password protection.');
   return result.bytes;
  }
  throw new Error('Cloud workbook download failed.');

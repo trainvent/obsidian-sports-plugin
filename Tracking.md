@@ -142,7 +142,7 @@ and **Planned metrics**.
 Felt effort starts blank. Planned intensity uses exercise volume, including
 timed work converted using Scoring's shared seconds-per-rep weighting assumption.
 The rating averages exercise base values (0–10), weighted by planned volume. Recalculate
-and save the XLSX before syncing. Analytics/Sheet uses time on the horizontal
+and save the workbook before syncing. Analytics/Sheet uses time on the horizontal
 axis for all three charts. Performance is shown as intensity × performance / 100 on the same scale as
 intensity, so 100% follows intensity and 80% sits 20% below it. Values may exceed
 10 when performance exceeds 100%. Scaling is per session before daily medians. Effort versus intensity uses 0–5 on the

@@ -2,8 +2,8 @@ import { dailyHeaders } from './daily-headers';
 import { parseWeeklySchedule } from './weekly-schedule';
 import { parseWeekPlans } from './week-plans';
 import { dailyLog } from './daily-log';
-import { checkWorkbookArchive } from './zip-safety';
-import readXlsxFile, { type SheetData } from 'read-excel-file/browser';
+import { readWorkbookSheets } from './read-sheets';
+import type { SheetData } from './sheet-data';
 import type { Goal, TrainingPart, Session, TrainingPlan } from '../model/types';
 
 type RecordRow = Record<string, string>;
@@ -64,8 +64,9 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
  if (!mapping.strategySheet && !mapping.trackingSheet && !mapping.scheduleSheet) throw new Error('Select at least one sheet to sync a workbook.');
  if (mapping.trackingSheet && [mapping.strategySheet, mapping.scheduleSheet].includes(mapping.trackingSheet)) throw new Error('Choose different sheets for tracking and the other imports.');
  if (buffer.byteLength > 5 * 1024 * 1024) throw new Error('Workbook exceeds the prototype limit of 5 MB.');
- checkWorkbookArchive(buffer);
- const sheets = await readXlsxFile(new Blob([buffer]));
+ const selectedNames = new Set([mapping.strategySheet, mapping.trackingSheet, mapping.scheduleSheet].filter((name): name is string => !!name));
+ if (mapping.scheduleSheet === undefined && mapping.strategySheet) selectedNames.add('Recurring');
+ const sheets = await readWorkbookSheets(buffer, selectedNames);
  const selected = (name: string, setting: string): SheetData => {
   const sheet = sheets.find(sheet => sheet.sheet === name);
   if (!sheet) throw new Error(`${setting} "${name}" was not found. Available sheets: ${sheets.map(item => `"${item.sheet}"`).join(', ') || 'none'}. Update ${setting.toLowerCase()} in Sports settings, then select Sync now. Previously imported data is retained.`);

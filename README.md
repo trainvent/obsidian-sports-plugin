@@ -5,7 +5,7 @@ An Obsidian plugin developed by [Trainvent](https://github.com/trainvent).
 ## Alpha release
 
 Plan training in spreadsheets and follow it in Obsidian: recurring schedules,
-a combined calendar, workout logs, and individual goal notes. Read an XLSX from a downloadable
+a combined calendar, workout logs, and individual goal notes. Read an XLSX or ODS workbook from a downloadable
 cloud link, with optional Garmin activity and Coach imports.
 
 Version 0.3.0 is an early alpha. Obsidian 1.11.4 or later is required. Sports is desktop-only because workbook and Garmin connections use Node.js APIs.
@@ -39,7 +39,7 @@ Scheduling runs inside Obsidian; closed apps and mobile suspension stop or delay
 
 Generated notes default to `Sports/Strategy.md` and `Sports/Weeks/YYYY-MM-DD.md`
 inside the user's vault. Sync refreshes the strategy and previously generated weekly
-notes. Edit recurring activities in the XLSX, then sync to refresh the dashboard
+notes. Edit recurring activities in the workbook, then sync to refresh the dashboard
 and weekly notes.
 
 Only HTTPS cloud sources are supported. Old local paths are rejected with guidance
@@ -59,6 +59,12 @@ and enabled recurring activities, with an **Open weekly note** button. On Sunday
 the date changes, using cached data.
 
 ## Workbook format (prototype schema 1)
+
+Both **XLSX and ODS** imports are supported, with automatic format detection.
+Use the same sheet names and column layout in either format. To use ODS, save a
+copy in LibreOffice Calc, recalculate, save, and point **Cloud workbook link** at
+that file. Formula results are read as saved; Sports does not recalculate formulas.
+Password-protected workbooks are unsupported. Template downloads remain XLSX.
 
 Use the [example workbook](templates/Training-example.xlsx), or select **Download template**
 in Sports settings to save a generated copy through the browser. It uses **Strategy**, **Recurring**,
@@ -249,7 +255,7 @@ scheduled activities are never automatically marked completed.
 
 ## Markdown ownership and safety
 
-Synchronization always flows **XLSX → Obsidian**. The plugin never writes changes
+Synchronization always flows **XLSX/ODS → Obsidian**. The plugin never writes changes
 back to an existing workbook. Creating a new template is a separate explicit action.
 Edit structured plans/results in the workbook and reflections in Markdown. The plugin
 updates only its `sports:begin` / `sports:end` blocks and preserves surrounding prose.
@@ -408,7 +414,7 @@ remain unrecorded, and separate sessions keep their own scores and coverage.
 ## Goal notes
 
 Sync creates `Goals/<goal_id>.md` under the configured notes folder and links each
-goal from Plans and Strategy. Each note includes the baseline, target, dated XLSX
+goal from Plans and Strategy. Each note includes the baseline, target, dated workbook
 entries, matching Garmin activities, and a separate review area that sync preserves.
 
 Both data sources are available to every goal. Aspiration/maintenance categories
@@ -443,7 +449,7 @@ Garmin stops all Garmin requests and retains cached summaries locally.
 ### Combined plan calendar
 
 `Calendar.md` provides one chronological table for today and upcoming dates,
-with recurring weekly training, XLSX daily plans and optional Garmin Coach plans side by side. Multiple
+with recurring weekly training, workbook daily plans and optional Garmin Coach plans side by side. Multiple
 workouts share one date row. Open it through the **Calendar** link in `Plans.md`.
 The existing weekly and daily views remain available. Weekly strategy is not
 expanded into invented daily sessions. Coach visibility follows **Show Garmin
@@ -455,7 +461,7 @@ Write personal calendar reviews below the generated section; sync preserves them
 
 ## Read-only cloud workbooks
 
-In **Cloud workbook link**, paste a Nextcloud share link to the XLSX file itself,
+In **Cloud workbook link**, paste a Nextcloud share link to the XLSX or ODS file itself,
 for example `https://cloud.example/s/SHARE_TOKEN`. The plugin adds `/download`
 automatically. Direct HTTPS file-download links also work. For this first version,
 the share must allow downloads without a password or account login; folder shares,
