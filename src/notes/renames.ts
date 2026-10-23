@@ -1,9 +1,13 @@
 export const NOTE_RENAMES = [
+ ['Analytics/Index.md', 'Analytics/_Index.md', 'analytics'],
+ ['Analytics/Daily/Index.md', 'Analytics/Daily/_Index.md', 'analytics-daily'],
+ ['Routines/Index.md', 'Routines/_Index.md', 'routines-index'],
+ ['Routines/Intervals.md', 'Routines/Cal-Intervals.md', 'routine:intervals'],
  ['Plan.md', 'Plans.md', 'plan'],
  ['complete-log.md', 'Log.md', 'training-log'],
  ['Training log.md', 'Log.md', 'training-log'],
- ['Analytics.md', 'Analytics/Index.md', 'analytics'],
- ['Analytics/Daily.md', 'Analytics/Daily/Index.md', 'analytics-daily'],
+ ['Analytics.md', 'Analytics/_Index.md', 'analytics'],
+ ['Analytics/Daily.md', 'Analytics/Daily/_Index.md', 'analytics-daily'],
  ['Analytics/Graph.md', 'Analytics/Sheet.md', 'analytics-graph'],
 ] as const;
 

@@ -84,31 +84,31 @@ test('automatic link rewrites during Daily migration do not look like edits on r
  const { plugin, plan, files } = fixture();
  const baseline = (id, body) => `<!-- sports:begin ${id} -->\n${body}\n<!-- sports:end ${id} -->`;
  const oldDaily = new TFile('Sports/Analytics/Daily.md'); oldDaily.content = baseline('analytics-daily', 'Old index');
- const index = new TFile('Sports/Analytics/Index.md');
+ const index = new TFile('Sports/Analytics/_Index.md');
  const oldIndex = baseline('analytics', '[[Sports/Analytics/Daily|Daily]]\nOld overview');
  index.content = `${oldIndex}\n\nKeep index reflections\n`;
  files.set(oldDaily.path, oldDaily); files.set(index.path, index);
  plugin.data.generatedBlocks['Sports/Analytics/Daily.md:analytics-daily'] = baseline('analytics-daily', 'Old index');
- plugin.data.generatedBlocks['Sports/Analytics/Index.md:analytics'] = oldIndex;
+ plugin.data.generatedBlocks['Sports/Analytics/_Index.md:analytics'] = oldIndex;
  plugin.app.fileManager.renameFile = async (file, path) => {
   files.delete(file.path); file.path = path; files.set(path, file);
   // Obsidian updates referring files, but does not update plugin metadata.
-  for (const note of files.values()) if (note instanceof TFile) note.content = note.content.replaceAll('[[Sports/Analytics/Daily|', '[[Sports/Analytics/Daily/Index|');
+  for (const note of files.values()) if (note instanceof TFile) note.content = note.content.replaceAll('[[Sports/Analytics/Daily|', '[[Sports/Analytics/Daily/_Index|');
  };
  for (let i = 0; i < 3; i++) assert.deepEqual(await syncNotes(plugin, plan), []);
- assert.ok(index.content.includes('[[Sports/Analytics/Daily/Index|Daily]]'));
+ assert.ok(index.content.includes('[[Sports/Analytics/Daily/_Index|Daily]]'));
  assert.ok(index.content.endsWith('Keep index reflections\n'));
  assert.equal(files.has('Sports/Analytics/Daily.md'), false);
 });
 
 test('link migration tolerance rejects changes to prose, aliases and unrelated destinations', () => {
  const previous = '<!-- sports:begin test -->\n[[Sports/Analytics/Daily|Daily]] · original prose\n<!-- sports:end test -->';
- const rewritten = previous.replace('Analytics/Daily|', 'Analytics/Daily/Index|');
+ const rewritten = previous.replace('Analytics/Daily|', 'Analytics/Daily/_Index|');
  const current = `${rewritten}\n\nMy commentary\n`;
  assert.ok(mergeBlock(current, 'test', 'New source output', previous, 'Sports').endsWith('My commentary\n'));
- for (const edited of [current.replace('original prose', 'My prose'), current.replace('|Daily', '|My alias'), current.replace('Daily/Index|', 'Other|')]) assert.throws(() => mergeBlock(edited, 'test', 'New source output', previous, 'Sports'), /generated section was edited/);
+ for (const edited of [current.replace('original prose', 'My prose'), current.replace('|Daily', '|My alias'), current.replace('Daily/_Index|', 'Other|')]) assert.throws(() => mergeBlock(edited, 'test', 'New source output', previous, 'Sports'), /generated section was edited/);
  const escaped = previous.replace('|Daily', '\\|Daily');
- assert.doesNotThrow(() => mergeBlock(escaped.replace('Analytics/Daily\\|', 'Analytics/Daily/Index\\|'), 'test', 'New source output', escaped, 'Sports'));
+ assert.doesNotThrow(() => mergeBlock(escaped.replace('Analytics/Daily\\|', 'Analytics/Daily/_Index\\|'), 'test', 'New source output', escaped, 'Sports'));
 });
 
 test('sync creates browsable notes and future weeks without first opening the dashboard', async () => {
@@ -182,10 +182,10 @@ test('dated Daily notes combine sources, link from Log, and preserve old Daily r
  assert.ok(!daily.content.includes('Old all-days details'));
  assert.ok(daily.content.endsWith('Original Daily reflections\n'));
  assert.equal(files.has('Sports/Analytics/Daily.md'), false);
- assert.equal(daily.path, 'Sports/Analytics/Daily/Index.md');
- assert.ok(files.get('Sports/Analytics/Index.md').content.includes('[[Sports/Analytics/Daily/Index|Daily]]'));
+ assert.equal(daily.path, 'Sports/Analytics/Daily/_Index.md');
+ assert.ok(files.get('Sports/Analytics/_Index.md').content.includes('[[Sports/Analytics/Daily/_Index|Daily]]'));
  assert.equal(plugin.data.generatedBlocks['Sports/Analytics/Daily.md:analytics-daily'], undefined);
- assert.ok(plugin.data.generatedBlocks['Sports/Analytics/Daily/Index.md:analytics-daily']);
+ assert.ok(plugin.data.generatedBlocks['Sports/Analytics/Daily/_Index.md:analytics-daily']);
  day.content += '\nMy day reflection\n';
  plan.sessions[0].results['A 1 result'] = '3';
  assert.deepEqual(await syncNotes(plugin, plan), []);
@@ -203,11 +203,11 @@ test('moving the Daily index never overwrites an existing destination', async ()
  const { plugin, plan, files } = fixture();
  const baseline = '<!-- sports:begin analytics-daily -->\nOld index\n<!-- sports:end analytics-daily -->';
  const source = new TFile('Sports/Analytics/Daily.md'); source.content = `${baseline}\nOld reflections\n`;
- const target = new TFile('Sports/Analytics/Daily/Index.md'); target.content = 'My existing index';
+ const target = new TFile('Sports/Analytics/Daily/_Index.md'); target.content = 'My existing index';
  files.set(source.path, source); files.set(target.path, target);
  plugin.data.generatedBlocks[`${source.path}:analytics-daily`] = baseline;
  const issues = await syncNotes(plugin, plan);
- assert.ok(issues.some(issue => issue.startsWith('Analytics/Daily/Index.md:')));
+ assert.ok(issues.some(issue => issue.startsWith('Analytics/Daily/_Index.md:')));
  assert.equal(source.path, 'Sports/Analytics/Daily.md');
  assert.ok(source.content.endsWith('Old reflections\n'));
  assert.equal(target.content, 'My existing index');
@@ -614,7 +614,7 @@ test('Analytics owns comparisons, links from Plans, preserves reflections, and p
  assert.ok(analytics.content.includes('sports-compare'));
  assert.ok(analytics.content.includes('(reps)\t15\t4'));
  const plans = files.get('Sports/Plans.md');
- assert.ok(plans.content.includes('[[Sports/Analytics/Index|Analytics]]'));
+ assert.ok(plans.content.includes('[[Sports/Analytics/_Index|Analytics]]'));
  assert.ok(!plans.content.includes('sports-compare'));
  assert.ok(!plans.content.includes('Recorded result'));
  assert.ok(!plans.content.includes('| Results |'));
@@ -641,12 +641,12 @@ test('Analytics folder separates table, daily details and score graphs, and migr
  plan.sessions = [{ id: 'scored', date: '2026-12-28', title: 'Skills', sport: 'training', partId: '', partVersion: '', status: 'in-progress', notes: '', result: '', plannedMinutes: 30, actualMinutes: 25, prescription: 'A) Pull-up: 3 x 5', checks: { 'A done': true }, results: { 'A 1 result': '4' }, scores: { expectedPerformance: 100, actualPerformance: 80, plannedIntensity: 3, effortRating: 4, scoredMetrics: 1, plannedMetrics: 3 } }];
  assert.deepEqual(await syncNotes(plugin, plan), []);
  assert.ok(!files.has('Sports/Analytics.md'));
- const index = files.get('Sports/Analytics/Index.md');
+ const index = files.get('Sports/Analytics/_Index.md');
  assert.ok(index.content.endsWith('My existing analytics reflections\n'));
  for (const name of ['Daily', 'Sheet', 'Smartwatch', 'Combined']) assert.ok(index.content.includes(`Sports/Analytics/${name}`));
  assert.ok(!files.has('Sports/Analytics/Table.md'));
  assert.ok(!index.content.includes('Analytics/Table'));
- assert.ok(!files.get('Sports/Analytics/Daily/Index.md').content.includes('sports-compare'));
+ assert.ok(!files.get('Sports/Analytics/Daily/_Index.md').content.includes('sports-compare'));
  const graph = files.get('Sports/Analytics/Sheet.md');
  assert.ok(graph.content.includes('2026-12-28\t80'));
  assert.ok(graph.content.includes('2026-12-28\t4\t3'));

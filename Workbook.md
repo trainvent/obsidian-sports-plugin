@@ -9,6 +9,9 @@ its goals, exercises, prescriptions, schedule and training volume to your needs.
 Work on a copy. The plugin reads the workbook and never writes training results
 back to it.
 
+**Am / Bm** are the A / B sessions with added mass (`m`). The underlying block
+stays A or B; planned and actual added kg are recorded in **Loads**.
+
 ## Color key
 
 | Color | Meaning | How to use it |
@@ -157,15 +160,15 @@ Keep structural headers and each group's subcolumn alignment intact.
 
 | Columns | Row 2 headings | Use |
 | --- | --- | --- |
-| A–G | Date, Block, Plan, Title, Planned minutes, Actual minutes, Status | Session plan and recording |
-| H–M | Done, 1, 2, 3, 4, 5 | A rep fields |
-| N–S | Done, 1, 2, 3, 4, 5 | B rep fields |
-| T–Y | Done, 1, 2, 3, 4, 5 | C rep fields |
-| Z–AA | Done, Rounds | Cal-Intervals recording |
-| AB | All done | Record every exercise group in the row at once |
-| AC | Notes | Shared session notes |
-| AD–AF | Muscle-up result, HSPU result, Pistol result | Optional manual goal results |
-| AG–AH | Planned intensity, Effort rating | Session ratings (XLSX); performance and coverage live in Scoring |
+| A–F | Date, Block, Plan, Title, Planned minutes, Actual minutes | Session plan and recording |
+| G | Session done | One editable completion flag; TRUE marks the session completed |
+| H–L | 1, 2, 3, 4, 5 | A rep/time fields |
+| M–Q | 1, 2, 3, 4, 5 | B rep/time fields |
+| R–V | 1, 2, 3, 4, 5 | C rep/time fields |
+| W | Rounds | Cal-Intervals; 0 means not done |
+| X | Notes | Reflection text |
+| Y | Notes topic | General (default), goal or routine; routes the note to its Obsidian page |
+| Z–AA | Planned intensity, Effort rating | Session ratings (XLSX); performance and coverage live in Scoring |
 
 **Plan:** the A and B session blocks stack each A), B), C) exercise and Cal-Intervals on
 separate lines, just like Technique. The session's Block A/B and the exercise
@@ -177,28 +180,25 @@ as `2` or `5`; timed entries use native spreadsheet durations displayed as
 `mm:ss`, such as `00:15` or `02:00`. When entering native times, use `0:00:15`
 for fifteen seconds so the spreadsheet does not interpret it as fifteen minutes.
 Unused fields stay blank. Prefilled values are targets, not completed training.
-Adjust the values to what you did, then select TRUE in that group's Done field
-to record them. A group left FALSE or blank does not import its prefilled values
-as actual results. For a partial attempt, adjust the values first and use TRUE
-to record that attempt; this does not complete the whole session.
+Adjust the values to what you did, then select TRUE in **Session done** to record
+them. FALSE or blank leaves the prefilled values unrecorded. For a partial
+attempt, clear unused set values before selecting TRUE.
 
 **Rounds groups (Cal-Intervals in the example):** Rounds starts with the day's planned round count; Technique days without
 a Cal-Intervals prescription leave it blank. Adjust it to the actual nonnegative whole
-number of rounds (including zero), then select TRUE in Cal-Intervals Done to record it.
-Unrecorded round targets are ignored during import.
+number of rounds. With **Session done** TRUE, positive rounds are recorded;
+**0 or blank means Cal-Intervals was not done**, so it stays unscored. There is
+no separate circuit Done flag and no All done control. Session done is a manual
+value, never a formula. TRUE marks the session completed; there is no separate
+Status column in the XLSX. Notes topic replaces the three manual goal-result
+columns. General notes stay with the session; selected Muscle-up, HSPU and Pistol
+notes also appear on their goal page. Skills A, Skills B, Technique, Swimming and
+Running route to **Routines/<topic>.md**. Cal-Intervals routes to
+**Routines/Cal-Intervals.md**. Reflections do not count as measured performance.
 
-**All done:** select TRUE in **AB**, immediately after Cal-Intervals, to record all exercise
-groups at once. First adjust the numbered results and Cal-Intervals rounds to what you
-actually did. The master control overrides individual Done fields during import
-and performance calculation and highlights those fields; their stored values
-stay available for individual recording. Select FALSE or clear All done to return
-to the individual controls. Missing results stay blank. This does not change
-Status or fill manual goal results. All example rows start with All done FALSE.
-
-**Manual goal results:** AD–AF start completely blank, with no formulas. Fill them
-only when you want a result in the matching goal note. They do not automatically
-summarize the A/B/C fields. Keep their exact headers while Strategy goal mappings
-refer to them.
+**Goal reflections:** write in Notes and select its topic. General is the default;
+only the selected goal receives the reflection. No note text is interpreted as
+a measured result or automatic goal achievement.
 
 - One row represents one manual session. Keep Date and Plan formulas connected
   to the correct week and block. Copying a row requires checking every reference.
@@ -317,7 +317,7 @@ vest pull-ups** and **3 × 5 vest dips** at 6 kg, then remove the vest before th
 unweighted Cal-Intervals circuit. Your best single sets at 10 kg (5 pull-ups / 8 dips)
 are recorded as context, not repeated-set targets.
 Set planned kg to 0 or remove the load row for bodyweight. Leave actual kg blank
-until recorded; **All done does not invent an actual weight**. Actual 0 means
+until recorded; **Session done does not invent an actual weight**. Actual 0 means
 bodyweight. A Done flag is still required before a load appears as a recorded
 result in the exercise comparison.
 
@@ -348,7 +348,7 @@ planned kg, growth and loaded intensity. **N:O** holds volume and contribution.
 =MIN(10,J5*(1+K5*L5))
 ```
 
-**Scoring!P5** combines its session rows; **Daily!AG3** links to that result:
+**Scoring!P5** combines its session rows; **Daily!Z3** links to that result:
 
 ```excel
 =IF(COUNT(O5:O8)<>COUNT(N5:N8),"",IF(SUM(N5:N8)=0,0,ROUND(SUM(O5:O8)/SUM(N5:N8),1)))
@@ -372,7 +372,7 @@ observations, and the next plan. Completion still uses the explicit Daily Status
 tracker imports and exercise Done flags do not mark a whole session completed.
 
 The plugin's Analytics folder separates **Daily**, **Sheet**, and
-**Smartwatch**, plus **Combined** for source totals and intensity/heart-rate timelines. `Daily/Index.md` is the date index; `Daily/YYYY-MM-DD.md` holds that day's
+**Smartwatch**, plus **Combined** for source totals and intensity/heart-rate timelines. `Daily/_Index.md` is the date index; `Daily/YYYY-MM-DD.md` holds that day's
 sheet sessions, scores, sets, and Garmin activities. Log dates link to these
 notes. Existing Daily reflections remain on the index, and each day has its
 own preserved reflections section.
@@ -404,5 +404,5 @@ Calc, save a copy as `.ods`, recalculate and save, then update the plugin’s cl
 workbook link. Sports imports saved cell values, including formula results; it
 does not evaluate formulas. Verify calculated intensity and Done values after
 conversion. Choose **Download XLSX** or **Download ODS** in settings. Both start next Monday.
-The ODS template uses TRUE/FALSE completion dropdowns; **All done** links the
-individual Done values.
+Both templates use one manual TRUE/FALSE **Session done** dropdown. Notes topics,
+Loads, Library, Scoring and Cal-Intervals use the same structure in both formats.

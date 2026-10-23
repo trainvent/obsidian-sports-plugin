@@ -148,7 +148,7 @@ export default class SportsPlugin extends Plugin {
    for (const task of analyticsNoteTasks(this.data.plan, this.data.notesFolder, this.data.garminCache)) {
     await updateNote(this, task.path, task.id, task.body, task.initial);
    }
-   const file = this.app.vault.getFileByPath(`${this.data.notesFolder}/Analytics/Index.md`);
+   const file = this.app.vault.getFileByPath(`${this.data.notesFolder}/Analytics/_Index.md`);
    if (file) await this.app.workspace.getLeaf(false).openFile(file);
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not open analytics.'); }
   finally { this.noteBusy = false; }
@@ -169,7 +169,7 @@ export default class SportsPlugin extends Plugin {
   try {
    const issues = await migrateNoteNames(this);
    if (issues.length) throw new Error(issues[0]);
-   const file = await updateNote(this, 'Log.md', 'training-log', `${noteLink(this.data.notesFolder, 'Plans', 'Plans')} · ${noteLink(this.data.notesFolder, 'Analytics/Index', 'Analytics')}\n\n${combinedLogMarkdown(this.data.plan, this.data.garminCache, new Date(), this.data.notesFolder)}`, '# Log\n\n## Commentary\n');
+   const file = await updateNote(this, 'Log.md', 'training-log', `${noteLink(this.data.notesFolder, 'Plans', 'Plans')} · ${noteLink(this.data.notesFolder, 'Analytics/_Index', 'Analytics')}\n\n${combinedLogMarkdown(this.data.plan, this.data.garminCache, new Date(), this.data.notesFolder)}`, '# Log\n\n## Commentary\n');
    await this.app.workspace.getLeaf(false).openFile(file);
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not update the training log.'); }
   finally { this.noteBusy = false; }
@@ -180,7 +180,7 @@ export default class SportsPlugin extends Plugin {
   this.noteBusy = true;
   try {
    const dates = weekDates(anchor);
-   const file = await updateNote(this, `Weeks/${dates[0]}.md`, `week:${dates[0]}`, `${noteLink(this.data.notesFolder, 'Plans', 'Plans')} · ${noteLink(this.data.notesFolder, 'Log', 'Log')} · ${noteLink(this.data.notesFolder, 'Analytics/Index', 'Analytics')}\n\n${weekMarkdown(this.data.plan, dates, this.data.showRegularActivities) + garminMarkdown(this.data.garminCache, dates)}`, `# Week of ${dates[0]}\n\n## Reflections\n\n### What improved\n\n- \n\n### Recovery and comfort\n\n- \n\n### What to adjust\n\n- \n\n### Next week's focus\n\n- \n`);
+   const file = await updateNote(this, `Weeks/${dates[0]}.md`, `week:${dates[0]}`, `${noteLink(this.data.notesFolder, 'Plans', 'Plans')} · ${noteLink(this.data.notesFolder, 'Log', 'Log')} · ${noteLink(this.data.notesFolder, 'Analytics/_Index', 'Analytics')}\n\n${weekMarkdown(this.data.plan, dates, this.data.showRegularActivities) + garminMarkdown(this.data.garminCache, dates)}`, `# Week of ${dates[0]}\n\n## Reflections\n\n### What improved\n\n- \n\n### Recovery and comfort\n\n- \n\n### What to adjust\n\n- \n\n### Next week's focus\n\n- \n`);
    if (review) {
     const content = await this.app.vault.read(file);
     const personal = content.slice(content.indexOf(`<!-- sports:end week:${dates[0]} -->`) + `<!-- sports:end week:${dates[0]} -->`.length);

@@ -5,6 +5,12 @@ const ALIASES: Record<string, string[]> = {
  muscleup: ['Muscle-up result'], hspu: ['HSPU result'], handstandpushup: ['HSPU result'], pistol: ['Pistol result'], pistolsquat: ['Pistol result'],
 };
 
+export function goalNotesMatch(goal: Goal, session: Session): boolean {
+ if (!session.notesTopic || session.notesTopic === 'General') return false;
+ const topic = normalized(session.notesTopic);
+ return [normalized(goal.id), normalized(goal.title)].some(name => name === topic || (ALIASES[name] ?? []).some(alias => normalized(alias.replace(/ result$/, '')) === topic));
+}
+
 /** Match exact IDs/titles and the original template aliases; never guess from prose. */
 export function goalResultColumn(goal: Goal, sessions: Session[]): string | undefined {
  if (goal.resultColumn) return goal.resultColumn;

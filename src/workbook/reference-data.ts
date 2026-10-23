@@ -1,5 +1,16 @@
 import type { EquipmentItem, ExerciseArsenalItem } from '../model/types';
 type Row = Record<string, string>;
+export function parseIntervals(rows: Row[]): {exercise: string; workSeconds: number; restSeconds: number}[] {
+ const seen = new Set<string>();
+ return rows.map(row => {
+  if (!row.Exercise || seen.has(row.Exercise)) throw new Error('Cal-Intervals: use unique exercise names.');
+  seen.add(row.Exercise);
+  const workSeconds = number(row['Work seconds'], 'Cal-Intervals work seconds');
+  const restSeconds = number(row['Rest seconds'], 'Cal-Intervals rest seconds');
+  if (workSeconds === undefined || restSeconds === undefined) throw new Error('Cal-Intervals: supply work and rest seconds.');
+  return {exercise:row.Exercise,workSeconds,restSeconds};
+ });
+}
 function number(raw: string | undefined, context: string, max = Infinity): number | undefined {
  if (!raw) return undefined;
  const value = Number(raw);

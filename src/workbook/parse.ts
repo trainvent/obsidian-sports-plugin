@@ -1,4 +1,4 @@
-import { parseArsenal, parseEquipment } from './reference-data';
+import { parseArsenal, parseEquipment, parseIntervals } from './reference-data';
 import { attachAddedLoads } from './added-load';
 import { attachSessionScoring } from './session-scoring';
 import { dailyHeaders } from './daily-headers';
@@ -130,10 +130,12 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
  if (strategy.get('Exercises')?.length) throw new Error('Exercise-level tables are not supported in this prototype. Use the part prescription field.');
  }
  const library = sheets.find(sheet => sheet.sheet === 'Library');
+ let intervals: ReturnType<typeof parseIntervals> | undefined;
  if (library && (mapping.strategySheet || mapping.trackingSheet)) {
   const reference = tables(library.data);
   exerciseArsenal = parseArsenal(table(reference, 'Exercise arsenal'));
   equipment = parseEquipment(reference.get('Equipment') ?? []);
+  if (reference.has('Cal-Intervals')) intervals = parseIntervals(reference.get('Cal-Intervals')!);
  }
  if (mapping.scheduleSheet) {
   weeklySchedule = parseWeeklySchedule(table(tables(selected(mapping.scheduleSheet, 'Weekly schedule sheet'), true), 'Weekly schedule'));
@@ -166,5 +168,5 @@ export async function parseWorkbook(buffer: ArrayBuffer, mapping: WorkbookMappin
  if (scoring && mapping.trackingSheet) attachSessionScoring(sessions, scoring.data);
  const loads = sheets.find(sheet => sheet.sheet === 'Loads');
  if (loads && mapping.trackingSheet) attachAddedLoads(sessions, table(tables(loads.data), 'Added load'), equipment, exerciseArsenal);
- return { id, name, timezone, goals, parts, weeklySchedule, weekPlans, exerciseArsenal, equipment, recap, sessions, importedAt: new Date().toISOString() };
+ return { id, name, timezone, goals, parts, weeklySchedule, weekPlans, exerciseArsenal, equipment, ...(intervals ? {intervals} : {}), recap, sessions, importedAt: new Date().toISOString() };
 }

@@ -3,6 +3,7 @@ import trackingGuide from '../../Tracking.md';
 import { calendarMarkdown } from './calendar';
 import { coachPlansMarkdown } from './coach-plans';
 import { goalNoteTask } from './goal-notes';
+import { routineNoteTasks } from './routines';
 import { combinedLogMarkdown } from './combined-log';
 import { garminMarkdown } from '../garmin/render';
 import type SportsPlugin from '../main';
@@ -28,13 +29,14 @@ export async function syncNotes(plugin: SportsPlugin, plan: TrainingPlan, recrea
  const ordered = [...weeks].sort();
  const tasks = [
   { path: 'Guide/Tracking.md', id: 'tracking-guide', body: trackingGuide, initial: '# Flexible Daily tracking\n\n## My workbook choices\n' },
-  { path: 'Calendar.md', id: 'calendar', body: `${noteLink(folder, 'Plans', 'Plans')} · ${noteLink(folder, 'Log', 'Log')} · ${noteLink(folder, 'Analytics/Index', 'Analytics')}\n\n${calendarMarkdown(plan, plugin.data.showGarminCoachPlans, plugin.data.garminCoachCache, new Date(), !!plugin.data.trackingSheet?.trim())}`, initial: '\n\n## Reflections\n' },
+  { path: 'Calendar.md', id: 'calendar', body: `${noteLink(folder, 'Plans', 'Plans')} · ${noteLink(folder, 'Log', 'Log')} · ${noteLink(folder, 'Analytics/_Index', 'Analytics')}\n\n${calendarMarkdown(plan, plugin.data.showGarminCoachPlans, plugin.data.garminCoachCache, new Date(), !!plugin.data.trackingSheet?.trim())}`, initial: '\n\n## Reflections\n' },
   ...plan.goals.map(goal => goalNoteTask(goal, plan, plugin.data.garminCache, folder)),
+  ...routineNoteTasks(plan, folder, plugin.data.garminCache),
   ...analyticsNoteTasks(plan, folder, plugin.data.garminCache),
   { path: 'Plans.md', id: 'plan', body: `${planMarkdown(plan, folder, ordered)}\n\n${datedLogMarkdown(plan, true)}${coachPlansMarkdown(plugin.data.showGarminCoachPlans, plugin.data.garminCoachCache, plan.timezone)}`, initial: '# Plans\n\n## Reflections\n' },
   ...((plugin.data.strategySheet || plugin.data.scheduleSheet) ? [{ path: 'Strategy.md', id: 'strategy', body: strategyMarkdown(plan, folder), initial: '# Training strategy\n\n## Commentary\n' }] : []),
-  ...((plugin.data.trackingSheet || plugin.data.garminCache) ? [{ path: 'Log.md', id: 'training-log', body: `${noteLink(folder, 'Plans', 'Plans')} · ${noteLink(folder, 'Analytics/Index', 'Analytics')}\n\n${combinedLogMarkdown(plan, plugin.data.garminCache, new Date(), folder)}`, initial: '# Log\n\n## Reflections\n' }] : []),
-  ...ordered.map(date => ({ path: `Weeks/${date}.md`, id: `week:${date}`, body: `${noteLink(folder, 'Plans', 'Plans')} · ${noteLink(folder, 'Log', 'Log')} · ${noteLink(folder, 'Analytics/Index', 'Analytics')}\n\n${weekMarkdown(plan, weekDates(new Date(`${date}T12:00:00`)), plugin.data.showRegularActivities)}${garminMarkdown(plugin.data.garminCache, weekDates(new Date(`${date}T12:00:00`)))}`, initial: `# Week of ${date}\n\n## Weekly review\n\n### What improved\n\n- \n\n### Recovery and comfort\n\n- \n\n### Repeat or progress\n\n- \n\n### What to adjust\n\n- \n` })),
+  ...((plugin.data.trackingSheet || plugin.data.garminCache) ? [{ path: 'Log.md', id: 'training-log', body: `${noteLink(folder, 'Plans', 'Plans')} · ${noteLink(folder, 'Analytics/_Index', 'Analytics')}\n\n${combinedLogMarkdown(plan, plugin.data.garminCache, new Date(), folder)}`, initial: '# Log\n\n## Reflections\n' }] : []),
+  ...ordered.map(date => ({ path: `Weeks/${date}.md`, id: `week:${date}`, body: `${noteLink(folder, 'Plans', 'Plans')} · ${noteLink(folder, 'Log', 'Log')} · ${noteLink(folder, 'Analytics/_Index', 'Analytics')}\n\n${weekMarkdown(plan, weekDates(new Date(`${date}T12:00:00`)), plugin.data.showRegularActivities)}${garminMarkdown(plugin.data.garminCache, weekDates(new Date(`${date}T12:00:00`)))}`, initial: `# Week of ${date}\n\n## Weekly review\n\n### What improved\n\n- \n\n### Recovery and comfort\n\n- \n\n### Repeat or progress\n\n- \n\n### What to adjust\n\n- \n` })),
  ];
  const issues: string[] = [...migrationIssues];
  try { await ensureSheetGuide(plugin); }

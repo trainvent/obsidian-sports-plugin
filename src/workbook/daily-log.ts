@@ -22,7 +22,7 @@ export function dailyLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bo
  const headers = dailyHeaders(rows, first);
  if (!headers.includes('Date') || !headers.includes('Block') || !headers.includes('Plan')) return null;
  if (headers.some(header => !header) || new Set(headers).size !== headers.length) throw new Error('Daily log: column headers must be nonempty and unique.');
- const structural: string[] = [...SCORE_COLUMNS, 'All done', 'Date', 'Block', 'Plan', 'Notes', 'Session ID', 'Part version', 'Status', 'Sport', 'Planned minutes', 'Actual minutes', 'Title'];
+ const structural: string[] = [...SCORE_COLUMNS, 'Session done', 'All done', 'Date', 'Block', 'Plan', 'Notes', 'Notes topic', 'Session ID', 'Part version', 'Status', 'Sport', 'Planned minutes', 'Actual minutes', 'Title'];
  for (const header of headers) if (!structural.includes(header) && !header.endsWith(' result') && !header.endsWith(' done')) throw new Error(`Daily log: name custom result columns "${header} result" or completion columns "${header} done".`);
  return rows.slice(first + 1).flatMap((row, index) => {
   if (!row.some(value => cellText(value))) return [];
@@ -37,6 +37,8 @@ export function dailyLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bo
     : cellText(value);
   });
   const date = validDate(entry.Date ?? '', context);
+  const notesTopic = entry['Notes topic'] || 'General';
+  if (!['General', 'Muscle-up', 'HSPU', 'Pistol', 'Cal-Intervals', 'Skills A', 'Skills B', 'Technique', 'Swimming', 'Running'].includes(notesTopic)) throw new Error(`${context}: choose a listed goal or routine for Notes topic.`);
   const block = entry.Block ?? '';
   const version = entry['Part version'] ?? '';
   const candidates = parts.filter(part => part.id === block && (!version || part.version === version));
@@ -45,11 +47,13 @@ export function dailyLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bo
   const part = candidates.length === 1 ? candidates[0] : undefined;
   const checks: Record<string, boolean | null> = {};
   const results: Record<string, string> = {};
-  const allDoneValue = entry['All done']?.toLowerCase() ?? '';
-  if (allDoneValue && !['true', 'false'].includes(allDoneValue)) throw new Error(`${context}: All done must be TRUE, FALSE, or blank.`);
+  const sessionFlag = 'Session done' in entry;
+  const completionHeader = sessionFlag ? 'Session done' : 'All done';
+  const allDoneValue = entry[completionHeader]?.toLowerCase() ?? '';
+  if (allDoneValue && !['true', 'false'].includes(allDoneValue)) throw new Error(`${context}: ${completionHeader} must be TRUE, FALSE, or blank.`);
   const allDone = allDoneValue === 'true';
   for (const header of headers) {
-   if (header === 'All done') continue;
+   if (header === 'All done' || header === 'Session done') continue;
    const value = entry[header] ?? '';
    if (header.endsWith(' done')) {
     if (value && !['true', 'false'].includes(value.toLowerCase())) throw new Error(`${context}: ${header} must be TRUE, FALSE, or blank.`);
@@ -57,12 +61,16 @@ export function dailyLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bo
    } else if (header.endsWith(' result')) {
     // Iteration cells start with planned targets. Only a recorded exercise is actual training.
     const iteration = /^(.+) [1-9]\d* result$/.exec(header) ?? /^(.+) rounds result$/.exec(header);
-    results[header] = iteration && !allDone && entry[`${iteration[1]} done`]?.toLowerCase() !== 'true' ? '' : value;
+    if (sessionFlag && iteration) {
+     const performed = allDone && !(header.endsWith(' rounds result') && (!value || Number(value) === 0));
+     checks[`${iteration[1]} done`] = performed;
+     results[header] = performed ? value : '';
+    } else results[header] = iteration && !allDone && entry[`${iteration[1]} done`]?.toLowerCase() !== 'true' ? '' : value;
     if (header.endsWith(' rounds result') && results[header] && (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)))) throw new Error(`${context}: ${header.replace(/ rounds result$/, '')} rounds must be a nonnegative whole number or blank.`);
    }
   }
   const hasResults = Boolean(entry.Performance || entry['Actual performance'] || entry['Actual effort'] || entry['Effort rating']) || Object.values(results).some(value => value !== '') || Object.values(checks).some(value => value === true);
-  const status = entry.Status || (hasResults ? 'in-progress' : 'planned');
+  const status = entry.Status || (sessionFlag && allDone ? 'completed' : hasResults ? 'in-progress' : 'planned');
   if (!['planned', 'in-progress', 'completed', 'skipped', 'cancelled'].includes(status)) throw new Error(`${context}: invalid Status.`);
   const duration = (header: string): number | null => {
    const value = entry[header];
@@ -74,6 +82,7 @@ export function dailyLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bo
   const result = [...Object.entries(checks).map(([name, value]) => `${name}: ${value === null ? 'unrecorded' : value ? 'yes' : 'no'}`), ...Object.entries(results).filter(([, value]) => value !== '').map(([name, value]) => `${name}: ${value}`)].join('; ');
   return [{ id: entry['Session ID'] || `daily:${date}:${encodeURIComponent(block)}`, date, sport: entry.Sport || 'training', title: entry.Title || (empty ? 'No manual training planned' : part?.title || block || 'Training'),
    partId: part?.id ?? '', partVersion: part?.version ?? '', scores: scoreFields(entry, context), block, prescription: entry.Plan ?? '', checks, results,
-   plannedMinutes: duration('Planned minutes'), actualMinutes: duration('Actual minutes'), result, status, notes: entry.Notes ?? '' }];
+   plannedMinutes: duration('Planned minutes'), actualMinutes: duration('Actual minutes'), result, status,
+   ...(entry['Notes topic'] ? { notesTopic } : {}), notes: entry.Notes ?? '' }];
  });
 }

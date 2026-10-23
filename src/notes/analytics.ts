@@ -8,10 +8,10 @@ import { combinedAnalyticsMarkdown } from './combined-analytics';
 
 function number(value: number | null | undefined): string { return typeof value === 'number' ? String(Math.round(value * 10) / 10) : '—'; }
 function navigation(folder: string): string {
- return ['Index', 'Daily', 'Sheet', 'Smartwatch', 'Combined'].map(page => noteLink(folder, `Analytics/${page === 'Daily' ? 'Daily/Index' : page}`, page === 'Index' ? 'Analytics' : page)).join(' · ');
+ return ['Index', 'Daily', 'Sheet', 'Smartwatch', 'Combined'].map(page => noteLink(folder, `Analytics/${page === 'Daily' ? 'Daily/_Index' : page}`, page === 'Index' ? 'Analytics' : page)).join(' · ');
 }
 export function analyticsMarkdown(_plan: TrainingPlan | null, folder: string): string {
- return `${noteLink(folder, 'Plans', 'Plans')} · ${noteLink(folder, 'Log', 'Log')}\n\n## Training analytics\n\n- ${noteLink(folder, 'Analytics/Daily/Index', 'Daily')} — dated notes combining sheet sessions and Garmin activities.\n- ${noteLink(folder, 'Analytics/Sheet', 'Sheet')} — planned intensity, target attainment, and optional felt effort.\n- ${noteLink(folder, 'Analytics/Smartwatch', 'Smartwatch')} — weekly volume, running and swimming pace, and average heart rate.\n- ${noteLink(folder, 'Analytics/Combined', 'Combined')} — sheet and smartwatch timelines, with source totals kept separate.\n\nIntensity is how hard training is planned to be (0–10). Performance compares actual results with targets using median attainment (100% meets the target). Felt effort is an optional rating (1–5), recorded separately. Missing values stay unrecorded. These are planning comparisons, not an absolute fitness score.`;
+ return `${noteLink(folder, 'Plans', 'Plans')} · ${noteLink(folder, 'Log', 'Log')}\n\n## Training analytics\n\n- ${noteLink(folder, 'Analytics/Daily/_Index', 'Daily')} — dated notes combining sheet sessions and Garmin activities.\n- ${noteLink(folder, 'Analytics/Sheet', 'Sheet')} — planned intensity, target attainment, and optional felt effort.\n- ${noteLink(folder, 'Analytics/Smartwatch', 'Smartwatch')} — weekly volume, running and swimming pace, and average heart rate.\n- ${noteLink(folder, 'Analytics/Combined', 'Combined')} — sheet and smartwatch timelines, with source totals kept separate.\n\nIntensity is how hard training is planned to be (0–10). Performance compares actual results with targets using median attainment (100% meets the target). Felt effort is an optional rating (1–5), recorded separately. Missing values stay unrecorded. These are planning comparisons, not an absolute fitness score.`;
 }
 export function analyticsGraphMarkdown(plan: TrainingPlan | null, folder: string): string {
  const days = dailyScores(plan);
@@ -30,8 +30,8 @@ export function analyticsGraphMarkdown(plan: TrainingPlan | null, folder: string
 
 export function analyticsNoteTasks(plan: TrainingPlan | null, folder: string, garmin?: GarminCache, now = new Date()): { path: string; id: string; body: string; initial: string }[] {
  return [
-  { path: 'Analytics/Index.md', id: 'analytics', body: analyticsMarkdown(plan, folder), initial: '# Analytics\n\n## Reflections\n' },
-  { path: 'Analytics/Daily/Index.md', id: 'analytics-daily', body: dailyIndexMarkdown(plan, folder, garmin, now), initial: '# Index\n\n## Reflections\n' },
+  { path: 'Analytics/_Index.md', id: 'analytics', body: analyticsMarkdown(plan, folder), initial: '# Analytics\n\n## Reflections\n' },
+  { path: 'Analytics/Daily/_Index.md', id: 'analytics-daily', body: dailyIndexMarkdown(plan, folder, garmin, now), initial: '# Index\n\n## Reflections\n' },
   { path: 'Analytics/Sheet.md', id: 'analytics-graph', body: analyticsGraphMarkdown(plan, folder), initial: '# Sheet\n\n## Reflections\n' },
   { path: 'Analytics/Smartwatch.md', id: 'analytics-smartwatch', body: smartwatchMarkdown(garmin, folder), initial: '# Smartwatch\n\n## Reflections\n' },
   { path: 'Analytics/Combined.md', id: 'analytics-combined', body: combinedAnalyticsMarkdown(plan, folder, garmin, now), initial: '# Combined\n\n## Reflections\n' },

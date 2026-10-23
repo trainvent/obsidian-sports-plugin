@@ -10,6 +10,7 @@ export interface Session {
  partId: string; partVersion: string; plannedMinutes: number | null;
  tracking?: ExerciseTracking[]; scores?: SessionScores;
  loads?: { exercise: string; group: string; equipment: string; plannedKg: number; actualKg: number | null; notes: string }[];
+ notesTopic?: string;
  block?: string; prescription?: string; checks?: Record<string, boolean | null>; results?: Record<string, string>;
  actualMinutes: number | null; result: string; status: string; notes: string;
 }
@@ -21,6 +22,7 @@ export interface TrainingPlan {
  id: string; name: string; timezone: string; goals: Goal[];
  exerciseArsenal?: ExerciseArsenalItem[];
  equipment?: EquipmentItem[];
+ intervals?: { exercise: string; workSeconds: number; restSeconds: number }[];
  recap?: { prompt: string; response: string }[];
  weeklySchedule?: WeeklyScheduleItem[];
  weekPlans?: WeekPlan[];

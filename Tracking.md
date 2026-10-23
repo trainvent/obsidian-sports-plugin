@@ -71,11 +71,11 @@ Do not merge two exercise groups under the same name.
 
 Flat equivalents are `Squat done`, `Squat 1 result`, `Squat 2 result`, etc.
 `Circuit done` with `Circuit rounds result` also works. Numbered inputs and rounds
-remain gated by the corresponding Done flag. The example's **All done** column,
-immediately after Cal-Intervals, records all groups together when TRUE. Adjust the result
-values first. FALSE or blank returns to individual Done controls. The master
-control affects import and workbook performance scoring; individual cells retain
-their values. Whole-session Status stays separate.
+remain gated by the corresponding Done flag. The current XLSX uses one manual
+**Session done** flag for all skill results. Adjust values before selecting TRUE.
+Cal-Intervals rounds greater than zero are then recorded; zero or blank means
+not done and remains unscored. Session done TRUE marks the session completed;
+the XLSX has no separate Status column.
 
 For numeric comparisons, match the group name in Plan, one prescription per line:
 
@@ -103,7 +103,7 @@ changes. Confirm **Settings → Sports → Tracking sheet** selects the intended
 Upcoming manual prescriptions appear in **Plans**. Results and comparisons live
 in **Analytics**, available through **Open analytics** on the dashboard or the link
 in Plans. Session results live in **Log**. The Analytics folder contains **Daily**
-(the `Daily/Index.md` date index), **Sheet** (sheet score trends), and **Smartwatch** (Garmin graphs), and **Combined** (both sources over time).
+(the `Daily/_Index.md` date index), **Sheet** (sheet score trends), and **Smartwatch** (Garmin graphs), and **Combined** (both sources over time).
 Daily links to `Daily/YYYY-MM-DD.md`, combining that day's sheet sessions, scores,
 individual sets, and Garmin activities. Log dates link there too. Only today and
 earlier dates with source entries receive day notes; upcoming sessions stay in

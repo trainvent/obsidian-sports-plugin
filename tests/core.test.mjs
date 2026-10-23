@@ -381,7 +381,7 @@ test('example goals have independent source mappings, a swimming goal, and exact
  const bytes = readFileSync('templates/Training-example.xlsx');
  const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
  const plan = await parseWorkbook(buffer);
- assert.equal(plan.goals.find(goal => goal.id === 'hspu').resultColumn, 'HSPU result');
+ assert.equal(plan.goals.find(goal => goal.id === 'hspu').resultColumn, undefined);
  assert.deepEqual(plan.goals.find(goal => goal.id === 'running').garminTypes, ['running']);
  const swim = plan.goals.find(goal => goal.id === 'swimming');
  assert.equal(swim.category, 'maintenance');
@@ -390,7 +390,7 @@ test('example goals have independent source mappings, a swimming goal, and exact
  const files = unzipSync(new Uint8Array(buffer));
  // Change only Strategy's mapping, not the Log header that uses the original shared string.
  const sheet = strFromU8(files['xl/worksheets/sheet1.xml']);
- const mappingCell = sheet.match(/<((?:\w+:)?)c\b[^>]*\br="G8"[^>]*>[\s\S]*?<\/\1c>/);
+ const mappingCell = sheet.match(/<((?:\w+:)?)c\b[^>]*\br="G8"[^>]*?(?:\/>|>[\s\S]*?<\/\1c>)/);
  assert.ok(mappingCell);
  const prefix = mappingCell[1];
  files['xl/worksheets/sheet1.xml'] = strToU8(sheet.replace(mappingCell[0], `<${prefix}c r="G8" t="inlineStr"><${prefix}is><${prefix}t>Missing result</${prefix}t></${prefix}is></${prefix}c>`));
@@ -449,18 +449,18 @@ test('example iteration inputs use numbers and Excel times, and recorded times i
  const files = unzipSync(new Uint8Array(readFileSync('templates/Training-example.xlsx')));
  let sheet = strFromU8(files['xl/worksheets/sheet3.xml']);
  // Record the first handstand session without changing its timed targets.
- const flag = /<((?:\w+:)?)c\b[^>]*\br="H5"[^>]*>[\s\S]*?<\/\1c>/;
+ const flag = /<((?:\w+:)?)c\b[^>]*\br="G5"[^>]*>[\s\S]*?<\/\1c>/;
  const match = sheet.match(flag);
  assert.ok(match);
  const p = match[1];
- sheet = sheet.replace(flag, `<${p}c r="H5" t="b"><${p}v>1</${p}v></${p}c>`);
+ sheet = sheet.replace(flag, `<${p}c r="G5" t="b"><${p}v>1</${p}v></${p}c>`);
  files['xl/worksheets/sheet3.xml'] = strToU8(sheet);
  const plan = await parseWorkbook(zipSync(files).buffer);
  assert.equal(plan.sessions[2].results['A 1 result'], '00:20');
  assert.equal(plan.sessions[2].results['A 2 result'], '00:20');
  assert.equal(plan.sessions[0].results['A 1 result'], '');
  // The previously verbose negative-rep cells are stored as numeric counts.
- assert.match(sheet, /r="O21"[^>]*>\s*<(?:\w+:)?v>2<\/(?:\w+:)?v>/);
+ assert.match(sheet, /r="M21"[^>]*>\s*<(?:\w+:)?v>2<\/(?:\w+:)?v>/);
 });
 
 test('weekly layout groups workouts by day, folds comparisons, and retains partial planned durations', () => {

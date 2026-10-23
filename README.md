@@ -65,7 +65,7 @@ Use the same sheet names and column layout in either format. To use ODS, save a
 copy in LibreOffice Calc, recalculate, save, and point **Cloud workbook link** at
 that file. Formula results are read as saved; Sports does not recalculate formulas.
 Password-protected workbooks are unsupported. Templates are available in both formats. The ODS template uses TRUE/FALSE dropdowns
-for completion; **All done** also updates the individual Done values.
+for the single **Session done** flag, with the same structure and note topics as XLSX.
 
 Use the example workbook in [XLSX](templates/Training-example.xlsx) or
 [ODS](templates/Training-example.ods), or download either format in Sports settings
@@ -99,8 +99,8 @@ unresolved. A new tracking-only plan uses the device timezone until strategy sup
 Sync creates ordinary Markdown files in the configured **Notes folder**:
 
 - `Plans.md`: starting levels, goals, weekly links, and upcoming manual prescriptions.
-- `Analytics/Index.md`: navigation to Daily, Sheet, Smartwatch, and Combined. Session results live in Log and dated day notes; the old Table note is retired.
-- `Analytics/Daily/Index.md`: date index, preserving reflections from the previous all-days note.
+- `Analytics/_Index.md`: navigation to Daily, Sheet, Smartwatch, and Combined. Session results live in Log and dated day notes; the old Table note is retired.
+- `Analytics/Daily/_Index.md`: date index, preserving reflections from the previous all-days note.
 - `Analytics/Daily/YYYY-MM-DD.md`: one combined day note with sheet sessions,
   scores, individual sets, exercise comparisons, Garmin activities, and reflections.
 - `Analytics/Sheet.md`: sheet intensity, performance, and felt-effort trends.
@@ -503,11 +503,16 @@ The current template defines `max_sets = 3` (exercise groups A, B, C) and
 `max_reps = 5` (the numbered rep fields), plus Cal-Intervals separately. These metadata
 values do not automatically resize the layout. Rep cells contain plain numbers
 or durations displayed as `mm:ss`. Adjust the targets, then select TRUE under
-Done to record them. Cal-Intervals uses the same recording rule with an editable Rounds
-count. **All done**, after Cal-Intervals, records every group together when TRUE; FALSE
-or blank uses the individual Done fields. Adjust result values before confirming.
-Whole-session Status is separate. The three goal-result columns are
-blank manual inputs, with no formulas. See [Workbook.md](Workbook.md) for details.
+**Session done** to record them. Cal-Intervals uses an editable Rounds count:
+positive rounds are recorded with Session done; zero or blank means not done
+and remains unscored. FALSE or blank Session done leaves all results unrecorded.
+Session done TRUE marks the session completed. **Notes topic** defaults to General;
+Muscle-up, HSPU or Pistol also routes the Notes text to the matching Obsidian goal
+page. Routine topics route to **Routines/Skills A**, **Skills B**, **Technique**,
+**Swimming** or **Running**; **Cal-Intervals** routes to **Routines/Cal-Intervals**.
+The Routines index links all six pages. Routine pages include Strategy explanations,
+linked goal targets, exercise lists and A/B weekly progressions. Cal-Intervals
+uses the shared Library work/rest definition. See [Workbook.md](Workbook.md) for details.
 
 
 ### Intensity, performance, and optional felt effort
@@ -552,5 +557,5 @@ cloud workbook. Add equivalent score formulas to a copy preserving history,
 or start a new plan from the updated template. Keep selecting Daily as tracking;
 Keep the Scoring tab name. Update its result-cell references, explicit targets
 and session summary ranges together when customizing workouts.
-Existing Analytics.md notes with a trusted baseline migrate to Analytics/Index.md,
+Existing Analytics.md notes with a trusted baseline migrate to Analytics/_Index.md,
 retaining reflections and generated-section edit protection.

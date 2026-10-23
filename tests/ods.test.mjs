@@ -19,18 +19,18 @@ const formula = (type, attr, value) => raw(`<table:table-cell table:formula="of:
 const simple = data => [{ sheet: 'Daily', data }];
 const withoutStamp = plan => { const { importedAt, ...rest } = plan; assert.ok(importedAt); return rest; };
 
-test('shipped templates keep Daily compact; XLSX pairs vest exercises outside Core', async () => {
+test('shipped templates match and keep weighted work outside Cal-Intervals', async () => {
  for (const extension of ['xlsx', 'ods']) {
   const bytes = readFileSync(`templates/Training-example.${extension}`);
   const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
   const plan = await parseWorkbook(buffer, { strategySheet: 'Strategy', trackingSheet: 'Daily', scheduleSheet: 'Recurring' });
   const loads = plan.sessions.flatMap(session => session.loads ?? []);
-  assert.equal(loads.length, extension === 'xlsx' ? 6 : 3);
+  assert.equal(loads.length, 6);
   assert.ok(loads.every(load => load.plannedKg === 6 && load.actualKg === null));
-  if (extension === 'xlsx') {
+  {
    assert.ok(loads.every(load => ['Pull-up', 'Dip'].includes(load.exercise) && load.group !== 'Cal-Intervals'));
    for (const session of plan.sessions.filter(session => session.loads?.length)) {
-    assert.equal(session.title, `Skill ${session.block} (weighted)`);
+    assert.equal(session.title, `Skill ${session.block}m + Cal-Intervals`);
     assert.match(session.prescription, /A\) Pull-up: 3 x 3\nB\) Dip: 3 x 5/);
     assert.equal(session.loads.length, 2);
    }
@@ -38,7 +38,7 @@ test('shipped templates keep Daily compact; XLSX pairs vest exercises outside Co
   assert.equal(plan.recap.length, 6);
   assert.equal(plan.equipment[0].maxKg, 10);
   const growth = name => plan.exerciseArsenal.find(item => item.exercise === name).growthPerKg;
-  if (extension === 'xlsx') {
+  {
    assert.ok(growth('Pull-up') > growth('Dip'));
    assert.ok(!plan.exerciseArsenal.some(item => /Vest /i.test(item.exercise)));
    assert.equal(plan.exerciseArsenal.find(item => item.exercise === 'Pull-up').unit, 'reps');
@@ -50,13 +50,18 @@ test('shipped templates keep Daily compact; XLSX pairs vest exercises outside Co
    assert.equal(growth('Squat'), .02);
    assert.ok(plan.exerciseArsenal.filter(item => /pike|HSPU|handstand|wall|mobility|upside-down|low-bar/i.test(item.exercise)).every(item => item.growthPerKg === undefined));
    assert.ok(plan.sessions.every(session => Number.isFinite(session.scores.plannedIntensity)));
-  } else assert.ok(growth('Pull-up') > growth('Push-up'));
-  const sheets = await readWorkbookSheets(buffer, new Set(['Daily']));
+  }
+  const sheets = await readWorkbookSheets(buffer, new Set(['Daily','Scoring','Library']));
   const headers = sheets.find(sheet => sheet.sheet === 'Daily').data[1];
-  assert.equal(headers.length, extension === 'xlsx' ? 34 : 38);
-  if (extension === 'xlsx') {
+  assert.equal(headers.length, 27);
+  {
    assert.ok(!headers.includes('Performance'));
    assert.ok(!headers.includes('Expected performance'));
+   assert.equal(headers.filter(header => /done/i.test(header)).length, 1);
+   assert.ok(headers.includes('Session done'));
+   assert.ok(!headers.includes('Status'));
+   assert.ok(headers.includes('Notes topic'));
+   assert.ok(!headers.includes('Muscle-up result'));
    const scoring = sheets.find(sheet => sheet.sheet === 'Scoring').data;
    assert.equal(scoring.filter(row => row.includes('Date')).length, 1);
    assert.ok(scoring[3].includes('Performance'));
@@ -73,6 +78,8 @@ test('shipped templates keep Daily compact; XLSX pairs vest exercises outside Co
    const library = sheets.find(sheet => sheet.sheet === 'Library').data;
    assert.equal(library[64][0], 'Cal-Intervals');
    assert.deepEqual(library.slice(66, 70).map(row => row.slice(1, 3)), Array(4).fill([30, 20]));
+   assert.equal(plan.intervals.length, 4);
+   assert.deepEqual(plan.intervals[0], {exercise:'Pull-up',workSeconds:30,restSeconds:20});
   }
  }
 });
@@ -142,7 +149,7 @@ test('ODS uses namespace URIs and ignores unsupported values on unselected sheet
  const sheets = simple([['Date', 'Block', 'Plan'], [date, 'A', 'Practice']]);
  sheets.push({ sheet: 'Unrelated', rows: '<table:table-row><table:table-cell table:formula="of:=1+1"/></table:table-row>' });
  const xml = odsDocument(sheets).replaceAll('<table:', '<t:').replaceAll('</table:', '</t:').replaceAll(' table:', ' t:').replace('xmlns:table=', 'xmlns:t=');
- assert.equal(readOds(xml, new Set(['Daily']))[0].data[1][0].toISOString().slice(0, 10), '2026-10-26');
+ assert.equal(readOds(xml, new Set(['Daily','Scoring','Library']))[0].data[1][0].toISOString().slice(0, 10), '2026-10-26');
  assert.equal((await parseWorkbook(odsArchive(sheets), mapping)).sessions.length, 1);
  await assert.rejects(parseWorkbook(odsArchive(sheets), { ...mapping, trackingSheet: 'Missing' }), /Available sheets: "Daily", "Unrelated"/);
 });
@@ -155,14 +162,14 @@ test('ODS requires usable saved formula results rather than treating missing val
 
 test('ODS rejects invalid XML, unsupported archives, encrypted data, and oversized expansion', async () => {
  const xml = odsDocument([{ sheet: 'Daily', data: [['Test']] }]);
- for (const malformed of [xml.slice(0, -20), xml.replace('</text:p>', '</wrong>'), '<!DOCTYPE x><office:document-content/>']) assert.throws(() => readOds(malformed, new Set(['Daily'])));
- for (const attrs of ['table:number-columns-repeated="16385"', 'table:number-columns-repeated="-1"']) assert.throws(() => readOds(odsDocument([{ sheet: 'Daily', rows: `<table:table-row><table:table-cell ${attrs}/></table:table-row>` }]), new Set(['Daily'])), /limit/);
+ for (const malformed of [xml.slice(0, -20), xml.replace('</text:p>', '</wrong>'), '<!DOCTYPE x><office:document-content/>']) assert.throws(() => readOds(malformed, new Set(['Daily','Scoring','Library'])));
+ for (const attrs of ['table:number-columns-repeated="16385"', 'table:number-columns-repeated="-1"']) assert.throws(() => readOds(odsDocument([{ sheet: 'Daily', rows: `<table:table-row><table:table-cell ${attrs}/></table:table-row>` }]), new Set(['Daily','Scoring','Library'])), /limit/);
  const huge = `<table:table-row table:number-rows-repeated="100000">${odsCell('A')}${odsCell('B')}${odsCell('C')}${odsCell('D')}${odsCell('E')}${odsCell('F')}${odsCell('G')}${odsCell('H')}${odsCell('I')}${odsCell('J')}${odsCell('K')}</table:table-row>`;
- assert.throws(() => readOds(odsDocument([{ sheet: 'Daily', rows: huge }]), new Set(['Daily'])), /limit/);
+ assert.throws(() => readOds(odsDocument([{ sheet: 'Daily', rows: huge }]), new Set(['Daily','Scoring','Library'])), /limit/);
  const encrypted = odsArchive(simple([['Test']]), { 'META-INF/manifest.xml': strToU8('<manifest:encryption-data/>') });
- await assert.rejects(readWorkbookSheets(encrypted, new Set(['Daily'])), /Password-protected/);
+ await assert.rejects(readWorkbookSheets(encrypted, new Set(['Daily','Scoring','Library'])), /Password-protected/);
  const unsupported = zipSync({ 'content.xml': strToU8(xml) });
- await assert.rejects(readWorkbookSheets(unsupported.buffer, new Set(['Daily'])), /Unsupported workbook format/);
+ await assert.rejects(readWorkbookSheets(unsupported.buffer, new Set(['Daily','Scoring','Library'])), /Unsupported workbook format/);
 });
 
 
@@ -172,9 +179,8 @@ test('both downloadable templates start next Monday across year/DST boundaries',
   const xlsx = await parseWorkbook(templateWorkbook(now, 'xlsx'), config);
   const odsBytes = templateWorkbook(now, 'ods');
   const ods = await parseWorkbook(odsBytes, config);
-  // ODS content stays at its last revision while the XLSX design is refined.
   assert.deepEqual(ods.sessions.map(session => session.date), xlsx.sessions.map(session => session.date));
-  assert.deepEqual(JSON.parse(JSON.stringify(ods.weekPlans).replaceAll('Core', 'Cal-Intervals')), xlsx.weekPlans);
+  assert.deepEqual(withoutStamp(ods), withoutStamp(xlsx));
   assert.equal(ods.sessions.length, 48);
   assert.equal(ods.weekPlans.length, 12);
   assert.ok(ods.sessions.every(session => session.scores.actualPerformance === null));
