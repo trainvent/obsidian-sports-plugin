@@ -99,25 +99,14 @@ test('missing sheet errors identify the setting and list available workbook tabs
   });
  }
 });
-test('offered daily template imports dates and separate results without inventing measurements', async () => {
- const saved = readFileSync('templates/Sports-template.xlsx');
+test('offered blank template imports without inventing training data or changing the file', async () => {
+ const saved = readFileSync('templates/Training-Template.xlsx');
  const buffer = saved.buffer.slice(saved.byteOffset, saved.byteOffset + saved.byteLength);
  const original = new Uint8Array(buffer).slice();
- const plan = await parseWorkbook(buffer, { strategySheet: 'Strategy', trackingSheet: 'Training log' });
- assert.equal(plan.goals.length, 3);
- assert.equal(plan.parts.length, 4);
- const core = plan.parts.find(part => part.id === 'Core');
- assert.ok(core.prescription.includes('30 sec work + 20 sec rest'));
- assert.ok(core.prescription.includes('weighted squats'));
- assert.ok(core.title.includes('16 min 40 sec'));
- assert.equal(plan.sessions.length, 7);
- assert.equal(plan.sessions[0].date, '2026-10-19');
- assert.equal(plan.sessions[0].plannedMinutes, null);
- assert.equal(plan.sessions[0].actualMinutes, null);
- assert.equal(plan.sessions[0].checks['Core done'], false);
- assert.equal(plan.sessions[0].results['Muscle-up result'], '');
- assert.equal(plan.sessions[0].partId, 'A');
- assert.equal(plan.sessions[0].status, 'planned');
+ const plan = await parseWorkbook(buffer, { strategySheet: 'Strategy', trackingSheet: 'Daily', scheduleSheet: 'Recurring' });
+ for (const field of ['goals', 'parts', 'sessions', 'weekPlans', 'weeklySchedule', 'exerciseArsenal']) {
+  assert.deepEqual(plan[field], [], field);
+ }
  assert.deepEqual(new Uint8Array(buffer), original);
 });
 function dailyWorkbook({ core = true, result = '3 x 5 assisted', duplicate = false, rows } = {}) {
@@ -216,9 +205,9 @@ test('explicit weekly plans create future weeks and show strategy without claimi
 });
 
 test('12-week workbook imports all planned sessions, typed dates, and blank results', async () => {
- const bytes = readFileSync('templates/Sports-12-week.xlsx');
- const plan = await parseWorkbook(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), { strategySheet: 'Strategy', trackingSheet: 'Training log' });
- assert.deepEqual(plan.weeklySchedule.map(item => [item.weekday, item.time, item.title, item.minutes]), [[2, '20:00', 'Swimming', null], [0, '10:30', 'Running', null]]);
+ const bytes = readFileSync('templates/Training-Example.xlsx');
+ const plan = await parseWorkbook(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), { strategySheet: 'Strategy', trackingSheet: 'Daily' });
+ assert.deepEqual(plan.weeklySchedule.map(item => [item.weekday, item.time, item.title, item.minutes]), [[2, '20:00', 'Swimming', 60], [0, '10:30', 'Running', 60]]);
  assert.equal(scheduleOn(plan, '2026-10-20')[0].title, 'Swimming');
  assert.equal(scheduleOn(plan, '2027-04-04')[0].title, 'Running');
  const weekly = weekMarkdown(plan, weekDates(new Date(2026, 9, 20, 12)), true);
@@ -236,13 +225,14 @@ test('12-week workbook imports all planned sessions, typed dates, and blank resu
  assert.equal(plan.sessions[1].title, 'Handstand technique');
  assert.equal(plan.sessions[1].sport, 'training');
  assert.equal(plan.sessions[1].plannedMinutes, 10);
- assert.ok(plan.sessions.every(session => ['A', 'B', 'Technique', 'Core'].includes(session.block)));
- assert.ok(plan.sessions.every(session => !/swim|run|bike|mobility/i.test(`${session.title} ${session.prescription}`)));
+ assert.ok(plan.sessions.every(session => ['A', 'B', 'Technique', 'Cal-Intervals'].includes(session.block)));
+ assert.ok(plan.sessions.every(session => !plan.weeklySchedule.some(item => item.title === session.title)));
+ assert.ok(plan.sessions.every(session => !/swim|run|bike/i.test(session.title)));
  assert.equal(plan.weekPlans[0].minutes, 160);
  assert.equal(plan.sessions[0].plannedMinutes, 65);
  assert.ok(plan.sessions.every(session => session.actualMinutes === null && session.status === 'planned'));
  assert.ok(plan.sessions.every(session => Object.values(session.results).every(value => value === '')));
- assert.ok(plan.sessions.every(session => session.checks['Core done'] === null));
+ assert.ok(plan.sessions.every(session => Object.values(session.checks).every(value => value === false)));
  for (const week of plan.weekPlans) {
   const dates = weekDates(new Date(`${week.start}T12:00:00`));
   const required = plan.sessions.filter(session => dates.includes(session.date) && !session.title.includes('optional'));
@@ -280,11 +270,11 @@ test('Log and Plans split at today in the strategy timezone without losing sessi
 });
 
 test('new workbooks start next Monday, with cached dates rebased across year and DST boundaries', async () => {
- const source = new Uint8Array(readFileSync('templates/Sports-12-week.xlsx'));
+ const source = new Uint8Array(readFileSync('templates/Training-Example.xlsx'));
  const original = source.slice();
  for (const [now, tomorrow] of [[new Date(2026,9,20,23,59), '2026-10-26'], [new Date(2026,11,31,23,59), '2027-01-04'], [new Date(2026,2,28,23,59), '2026-03-30'], [new Date(2026,9,25,23,59), '2026-10-26'], [new Date(2026,9,26,12), '2026-11-02']]) {
   const bytes = startTemplateNextMonday(source, now);
-  const plan = await parseWorkbook(bytes, { strategySheet: 'Strategy', trackingSheet: 'Training log' });
+  const plan = await parseWorkbook(bytes, { strategySheet: 'Strategy', trackingSheet: 'Daily' });
   assert.equal(plan.weekPlans[0].start, tomorrow);
   assert.equal(plan.sessions[0].date, tomorrow);
   assert.ok(plan.sessions.every(session => session.date >= tomorrow));
@@ -305,28 +295,28 @@ test('an already-current generated section recovers a stale baseline without ove
  assert.throws(() => mergeBlock(note, 'plan', 'Different output'), /trusted baseline/);
 });
 
-test('goal categories separate new skills from maintenance and core supports all three milestones', async () => {
- const source = new Uint8Array(readFileSync('templates/Sports-12-week.xlsx'));
- const plan = await parseWorkbook(source.buffer.slice(source.byteOffset, source.byteOffset + source.byteLength), { strategySheet: 'Strategy', trackingSheet: 'Training log' });
+test('goal categories separate new skills from maintenance and Cal-Intervals supports all three milestones', async () => {
+ const source = new Uint8Array(readFileSync('templates/Training-Example.xlsx'));
+ const plan = await parseWorkbook(source.buffer.slice(source.byteOffset, source.byteOffset + source.byteLength), { strategySheet: 'Strategy', trackingSheet: 'Daily' });
  const milestones = plan.goals.filter(goal => goal.category === 'milestone');
  assert.deepEqual(milestones.map(goal => goal.id), ['muscle-up', 'hspu', 'pistol']);
  assert.equal(plan.goals.find(goal => goal.id === 'running').category, 'maintenance');
- assert.deepEqual(plan.parts.find(part => part.id === 'Core').goalIds, ['muscle-up', 'hspu', 'pistol']);
+ assert.deepEqual(plan.parts.find(part => part.id === 'Cal-Intervals').goalIds, ['muscle-up', 'hspu', 'pistol']);
  for (const markdown of [strategyMarkdown(plan), planMarkdown(plan, 'Sports', [])]) {
   assert.ok(markdown.includes('### Aspiration'));
   assert.ok(markdown.includes('### Maintenance'));
   assert.ok(markdown.indexOf('Running') > markdown.indexOf('### Maintenance'));
  }
- const core = strategyMarkdown(plan).split('### Core circuit')[1];
+ const core = strategyMarkdown(plan).split('### Cal-Intervals circuit')[1];
  assert.ok(core.includes('Supports: Muscle-up, Handstand push-up, Pistol squat'));
  const legacy = await parseWorkbook(workbook());
  assert.ok(legacy.goals.every(goal => goal.category === 'milestone'));
  const files = unzipSync(source);
- const xml = strFromU8(files['xl/worksheets/sheet1.xml']);
+ const xml = strFromU8(files['xl/sharedStrings.xml']);
  const invalid = xml.replace('milestone', 'unknown-category');
  assert.notEqual(invalid, xml);
- files['xl/worksheets/sheet1.xml'] = strToU8(invalid);
- await assert.rejects(parseWorkbook(zipSync(files).buffer, { strategySheet: 'Strategy', trackingSheet: 'Training log' }), /category must be/);
+ files['xl/sharedStrings.xml'] = strToU8(invalid);
+ await assert.rejects(parseWorkbook(zipSync(files).buffer, { strategySheet: 'Strategy', trackingSheet: 'Daily' }), /category must be/);
 });
 
 test('template imports and rebases Daily without changing Recurring', async () => {
