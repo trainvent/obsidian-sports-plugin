@@ -59,7 +59,7 @@ test('only unambiguous prescriptions supply targets; extra sets and unsupported 
 });
 
 test('real grouped Daily cells preserve adjusted reps and Excel times through import and rendering', async () => {
- const files = unzipSync(new Uint8Array(readFileSync('templates/Training-example.xlsx')));
+ const files = unzipSync(new Uint8Array(readFileSync('templates/Training-Example.xlsx')));
  let xml = strFromU8(files['xl/worksheets/sheet3.xml']);
  for (const [address, value, type] of [['G3', '1', 'b'], ['H3', '4', 'n'], ['G5', '1', 'b']]) {
   const pattern = new RegExp(`<((?:\\w+:)?)c\\b[^>]*\\br="${address}"[^>]*>[\\s\\S]*?<\\/\\1c>`);

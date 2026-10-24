@@ -4,7 +4,7 @@ import { build } from 'esbuild';
 import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
-import { strToU8, zipSync, unzipSync } from 'fflate';
+import { strToU8, strFromU8, zipSync, unzipSync } from 'fflate';
 import { odsArchive, odsDocument, odsCell } from './ods-fixtures.mjs';
 const temp = mkdtempSync(`${tmpdir()}/sports-ods-`);
 process.on('exit', () => rmSync(temp, { recursive: true, force: true }));
@@ -21,7 +21,7 @@ const withoutStamp = plan => { const { importedAt, ...rest } = plan; assert.ok(i
 
 test('shipped templates match and keep weighted work outside Cal-Intervals', async () => {
  for (const extension of ['xlsx', 'ods']) {
-  const bytes = readFileSync(`templates/Training-example.${extension}`);
+  const bytes = readFileSync(`templates/Training-Example.${extension}`);
   const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
   const plan = await parseWorkbook(buffer, { strategySheet: 'Strategy', trackingSheet: 'Daily', scheduleSheet: 'Recurring' });
   const loads = plan.sessions.flatMap(session => session.loads ?? []);
@@ -85,7 +85,7 @@ test('shipped templates match and keep weighted work outside Cal-Intervals', asy
 });
 
 test('ODS and XLSX template imports yield the same complete training model', async () => {
- const bytes = readFileSync('templates/Training-example.xlsx');
+ const bytes = readFileSync('templates/Training-Example.xlsx');
  const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
  const selected = new Set(['Strategy', 'Daily', 'Recurring']);
  const sheets = await readWorkbookSheets(buffer, selected);
@@ -198,4 +198,77 @@ test('native Calc empty formula paragraphs stay missing rather than becoming zer
  const plan = await parseWorkbook(odsArchive(simple(data)), mapping);
  assert.equal(plan.sessions[0].status, 'planned');
  assert.equal(plan.sessions[0].scores, undefined);
+});
+
+test('blank XLSX and ODS templates import empty and rebase metadata without inventing workouts', async () => {
+ const config = {strategySheet:'Strategy',trackingSheet:'Daily',scheduleSheet:'Recurring'};
+ const now = new Date(2026, 11, 31, 12);
+ for (const format of ['xlsx','ods']) {
+  const bytes = templateWorkbook(now, format, 'blank');
+  const plan = await parseWorkbook(bytes, config);
+  assert.equal(plan.id, 'my-training-plan');
+  assert.equal(plan.name, 'My training plan');
+  assert.equal(plan.timezone, Intl.DateTimeFormat().resolvedOptions().timeZone);
+  for (const field of ['goals','parts','sessions','weeklySchedule','weekPlans','exerciseArsenal','equipment']) assert.deepEqual(plan[field], []);
+  const sheets = await readWorkbookSheets(bytes, new Set(['Strategy','Daily','Recurring']));
+  assert.deepEqual(sheets.map(sheet=>sheet.sheet), format === 'xlsx' ? ['Strategy','Recurring','Daily','Scoring','Library','Loads'] : ['Strategy','Recurring','Daily']);
+  const start = sheets.find(sheet=>sheet.sheet==='Strategy').data[2][4];
+  assert.ok(start instanceof Date);
+  assert.equal(start.toISOString().slice(0,10), '2027-01-04');
+  const header = sheets.find(sheet=>sheet.sheet==='Daily').data[format === 'xlsx' ? 1 : 0];
+  for (const field of ['Date','Block','Plan','Title','Planned minutes','Actual minutes','Session done','Notes','Notes topic']) assert.ok(header.includes(field));
+ }
+});
+
+
+test('blank templates accept an entered session without requiring example exercises or scoring', async () => {
+ const row = ['2027-01-04','','Easy training','My session',20,0,true,'My reflection','General','session-1','','training'];
+ for (const format of ['xlsx','ods']) {
+  const files = unzipSync(new Uint8Array(templateWorkbook(new Date(2026,11,31,12), format, 'blank')));
+  if (format === 'xlsx') {
+   const location = 'xl/worksheets/sheet3.xml';
+   const xml = strFromU8(files[location]);
+   const entered = {A:'2027-01-04',C:'Easy training',D:'My session',E:20,F:0,G:'TRUE',X:'My reflection',Y:'General'};
+   const cells = Object.entries(entered).map(([column,value])=>`<x:c r="${column}134" t="inlineStr"><x:is><x:t>${value}</x:t></x:is></x:c>`).join('');
+   files[location] = strToU8(xml.replace('</x:sheetData>', `<x:row r="134">${cells}</x:row></x:sheetData>`));
+  } else {
+   const xml = strFromU8(files['content.xml']);
+   const start = xml.indexOf('table:name="Daily"');
+   const position = xml.indexOf('</table:table-row>', start) + '</table:table-row>'.length;
+   files['content.xml'] = strToU8(xml.slice(0,position) + `<table:table-row>${row.map(odsCell).join('')}</table:table-row>` + xml.slice(position));
+  }
+  const packed = Uint8Array.from(zipSync(files)).buffer;
+  const plan = await parseWorkbook(packed, {strategySheet:'Strategy',trackingSheet:'Daily',scheduleSheet:'Recurring'});
+  assert.equal(plan.sessions.length, 1);
+  assert.equal(plan.sessions[0].date, '2027-01-04');
+  assert.equal(plan.sessions[0].title, 'My session');
+  assert.equal(plan.sessions[0].status, 'completed');
+  assert.equal(plan.sessions[0].actualMinutes, 0);
+  assert.equal(plan.sessions[0].notes, 'My reflection');
+ }
+});
+
+test('formula-free XLSX template preserves every example sheet, table and layout', () => {
+ const original = unzipSync(new Uint8Array(readFileSync('templates/Training-Example.xlsx')));
+ const template = unzipSync(new Uint8Array(readFileSync('templates/Training-Template.xlsx')));
+ assert.deepEqual(Object.keys(template), Object.keys(original));
+ const cells = xml => [...xml.matchAll(/<(?:\w+:)?c\b([^>]*?)(?:\s*\/>|>([\s\S]*?)<\/(?:\w+:)?c>)/g)].map(match=>({address:match[1].match(/\br="([^"]+)"/)[1],style:match[1].match(/\bs="([^"]+)"/)?.[1],body:match[2]??''}));
+ for (const [name, content] of Object.entries(original)) {
+  if (!/^xl\/worksheets\/sheet\d+\.xml$/.test(name)) {
+   if (name !== 'xl/sharedStrings.xml') assert.deepEqual(template[name], content, name);
+   continue;
+  }
+  const source = strFromU8(content), cleared = strFromU8(template[name]);
+  const sourceCells = cells(source), targetCells = cells(cleared);
+  assert.deepEqual(targetCells.map(({address,style})=>[address,style]), sourceCells.map(({address,style})=>[address,style]), name);
+  const target = new Map(targetCells.map(cell=>[cell.address,cell]));
+  assert.doesNotMatch(cleared, /<(?:\w+:)?f\b/, name);
+  for (const cell of sourceCells.filter(cell=>/<(?:\w+:)?f\b/.test(cell.body))) assert.doesNotMatch(target.get(cell.address).body, /<(?:\w+:)?(?:f|v|is)\b/, `${name}:${cell.address}`);
+  const layout = xml => xml.replace(/<(?:\w+:)?sheetData\b[\s\S]*?<\/(?:\w+:)?sheetData>/,'').replace(/<(?:\w+:)?dataValidations\b[\s\S]*?<\/(?:\w+:)?dataValidations>/,'');
+  assert.equal(layout(cleared), layout(source), name);
+  assert.deepEqual([...cleared.matchAll(/<(?:\w+:)?row\b([^>]*)>/g)].map(m=>m[1]), [...source.matchAll(/<(?:\w+:)?row\b([^>]*)>/g)].map(m=>m[1]), name);
+ }
+ const archiveText = Object.values(template).map(bytes=>strFromU8(bytes)).join('\n');
+ for (const sample of ['Band-assisted or first strict rep','Weight vest','12-week hybrid plan','Regular weekly swim training','Muscle-up,HSPU,Pistol']) assert.ok(!archiveText.includes(sample), sample);
+ assert.ok(strFromU8(template['xl/worksheets/sheet3.xml']).includes('INDIRECT'));
 });

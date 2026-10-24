@@ -9,7 +9,7 @@ const temp = mkdtempSync(`${tmpdir()}/sports-flexible-`);
 process.on('exit', () => rmSync(temp, { recursive: true, force: true }));
 const require = createRequire(import.meta.url);
 async function load(path) {
- const result = await build({ entryPoints: [`src/${path}.ts`], bundle: true, format: 'cjs', platform: 'node', write: false });
+ const result = await build({ entryPoints: [`src/${path}.ts`], bundle: true, format: 'cjs', platform: 'node', write: false, loader: {'.md':'text'} });
  const target = `${temp}/${path.replaceAll('/', '-')}.cjs`;
  writeFileSync(target, result.outputFiles[0].text);
  return require(target);
@@ -114,7 +114,7 @@ test('custom grouped and flat session layouts accept more than five sets and ren
 });
 
 test('row-based format imports through actual XLSX selection and keeps custom goal measurements', async () => {
- const files = unzipSync(new Uint8Array(readFileSync('templates/Training-example.xlsx')));
+ const files = unzipSync(new Uint8Array(readFileSync('templates/Training-Example.xlsx')));
  const data = [['Date', 'Exercise', 'Set', 'Unit', 'Target', 'Result', 'Done', 'Jump result'], [date, 'Jump', 1, 'cm', 40, 35, true, '35 cm']];
  const letter = i => { let value = ''; for (let n = i + 1; n > 0; n = Math.floor((n - 1) / 26)) value = String.fromCharCode(65 + (n - 1) % 26) + value; return value; };
  files['xl/worksheets/sheet3.xml'] = strToU8(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${data.map((row, r) => `<row r="${r + 1}">${row.map((value, c) => `<c r="${letter(c)}${r + 1}" t="inlineStr"><is><t>${String(value)}</t></is></c>`).join('')}</row>`).join('')}</sheetData></worksheet>`);

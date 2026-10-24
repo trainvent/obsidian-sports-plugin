@@ -16,12 +16,18 @@ Keep the spreadsheet useful on its own and the resulting notes readable as Markd
 - Desktop Obsidian plugin with a dashboard, command-palette actions, and settings.
 - Read-only HTTPS workbook sync for XLSX and ODS, including Nextcloud file shares.
 - Independently selectable strategy, tracking, and recurring-schedule sheets.
-- Templates with goals, weekly plans, session recording, scoring, an exercise library, and added loads.
+- A full empty XLSX template retaining the example’s six-sheet structure and formatting without cell formulas, plus a filled training example.
+- ODS downloads include the filled example and a simpler three-sheet blank template.
+- A guide-first setup for manual or chatbot-assisted planning; the example demonstrates scoring, an exercise library, and added loads.
 - Flexible tracking with custom exercise groups or one row per set/measurement.
 - Linked overview, plans, calendar, logs, day notes, weekly reviews, goals, and routines.
 - Local charts for exercise comparisons, workbook scores, and Garmin trends.
 - Optional experimental Garmin activity imports and published adaptive Coach summaries.
-- Cached data, completed-history checks, protected generated sections, and note recovery actions.
+- A user-editable Sports base with Weeks and Routines views over existing note properties.
+- Properties for goal mappings, routine targets, day/week dates, and relationships.
+- Shared tags for related pages, an Overview navigation hub, and contextual content links.
+- Cached data, completed-history checks, protected generated sections, and backed-up recovery.
+- Persistent recovery scope for notes returning after later workbook or Garmin imports.
 
 ## Product principles
 
@@ -34,6 +40,10 @@ Missing measurements stay missing.
 
 **Protect history and writing.** Preserve stable session identities, completed
 training, part versions, and commentary. Report conflicts rather than overwrite edits.
+
+**Keep notes focused.** Use properties for metadata and relationships, shared tags
+for related pages, and Overview for general navigation. Preserve custom properties
+and tags; keep training details and reflections in the body.
 
 **Keep connections optional.** Cached views and notes remain available offline.
 Network access starts only after a user configures a workbook link or connects Garmin.

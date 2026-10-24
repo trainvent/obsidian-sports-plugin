@@ -12,7 +12,7 @@ const output = await build({
  stdin: { contents: "export { calendarMarkdown } from './src/notes/calendar'; export { syncCoachOnlyPlans } from './src/notes/coach-plans'; export { syncNotes } from './src/notes/sync'; export { clearImportCache } from './src/notes/cache'; export { updateNote } from './src/notes/store'; export { mergeBlock } from './src/notes/blocks'; export { reconcileNoteWarning } from './src/notes/warnings';", resolveDir: process.cwd(), loader: 'ts' }, bundle: true, format: 'esm', platform: 'browser', write: false, loader: { '.md': 'text' },
  plugins: [{ name: 'obsidian-test-vault', setup(builder) {
   builder.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'obsidian', namespace: 'test' }));
-  builder.onLoad({ filter: /.*/, namespace: 'test' }, () => ({ contents: 'export class TFile { constructor(path) { this.path = path; } } export const normalizePath = path => path;' }));
+  builder.onLoad({ filter: /.*/, namespace: 'test' }, () => ({ contents: 'export class Notice {} export class TFile { constructor(path) { this.path = path; } } export const normalizePath = path => path;' }));
  } }],
 });
 writeFileSync(`${temp}/sync.mjs`, output.outputFiles[0].text + '\nexport { TFile };');
@@ -832,4 +832,43 @@ test('cache recovery remains authorized for Garmin notes returning after workboo
  const edited = day.content;
  assert.ok((await syncNotes(plugin, plan)).some(issue=>issue.startsWith('Days/2020-01-01.md:')));
  assert.equal(day.content, edited);
+});
+
+test('Sports base scopes two views to live notes and preserves user view edits across sync', async () => {
+ const {plugin, plan, files} = fixture();
+ plugin.data.notesFolder = 'Training/My "Sports"';
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ const base = files.get('Training/My "Sports"/Sports.base');
+ assert.ok(base instanceof TFile);
+ const config = parse(base.content);
+ assert.deepEqual(config.views.map(view => view.name), ['Weeks','Routines']);
+ assert.equal(config.filters.and[0], 'file.ext == "md"');
+ assert.equal(config.filters.and[1], 'file.inFolder("Training/My \\"Sports\\"")');
+ assert.deepEqual(config.filters.and[2], {not: ['file.inFolder("Training/My \\"Sports\\"/Backups")']});
+ assert.deepEqual(config.views[0].order, ['file.name','note.week_end','note.program_week','note.phase']);
+ assert.ok(config.views[1].filters.and.includes('file.path != "Training/My \\"Sports\\"/Routines/_Index.md"'));
+ assert.ok(config.views[1].order.includes('note.targets'));
+ assert.ok(files.get('Training/My "Sports"/Overview.md').content.includes('Sports.base\\|Browse weeks and routines'));
+ config.views[0].name = 'My weeks';
+ config.views[0].sort[0].direction = 'ASC';
+ base.content = stringify(config);
+ const custom = base.content;
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.equal(base.content, custom);
+});
+
+
+test('stock workbook guides receive blank-template onboarding without losing personal additions', async () => {
+ const {plugin, plan, files} = fixture();
+ await syncNotes(plugin, plan);
+ const guide = files.get('Sports/Guide/Workbook.md');
+ guide.content = 'This guide lives in `Guide/Workbook.md` under Sports.\n\n## Keep the workbook contract\n\nKeep my custom workbook conventions.\n';
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.ok(guide.content.includes('## Fill the blank template'));
+ assert.ok(guide.content.includes('## Optional sections and sheets'));
+ assert.ok(guide.content.includes('## Fill it with a chatbot') || guide.content.includes('### Fill it with a chatbot'));
+ assert.ok(guide.content.includes('Keep my custom workbook conventions.'));
+ const once = guide.content;
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.equal(guide.content, once);
 });

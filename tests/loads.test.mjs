@@ -13,7 +13,7 @@ writeFileSync(`${temp}/loads.cjs`, result.outputFiles[0].text);
 const { parseWorkbook, exerciseTracking, performanceMarkdown } = createRequire(import.meta.url)(`${temp}/loads.cjs`);
 
 test('current XLSX imports recorded pull-up/dip kg and renders separate load comparisons', async () => {
- const files = unzipSync(new Uint8Array(readFileSync('templates/Training-example.xlsx')));
+ const files = unzipSync(new Uint8Array(readFileSync('templates/Training-Example.xlsx')));
  const setCell = (file, address, value, type = 'n') => {
   const xml = strFromU8(files[file]);
   const pattern = new RegExp(`<((?:\\w+:)?)c\\b[^>]*\\br="${address}"[^>]*?(?:\\/>|>[\\s\\S]*?<\\/\\1c>)`);

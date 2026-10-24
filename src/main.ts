@@ -4,7 +4,7 @@ import { analyticsNoteTasks } from './notes/analytics';
 import trackingGuide from '../Tracking.md';
 import { registerPerformanceCharts } from './ui/performance-chart';
 import { TemplateFormatModal } from './ui/template-format';
-import { downloadWorkbook, type WorkbookFormat } from './workbook/download';
+import { downloadWorkbook, type WorkbookFormat, type WorkbookKind } from './workbook/download';
 import { syncCoachOnlyPlans } from './notes/coach-plans';
 import { combinedLogMarkdown } from './notes/combined-log';
 import { Plugin, Notice, addIcon, Platform } from 'obsidian';
@@ -13,7 +13,7 @@ import { weekDates } from './model/calendar';
 import { SPORTS_ICON_ID, SPORTS_ICON_SVG } from './ui/icon';
 import { SportsSettingTab } from './settings';
 import { SPORTS_VIEW, SportsDashboard } from './ui/dashboard';
-import { ensureSheetGuide } from './notes/sheet-guide';
+import { ensureSheetGuide, openSheetGuide } from './notes/sheet-guide';
 import { templateWorkbook } from './workbook/template-file';
 import { syncSources } from './garmin/orchestrate';
 import { GarminConnectModal } from './ui/garmin-connect';
@@ -43,7 +43,9 @@ export default class SportsPlugin extends Plugin {
   this.registerView(SPORTS_VIEW, leaf => new SportsDashboard(leaf, this));
   this.addRibbonIcon(SPORTS_ICON_ID, 'Open dashboard', () => { void this.openDashboard(); });
   this.addCommand({ id: 'open-dashboard', name: 'Open dashboard', callback: () => this.openDashboard() });
-  this.addCommand({ id: 'create-example', name: 'Download example workbook', callback: () => this.createExample() });
+  this.addCommand({ id: 'create-example', name: 'Download example workbook', callback: () => this.downloadTrainingWorkbook() });
+  this.addCommand({ id: 'download-blank-template', name: 'Download blank template', callback: () => this.downloadTrainingWorkbook(undefined, 'blank') });
+  this.addCommand({ id: 'open-workbook-guide', name: 'Open workbook guide', callback: () => openSheetGuide(this) });
   this.addCommand({ id: 'clear-cache', name: 'Clear cached data', callback: () => this.clearCachedData() });
   this.addCommand({ id: 'recreate-notes', name: 'Recreate missing notes', callback: () => this.refreshNotes(true, true) });
   this.addCommand({ id: 'refresh-notes', name: 'Generate notes from imported data', callback: () => this.refreshNotes() });
@@ -63,17 +65,17 @@ export default class SportsPlugin extends Plugin {
   });
  }
  onunload(): void { this.garminDialog?.close(); if (this.timer !== undefined) window.clearInterval(this.timer); }
- async createExample(format?: WorkbookFormat): Promise<void> {
-  if (!format) { new TemplateFormatModal(this).open(); return; }
+ async downloadTrainingWorkbook(format?: WorkbookFormat, kind: WorkbookKind = 'example'): Promise<void> {
+  if (!format) { new TemplateFormatModal(this, kind).open(); return; }
   try {
    await ensureSheetGuide(this);
-   const revoke = downloadWorkbook(templateWorkbook(new Date(), format), document, format);
+   const revoke = downloadWorkbook(templateWorkbook(new Date(), format, kind), document, format, kind);
    this.register(revoke);
    const timer = window.setTimeout(revoke, 60_000);
    this.register(() => window.clearTimeout(timer));
-   new Notice('Template download started. Upload it to your cloud storage, then paste its share link in settings. The workbook guide is in your vault.');
+   new Notice(`${kind === 'blank' ? 'Blank template' : 'Example workbook'} download started. Use Guide/Workbook.md to adapt it before uploading and syncing.`);
   } catch (error) {
-   new Notice(error instanceof Error ? error.message : 'Could not download the example workbook.');
+   new Notice(error instanceof Error ? error.message : 'Could not download the workbook.');
   }
  }
  async save(): Promise<void> { await this.saveData(this.data); }

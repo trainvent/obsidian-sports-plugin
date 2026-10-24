@@ -1,6 +1,6 @@
 import { upgradeWorkbookGuide } from './guide-upgrade';
 import { withoutNoteTitle } from './titles';
-import { normalizePath, TFile } from 'obsidian';
+import { normalizePath, TFile, Notice } from 'obsidian';
 import type SportsPlugin from '../main';
 import sheetGuide from '../../Workbook.md';
 
@@ -27,4 +27,13 @@ export async function ensureSheetGuide(plugin: SportsPlugin): Promise<void> {
   if (!plugin.app.vault.getAbstractFileByPath(current)) await plugin.app.vault.createFolder(current);
  }
  await plugin.app.vault.create(path, withoutNoteTitle(sheetGuide));
+}
+
+
+export async function openSheetGuide(plugin: SportsPlugin): Promise<void> {
+ try {
+  await ensureSheetGuide(plugin);
+  const file = plugin.app.vault.getAbstractFileByPath(normalizePath(`${plugin.data.notesFolder}/Guide/Workbook.md`));
+  if (file instanceof TFile) await plugin.app.workspace.getLeaf(false).openFile(file);
+ } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not open the workbook guide.'); }
 }

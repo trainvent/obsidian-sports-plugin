@@ -330,7 +330,7 @@ test('goal categories separate new skills from maintenance and core supports all
 });
 
 test('template imports and rebases Daily without changing Recurring', async () => {
- const source = new Uint8Array(readFileSync('templates/Training-example.xlsx'));
+ const source = new Uint8Array(readFileSync('templates/Training-Example.xlsx'));
  const plan = await parseWorkbook(startTemplateNextMonday(source, new Date(2026, 11, 31, 12)));
  assert.equal(plan.sessions.length, 48);
  assert.equal(plan.sessions[0].date, '2027-01-04');
@@ -355,7 +355,7 @@ test('template imports and rebases Daily without changing Recurring', async () =
 });
 
 test('weekly schedule sheet can be selected independently, renamed, disabled, or rejected when missing', async () => {
- const saved = readFileSync('templates/Training-example.xlsx');
+ const saved = readFileSync('templates/Training-Example.xlsx');
  const source = saved.buffer.slice(saved.byteOffset, saved.byteOffset + saved.byteLength);
  const mapping = { strategySheet: '', trackingSheet: '', scheduleSheet: 'Recurring' };
  const scheduleOnly = await parseWorkbook(source, mapping);
@@ -378,7 +378,7 @@ test('weekly schedule sheet can be selected independently, renamed, disabled, or
 });
 
 test('example goals have independent source mappings, a swimming goal, and exact result-column validation', async () => {
- const bytes = readFileSync('templates/Training-example.xlsx');
+ const bytes = readFileSync('templates/Training-Example.xlsx');
  const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
  const plan = await parseWorkbook(buffer);
  assert.equal(plan.goals.find(goal => goal.id === 'hspu').resultColumn, undefined);
@@ -411,7 +411,7 @@ test('daily iteration targets require explicit recording and preserve adjusted v
 });
 
 test('example labels daily skills and offers five unrecorded iteration targets', async () => {
- const bytes = readFileSync('templates/Training-example.xlsx');
+ const bytes = readFileSync('templates/Training-Example.xlsx');
  const plan = await parseWorkbook(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
  const first = plan.sessions[0];
  assert.ok(first.prescription.includes('A) Scapular pull-up'));
@@ -446,7 +446,7 @@ test('grouped Core rounds import only after recording and preserve zero and adju
 });
 
 test('example iteration inputs use numbers and Excel times, and recorded times import as mm:ss', async () => {
- const files = unzipSync(new Uint8Array(readFileSync('templates/Training-example.xlsx')));
+ const files = unzipSync(new Uint8Array(readFileSync('templates/Training-Example.xlsx')));
  let sheet = strFromU8(files['xl/worksheets/sheet3.xml']);
  // Record the first handstand session without changing its timed targets.
  const flag = /<((?:\w+:)?)c\b[^>]*\br="G5"[^>]*>[\s\S]*?<\/\1c>/;

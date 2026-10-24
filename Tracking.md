@@ -4,6 +4,12 @@ A/B/C, Cal-Intervals, and five set columns describe the example workbook only. T
 not required exercises or limits. Choose either format below. The plugin reads
 your selected tracking tab; its name does not have to be Daily.
 
+Start with **Settings → Sports → Workbook guide → Open guide**. Choose **Blank
+template** for empty training inputs or **Example workbook** for filled workouts
+and scoring. XLSX retains the full six-sheet structure; the ODS template currently
+uses simpler session tables. Use [Workbook.md](Workbook.md)
+to fill or adapt your file, manually or with a chatbot, before uploading and syncing.
+
 ### Recommended: one row per set or measurement
 
 Use these exact headers. Additional sets and exercises add rows, not columns.
@@ -71,11 +77,11 @@ Do not merge two exercise groups under the same name.
 
 Flat equivalents are `Squat done`, `Squat 1 result`, `Squat 2 result`, etc.
 `Circuit done` with `Circuit rounds result` also works. Numbered inputs and rounds
-remain gated by the corresponding Done flag. Both current templates use one manual
+remain gated by the corresponding Done flag. Both the blank template and filled example use one manual
 **Session done** flag for all skill results. Adjust values before selecting TRUE.
 Cal-Intervals rounds greater than zero are then recorded; zero or blank means
 not done and remains unscored. Session done TRUE marks the session completed;
-the templates have no separate Status column.
+the provided files have no separate Status column.
 
 For numeric comparisons, match the group name in Plan, one prescription per line:
 
@@ -89,7 +95,7 @@ Circuit: 4 rounds
 Group names, exercise names, units, and set counts are configurable. Compound
 instructions stay readable as text. Prefer the row-based format for changing
 per-set targets or recording multiple metrics instead of encoding these in prose.
-Template metadata `max_sets` and `max_reps` are descriptive; they do not impose
+Example metadata `max_sets` and `max_reps` are descriptive; they do not impose
 import limits or automatically resize a workbook.
 
 ### Where the changes appear
@@ -101,8 +107,8 @@ changes. Confirm **Settings → Sports → Tracking sheet** selects the intended
 
 Upcoming manual prescriptions appear in **Plans**. Results and comparisons live
 in day notes and **Analytics/Log.md**. **Open analytics** opens **Stats.md** for
-source totals and trends, with links to **Analytics/Sheet.md** and
-**Analytics/Smartwatch.md**. **Days/_Index.md** links to
+source totals and trends. Open **Analytics/Sheet.md** and
+**Analytics/Smartwatch.md** from Overview or find them with `sports/analytics`. **Days/_Index.md** links to
 `Days/YYYY-MM-DD.md`, combining that day's sheet sessions, scores,
 individual sets, and Garmin activities. Log dates link there too. Only today and
 earlier dates with source entries receive day notes; upcoming sessions stay in
@@ -121,9 +127,34 @@ plain source mode shows the readable `sports-compare` block. No network chart
 service is used. Existing notes and commentary retain their conflict protection.
 
 
+### Properties, tags, and recovery
+
+Overview is the navigation hub. Day notes keep **date** and a linked **week** in
+properties; routine **targets** link to goal notes. Weekly dates, phase and program
+week also live in properties. Benchmarks, sets, scores and reflections stay in the body.
+Sync updates these managed properties while preserving unrelated custom properties.
+
+Shared tags connect related pages: `sports/training` groups logs, days and weeks;
+`sports/analytics` groups Stats, Sheet and Smartwatch; `sports/planning` groups plans,
+calendars, routines and weeks; `sports/goals` groups Plans, goals and routines.
+Running and swimming routines and matching goals also share sport tags.
+Custom tags are preserved; Sports maintains its own tag groups.
+
+Keep the hidden generated-section markers and write reflections outside them.
+Use **Generate notes from imported data** for a cached refresh and **Recreate
+missing notes** for deleted files. A generated-section conflict needs its original
+content restored, or a deliberate backed-up rebuild through **Clear cached data**
+followed by **Sync now**. A reset preserves note files and settings; each existing
+target note is backed up before rebuilding. Edits inside generated sections are
+kept in those backups, while outside reflections remain in place.
+
+Pending recovery continues when Garmin notes return after workbook sync. There
+is no need to delete the notes folder or repeatedly reset the cache. Damaged
+markers still need repair. See [Sync recovery](Workbook.md#sync-recovery) for details.
+
 ### Intensity, performance, and optional felt effort
 
-The templates keep **Planned intensity** and **Effort rating** in Daily.
+The filled example keeps **Planned intensity** and **Effort rating** in Daily.
 The unified Scoring table holds performance and coverage, imported automatically.
 
 - **Intensity:** the example calculates planned intensity from 0 to 10 using

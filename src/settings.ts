@@ -1,3 +1,4 @@
+import { openSheetGuide } from './notes/sheet-guide';
 import { garminSettingRows } from './ui/garmin-settings';
 import type { SportsSettingGroup, SportsSettingRow } from './ui/setting-definitions';
 import { App, PluginSettingTab, Setting, Platform } from 'obsidian';
@@ -56,9 +57,16 @@ export class SportsSettingTab extends PluginSettingTab {
     sheet('Strategy sheet', 'Goals and training parts. Blank to disable.', 'strategySheet', 'Strategy'),
     sheet('Tracking sheet', 'Daily plans and results. Blank to disable.', 'trackingSheet', 'Daily'),
     sheet('Weekly schedule sheet', 'Recurring activities. Blank to disable.', 'scheduleSheet', 'Recurring'),
-    { name: 'Example workbook', desc: 'Download a template starting next week, then upload it to your cloud storage.', render: setting => {
-     setting.addButton(button => button.setButtonText('Download XLSX').onClick(() => plugin.createExample('xlsx')));
-     setting.addButton(button => button.setButtonText('Download ODS').onClick(() => plugin.createExample('ods')));
+    { name: 'Workbook guide', desc: 'Read before filling a blank template or adapting the example. You can share it with your chatbot.', render: setting => {
+     setting.addButton(button => button.setButtonText('Open guide').onClick(() => openSheetGuide(plugin)));
+    } },
+    { name: 'Blank template', desc: 'XLSX: full workbook with empty training inputs and no formulas. ODS: basic tables. Fill using the workbook guide.', render: setting => {
+     setting.addButton(button => button.setButtonText('Download XLSX').onClick(() => plugin.downloadTrainingWorkbook('xlsx', 'blank')));
+     setting.addButton(button => button.setButtonText('Download ODS').onClick(() => plugin.downloadTrainingWorkbook('ods', 'blank')));
+    } },
+    { name: 'Example workbook', desc: 'A filled training plan starting next week. Adapt the goals, exercises and schedule with the workbook guide.', render: setting => {
+     setting.addButton(button => button.setButtonText('Download XLSX').onClick(() => plugin.downloadTrainingWorkbook('xlsx', 'example')));
+     setting.addButton(button => button.setButtonText('Download ODS').onClick(() => plugin.downloadTrainingWorkbook('ods', 'example')));
     } },
    ]),
    group('Garmin', garminItems),

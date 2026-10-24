@@ -3,7 +3,7 @@
 	"name": "Sports",
 	"version": "0.4.0",
 	"minAppVersion": "1.11.4",
-	"description": "Plan training from spreadsheets, track workout results and progress, and review your week with optional Garmin Connect imports.",
+	"description": "Plan fitness and sports training from spreadsheets, track workouts and exercise progress, and review training logs for calisthenics, running, and swimming, with optional Garmin Connect imports.",
 	"author": "Trainvent",
 	"authorUrl": "https://github.com/trainvent",
 	"isDesktopOnly": true,

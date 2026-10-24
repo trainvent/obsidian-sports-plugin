@@ -13,7 +13,7 @@ const result = await build({ stdin: { contents: "export { parseWorkbook } from '
 } }] });
 writeFileSync(`${temp}/cloud.cjs`, result.outputFiles[0].text);
 const { parseWorkbook, cloudWorkbookUrl, readCloudWorkbook, readWorkbookSource, downloadWorkbook } = createRequire(import.meta.url)(`${temp}/cloud.cjs`);
-const file = readFileSync('templates/Training-example.xlsx');
+const file = readFileSync('templates/Training-Example.xlsx');
 const bytes = file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength);
 const ok = { status: 200, contentType: 'application/octet-stream', bytes };
 
@@ -59,7 +59,7 @@ test('template download uses a browser blob and disposes the link without select
  URL.revokeObjectURL = value => { revoked = value; };
  try {
   const doc = { body: { createEl(tag, options) {
-   assert.equal(tag, 'a'); assert.deepEqual(options.attr, { href: 'blob:template', download: 'Training.xlsx' });
+   assert.equal(tag, 'a'); assert.deepEqual(options.attr, { href: 'blob:template', download: 'Training-Example.xlsx' });
    return { click: () => calls.push('download'), remove: () => calls.push('remove') };
   } } };
   const dispose = downloadWorkbook(bytes, doc);
@@ -96,12 +96,26 @@ test('ODS downloads use the ODS filename and MIME type', async () => {
  try {
   const doc = { body: { createEl(tag, options) {
    assert.equal(tag, 'a');
-   assert.equal(options.attr.download, 'Training.ods');
+   assert.equal(options.attr.download, 'Training-Example.ods');
    return { click() { clicked = true; }, remove() {} };
   } } };
   const dispose = downloadWorkbook(bytes, doc, 'ods');
   assert.equal(blob.type, 'application/vnd.oasis.opendocument.spreadsheet');
   assert.equal(clicked, true);
   dispose(); assert.equal(revoked, 'blob:ods-template');
+ } finally { URL.createObjectURL = create; URL.revokeObjectURL = revoke; }
+});
+
+test('blank workbook downloads use a distinct template filename', () => {
+ const create = URL.createObjectURL; const revoke = URL.revokeObjectURL;
+ URL.createObjectURL = () => 'blob:blank'; URL.revokeObjectURL = () => {};
+ try {
+  for (const format of ['xlsx','ods']) {
+   const doc = {body:{createEl:(_tag, options)=>{
+    assert.equal(options.attr.download, `Training-Template.${format}`);
+    return {click(){},remove(){}};
+   }}};
+   downloadWorkbook(new ArrayBuffer(0), doc, format, 'blank')();
+  }
  } finally { URL.createObjectURL = create; URL.revokeObjectURL = revoke; }
 });

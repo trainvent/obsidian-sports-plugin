@@ -112,7 +112,7 @@ test('all done records exercise targets together while preserving individual con
 });
 
 test('scoring workbook imports saved formulas, no invented actuals, and rebases linked Scoring dates', async () => {
- const bytes = new Uint8Array(readFileSync('templates/Training-example.xlsx'));
+ const bytes = new Uint8Array(readFileSync('templates/Training-Example.xlsx'));
  const plan = await parseWorkbook(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
  assert.equal(plan.sessions[0].scores.expectedPerformance, null);
  assert.equal(plan.sessions[0].scores.actualPerformance, null);

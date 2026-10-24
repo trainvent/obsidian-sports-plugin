@@ -3,17 +3,97 @@
 This guide lives in `Guide/Workbook.md` under the configured Sports notes folder
 in your vault. Existing guide edits are preserved on template download and sync.
 
-Download an example with **Settings → Sports → Download XLSX** or **Download ODS**.
-Use this guide when adapting it yourself, or give both to your chatbot.
-The example is a fixed starting point, not a personalized recommendation. Adapt
-its goals, exercises, prescriptions, schedule and training volume to your needs.
-Work on a copy. The plugin reads the workbook and never writes training results
-back to it.
+In **Settings → Sports**, open **Workbook guide → Open guide**, then choose a
+starting point in XLSX or ODS:
+
+| Option | Contents | Choose it when |
+| --- | --- | --- |
+| **Blank XLSX template** (`Training-Template.xlsx`) | All six example sheets, tables and formatting; training data and formulas cleared | You want to fill the full workbook yourself or with a chatbot |
+| **Blank ODS template** (`Training-Template.ods`) | Basic Strategy, Recurring and Daily tables | You want the simpler ODS starting point |
+| **Example workbook** (`Training-Example`) | A filled 12-week plan, library, loads, and scoring | You want to learn the format or adapt a working example |
+
+Use this guide with either file. Adapt goals, exercises, schedule, equipment and
+training volume before uploading and syncing. The example is not a personalized
+recommendation. Sports reads the workbook and never writes results back to it.
+
+## Fill the blank template
+
+1. In **Strategy → Plan**, set a stable plan_id, your plan_name, timezone and
+   Monday start_date. Keep schema_version at 1. Downloaded files use your local
+   timezone and next Monday as the initial date.
+2. Fill **Goals** and **Parts** as needed. Use part goal_ids to link them. Add
+   **Week plans** if you want weekly phases and targets. Enter consecutive rows
+   under each header; a blank row ends a Strategy table. Insert rows before the
+   next section when more space is needed.
+3. In **Daily**, enter a Date, readable Plan and Title for each session. Block
+   may be blank or refer to a Parts ID. The XLSX template has no automatic dates,
+   prescriptions or scores: enter values manually or add formulas suited to your
+   own plan. Leave actual values blank until training, then record them and select
+   Session done. Add stable Session IDs when multiple sessions share a date and
+   block. See [Tracking.md](Tracking.md) for custom groups and set counts.
+4. In **Recurring**, fill Activity to enable a weekly entry. Times are optional
+   `HH:mm` text; enter positive Minutes or supply both start and end times.
+   Blank activities remain inactive. Add rows to schedule more than one activity per day.
+5. Save, upload, configure the three sheet mappings, then **Sync now**.
+
+The XLSX template retains the full example layout, including A/B/C set columns,
+Cal-Intervals, Library, Loads, Scoring, Plan summary and Plan recap. These labels
+and calculation slots are structure, not prescribed exercises. Goals, workouts,
+results, exercise definitions, equipment and added weights are empty. Plan metadata
+and the layout's set-count and timed-work conversion defaults remain editable.
+
+All cell formulas and their saved results are removed from the XLSX template,
+including dates, Loads links, Scoring, summaries and recurring durations. Fill
+these fields explicitly, or have your agent build calculations for your own
+strategy. The calculation sections later in this guide describe the filled
+example's method; they are optional reference material, not formulas included
+in the template. Do not copy its fixed row references without adapting them.
+
+Formatting is retained, so some neutral cells that previously held formulas are
+now empty fields. The filled example keeps the working calculations for reference.
+The ODS template is still the basic three-sheet version for now.
+
+## Optional sections and sheets
+
+The XLSX template includes every table but requires no calculations. Leave unused
+optional tables empty or remove them as described below.
+
+| Section or sheet | Optional when | How to omit it |
+| --- | --- | --- |
+| Goals and Parts | You do not need goals or linked training blocks | With Strategy import enabled, keep empty Goals and Parts labels/headers; leave Block blank for unlinked sessions |
+| Week plans | You do not need weekly phases or targets | Leave empty or remove the section; enter Daily dates and plans directly |
+| Plan summary and Plan recap | You do not want summaries or review prompts | Clear or remove these sections |
+| Recurring | You have no weekly recurring activities | Leave Activity empty, or disable the weekly schedule sheet mapping before removing the sheet |
+| Scoring | You do not need intensity/performance calculations or manual scores | Leave empty or remove the sheet |
+| Library | You do not need exercise, equipment or interval references | Leave empty or remove it; keep equipment definitions if you use Loads |
+| Loads | You do not track added weight | Leave empty or remove the sheet; enter Date and Session explicitly if using it |
+
+If you or your agent add formulas later, check their dependencies before removing
+referenced cells or sheets. Unused exercise groups and set columns may also be
+removed. Retain the supported headers for the sections you keep.
+
+### Fill it with a chatbot
+
+Attach the workbook and this guide. For example:
+
+```text
+Use Workbook.md to fill the attached Training-Template workbook for my needs.
+Ask for my goals, availability, experience, equipment and known starting levels
+before planning. Preserve the supported sheet names, headers and stable IDs.
+Do not invent completed workouts, measured baselines or results. Leave future
+actual values blank. If you add formulas, recalculate and save their results.
+Return an XLSX or ODS file and summarize the changes for me to review.
+```
+
+For an existing plan, also preserve all recorded history. Review the completed
+file before syncing. A chatbot is optional; the same guide supports manual edits.
+
+## Reading the filled example
 
 **Am / Bm** are the A / B sessions with added mass (`m`). The underlying block
 stays A or B; planned and actual added kg are recorded in **Loads**.
 
-## Color key
+## Example workbook color key
 
 | Color | Meaning | How to use it |
 | --- | --- | --- |
@@ -52,7 +132,9 @@ green; the calculated Minutes column stays neutral. Strategy's `max_sets` and
 
 ## Strategy
 
-Keep the following sections and headers:
+The XLSX template and filled example retain the following sections and headers.
+Optional sections may be left empty or removed as described above. The ODS
+template contains only the basic Plan, Goals, Parts and Week plans sections:
 
 | Section | Headers |
 | --- | --- |
@@ -69,7 +151,7 @@ plan ID requires clearing the cached plan. `start_date` stays at **E3**. Set a
 Monday before recording history. Plugin-created workbooks start next Monday in
 the user's local calendar and use the user's local timezone.
 
-The template's `max_sets` and `max_reps` cells describe its example layout only.
+The example's `max_sets` and `max_reps` cells describe its example layout only.
 They do not impose an exercise count, require A/B/C/Cal-Intervals, or limit set counts.
 Changing these cells does not automatically resize the workbook.
 
@@ -101,7 +183,7 @@ sources. **Both sources work for every goal, regardless of its category.**
 - A running aspiration can have `Running result` and `running`; a swimming
   maintenance goal can have `Swimming result` and `swimming`. Adding a manual
   mapping also requires adding that exact result column to Daily.
-- The template includes swimming as a maintenance goal. Its starting routine is
+- The example includes swimming as a maintenance goal. Its starting routine is
   reported background, not a recorded performance or a change to Recurring.
 
 **Parts:** `part_id` and `version` together identify a training block. Daily `Block`
@@ -233,6 +315,55 @@ The grouped headers are the exception to the flat custom-column naming rule.
 Do not add arbitrary columns such as `Reps` or `Weight`; use `Reps result` or
 `Weight result` instead.
 
+## Properties and tags
+
+Overview provides general navigation. Generated notes do not repeat navigation
+bars. Keep links where they describe a relationship: goal links in routine
+properties, a weekly-note link on each day, and dated links in logs and plans.
+
+| Note | Managed properties | Source |
+| --- | --- | --- |
+| `Goals/<goal_id>.md` | `goal_id`, `category`, `result_column`, `garmin_types` | Goals table and resolved source mappings |
+| `Routines/<name>.md` | `targets` (list of goal links) | Part/goal relationships; running and swimming goal mappings |
+| `Days/YYYY-MM-DD.md` | `date`, `week` (weekly-note link) | Entry date and its Monday-start week |
+| `Weeks/YYYY-MM-DD.md` | `week_start`, `week_end`, `program_week`, `phase` | Calendar dates and matching Week plans row |
+
+Goal categories appear as **Aspiration** or **Maintenance**. Baseline, target, and
+test standard remain in the goal body. Empty optional properties are omitted;
+for example, a week without a Week plans row has no program_week or phase.
+
+A routine's properties can look like this:
+
+```yaml
+---
+targets:
+  - "[[Sports/Goals/muscle-up|Muscle-up]]"
+  - "[[Sports/Goals/pistol|Pistol squat]]"
+tags:
+  - sports/planning
+  - sports/goals
+---
+```
+
+Sports uses your configured notes folder in the links. Sync updates the managed
+properties from imported data. Change goal mappings and plan metadata in the
+workbook; changes to those properties in Obsidian are not written back.
+Unrelated custom properties are preserved.
+
+| Shared tag | Pages |
+| --- | --- |
+| `sports` | Overview |
+| `sports/planning` | Plans, Strategy, Calendar, routine index, routines, weeks |
+| `sports/goals` | Plans, goals, routines |
+| `sports/training` | Log, day index, days, weeks |
+| `sports/analytics` | Stats, Sheet, Smartwatch |
+| `sports/guide` | Tracking guide |
+| `sports/running`, `sports/swimming` | Matching routines and goals with those resolved Garmin types |
+
+Use Obsidian's tag pane or search a tag such as `tag:#sports/planning` to find
+related notes. Sports refreshes these tag groups on sync, removing stale managed
+tags and keeping your custom tags. Use your own tag names for personal grouping.
+
 ## Protect recorded history
 
 Never shift the start date, change session identity, or rewrite completed training
@@ -245,6 +376,48 @@ Session IDs make those checks more reliable.
 
 Write reflections outside generated sections in Obsidian. Sync protects those
 sections against accidental edits; change plans in the workbook instead.
+
+## Weeks and routines base
+
+`Sports.base` provides **Weeks** and **Routines** table views using the properties
+above. Open **Browse weeks and routines** from Overview with the **Bases** core
+plugin enabled. Weeks show start/end dates, program week and phase; routines show
+their linked goals. Filters stay within the configured notes folder and exclude
+backups and the routine index.
+
+Sports creates a default base only when the file is missing. Your changes to
+columns, sorting and filters are preserved. It reads note properties directly;
+there is no second training database. Editing imported properties in the base
+has the same effect as editing them on a note: sync restores the workbook values.
+
+## Sync recovery
+
+Keep the `sports:begin` and `sports:end` comments around generated sections.
+They are hidden in Reading view. Write personal reflections outside them.
+
+1. For a refresh without downloading, run **Generate notes from imported data**.
+   For deleted notes, use **Recreate missing notes** instead.
+2. If a generated section conflicts, move any personal additions outside it and
+   restore the original generated section, including its markers, before refreshing.
+3. For persistent sync-state errors, use **Clear cached data**, then **Sync now**.
+   This keeps note files and settings, clears imported data and baselines, and
+   backs up each existing target note before rebuilding its generated section.
+
+The reset records pending notes before clearing the caches. Recovery continues
+when later imports bring back Garmin-only dates and historical weeks; a successful
+workbook refresh does not end recovery for those notes. Successfully recovered
+notes regain normal edit protection. Malformed or duplicate markers still stop
+a note from being rewritten; repair them from a known good copy first.
+
+Backups live under `Backups/<timestamp>/` in the configured notes folder. They
+preserve the full pre-rebuild note, including any edits inside generated sections.
+Reflections outside the markers and unrelated custom properties stay in the active
+note. Normal sync does not create backups, and the plugin does not read them as
+training data. You can remove old backups after checking the recovered notes.
+
+A reset clears cached history too. Keep completed results in the workbook and
+retain any notes or backups containing information absent from the source.
+Deleting the Sports folder is not required for recovery.
 
 ## Checklist for a chatbot
 
@@ -262,7 +435,7 @@ sections against accidental edits; change plans in the workbook instead.
 ## Scoring and the Analytics folder
 
 The example includes a **Scoring** formula sheet. Keep the plugin's three import
-mappings on Strategy, Daily, and Recurring. The XLSX template uses one Scoring
+mappings on Strategy, Daily, and Recurring. The XLSX example uses one Scoring
 table for exercise targets, results, intensity and performance. Scoring is read
 automatically alongside Daily; keep its tab name.
 
@@ -371,7 +544,7 @@ separate; added kg is shown as its own comparison metric, not added to reps.
 At the bottom of Strategy, **Plan summary** shows planned/completed sessions,
 recorded manual minutes, and median recorded performance. **Plan recap** has six
 short response fields for goal progress, what worked, changes, recovery, load
-observations, and the next plan. Completion uses **Session done** in the template, or explicit **Status** in other
+observations, and the next plan. Completion uses **Session done** in the provided files, or explicit **Status** in other
 layouts. Tracker imports and exercise-specific Done flags do not complete a session.
 
 The plugin creates **Analytics/Sheet.md** and **Analytics/Smartwatch.md** for source
@@ -408,5 +581,7 @@ Calc, save a copy as `.ods`, recalculate and save, then update the plugin’s cl
 workbook link. Sports imports saved cell values, including formula results; it
 does not evaluate formulas. Verify calculated intensity and Done values after
 conversion. Choose **Download XLSX** or **Download ODS** in settings. Both start next Monday.
-Both templates use one manual TRUE/FALSE **Session done** dropdown. Notes topics,
-Loads, Library, Scoring and Cal-Intervals use the same structure in both formats.
+Both starting points use a manual TRUE/FALSE **Session done** dropdown. In the
+filled example, Notes topics, Loads, Library, Scoring and Cal-Intervals use the
+same structure in both formats. The XLSX template keeps the full layout with all cell formulas removed; the ODS
+template remains the basic three-sheet version.

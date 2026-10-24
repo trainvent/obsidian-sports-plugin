@@ -6,11 +6,13 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 const temp = mkdtempSync(`${tmpdir()}/sports-settings-tests-`);
 process.on('exit', () => rmSync(temp, { recursive: true, force: true }));
-const result = await build({ stdin: { contents: "export { garminSettings } from './src/ui/garmin-settings'; export { SportsSettingTab } from './src/settings';", resolveDir: process.cwd() }, bundle: true, format: 'cjs', platform: 'node', write: false, plugins: [{ name: 'settings-stub', setup(builder) {
+const result = await build({ stdin: { contents: "export { garminSettings } from './src/ui/garmin-settings'; export { SportsSettingTab } from './src/settings';", resolveDir: process.cwd() }, bundle: true, format: 'cjs', platform: 'node', write: false, loader: {'.md':'text'}, plugins: [{ name: 'settings-stub', setup(builder) {
  builder.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'obsidian', namespace: 'test' }));
  builder.onLoad({ filter: /.*/, namespace: 'test' }, () => ({ contents: `
  export const Platform = { isDesktop: true };
  export class Notice {}
+ export class TFile {}
+ export const normalizePath = path => path;
  export class PluginSettingTab { constructor() { this.containerEl = {}; } }
  class Button {
   setButtonText(value) { this.label = value; return this; }

@@ -1,4 +1,4 @@
-# Sports
+# Sports — Workout planning and fitness tracking for Obsidian
 
 Plan your training in a spreadsheet. Follow it, track progress, and reflect in Obsidian.
 
@@ -32,13 +32,28 @@ Charts render locally without another community plugin or chart service.
 
 ## Get started
 
-1. In **Settings → Sports**, select **Download XLSX** or **Download ODS**.
-   The example starts next Monday. Adapt its goals and training to your needs.
-2. Upload the file to Nextcloud or another service that provides an HTTPS download link.
-3. Paste that link into **Cloud workbook link**. Keep the default sheet mappings:
-   **Strategy**, **Daily**, and **Recurring**.
-4. Select **Sync now**, then **Open dashboard**.
-5. Record training in the workbook, recalculate and save, then sync again.
+1. Open **Settings → Sports → Workbook guide → Open guide**. Read
+   [Workbook.md](Workbook.md) before adapting a file; it is also saved under
+   `Guide/Workbook.md` in your Sports notes folder.
+2. Choose **Blank template** to build your own plan or **Example workbook** to
+   learn from a filled plan. Both offer **Download XLSX** and **Download ODS**.
+3. Use the guide to fill or adapt the file to your goals, availability, equipment,
+   and preferred activities. You can do this yourself or give the file and guide
+   to your chatbot. Keep future results blank.
+4. Upload the completed file to Nextcloud or another service with an HTTPS
+   download link. Paste it into **Cloud workbook link** and keep the sheet
+   mappings **Strategy**, **Daily**, and **Recurring**.
+5. Select **Sync now**, then **Open dashboard**.
+6. Record training in the workbook, recalculate and save if it uses formulas,
+   then sync again.
+
+The XLSX template is an empty copy of the full six-sheet example, retaining its
+tables and formatting, with all cell formulas and cached calculation results removed.
+Optional sections can be left empty or removed; see the
+[optional sections guide](Workbook.md#optional-sections-and-sheets) before removing any.
+The ODS template currently retains the simpler three-sheet layout. The example contains a filled
+12-week calisthenics plan, exercise library, loads, and scoring. It is a worked
+example to adapt, not a personalized training recommendation.
 
 In the example, adjust the set values to what you did, clear unused sets, and
 select TRUE under **Session done**. FALSE or blank leaves the prefilled targets
@@ -60,11 +75,16 @@ made by Trainvent. Save changes to the cloud workbook before syncing Sports.
 
 - [Workbook guide](Workbook.md): sheet structure, goals, schedules, scoring, loads, and safe customization.
 - [Flexible tracking guide](Tracking.md): custom exercises, any number of sets, variable targets, and multiple metrics.
-- Example files: [XLSX](templates/Training-example.xlsx) · [ODS](templates/Training-example.ods).
 
-The templates include Strategy, Daily, Recurring, Library, Loads, and Scoring.
-Their exercises and five set columns are examples; the importer supports custom
-layouts described in the guides. To adapt a workbook with a chatbot, give it a
+| Starting point | XLSX | ODS |
+| --- | --- | --- |
+| Blank template | [Training-Template.xlsx](templates/Training-Template.xlsx) | [Training-Template.ods](templates/Training-Template.ods) |
+| Filled example | [Training-Example.xlsx](templates/Training-Example.xlsx) | [Training-Example.ods](templates/Training-Example.ods) |
+
+The XLSX template and filled example include Strategy, Daily, Recurring, Scoring,
+Library, and Loads. The ODS template currently contains Strategy, Daily and Recurring. The example’s
+exercises and five set columns are illustrations; the
+importer supports custom layouts described in the guides. To adapt a workbook with a chatbot, give it a
 copy and the workbook guide. Preserve recorded history and stable session IDs.
 
 Sports reads saved formula results and does not recalculate spreadsheets.
@@ -80,6 +100,7 @@ The default notes folder is `Sports/`. Files are created as their source data be
 | Path | Contents |
 | --- | --- |
 | `Overview.md` | Starting page with today, this week, and navigation |
+| `Sports.base` | Sortable Weeks and Routines views over note properties |
 | `Stats.md` | Source totals and training trends |
 | `Structure/Plans.md` | Goals, weekly progression, and upcoming sessions |
 | `Structure/Strategy.md` | Program structure and recurring schedule |
@@ -98,15 +119,38 @@ Day notes cover today and earlier dates with workbook or Garmin entries.
 Goal categories distinguish aspiration and maintenance; either can use workbook
 results and Garmin activities. Configure their source mappings in Strategy.
 
-Goal notes keep category and source mappings in properties. Routines link goals
-through **targets**. Day notes have **date** and a linked **week**; weekly notes
-have **week_start**, **week_end**, **program_week**, and **phase**. Sync updates
-these workbook-derived properties and preserves unrelated custom properties.
-Benchmarks, training details, results, and reflections stay in the body.
-Overview provides general navigation. Shared `sports/planning`, `sports/goals`,
-`sports/training`, and `sports/analytics` tags group related pages; running and
-swimming notes also share sport tags. Custom tags are preserved. Other notes keep
-links within their relevant content.
+### Properties and tags
+
+Overview is the navigation hub. Other notes use properties for relationships and
+shared tags for grouping, with direct links beside the content they refer to.
+
+| Note | Properties |
+| --- | --- |
+| Goal | `goal_id`, `category`, `result_column`, `garmin_types` |
+| Routine | `targets`: links to its goal notes |
+| Day | `date`, `week`: link to its weekly note |
+| Week | `week_start`, `week_end`, `program_week`, `phase` |
+
+Empty optional properties are omitted. Sync maintains these properties from
+imported data; edit their source in the workbook. Unrelated custom properties
+are preserved. Benchmarks, workouts, results, and reflections stay in the body.
+
+Shared tags include `sports/planning`, `sports/goals`, `sports/training`, and
+`sports/analytics`. Running and swimming routines and matching goals also receive
+sport tags. Sports refreshes its own tag groups while preserving custom tags.
+See the [full tag map and property example](Workbook.md#properties-and-tags).
+
+### Browse weeks and routines
+
+Select **Browse weeks and routines** in Overview to open `Sports.base`. Its
+**Weeks** view shows dates, program week and phase; **Routines** shows linked goals.
+Enable Obsidian's **Bases** core plugin to use these sortable tables. Only notes
+in your current Sports folder are included; backups and the routine index are excluded.
+
+The base reads existing properties and needs no separate sync. Customize its
+columns, sorting and filters freely: Sports creates the file only when missing
+and preserves existing base files. Workbook-managed property edits made through
+a base are still replaced on sync. Edit the workbook to change those values.
 
 ### Add today to another note
 
@@ -137,23 +181,36 @@ Failed downloads or invalid imports retain the previous dataset.
 
 ## Notes and recovery
 
-Sports refreshes only its `sports:begin` / `sports:end` generated sections.
-Write your own text outside those markers. If a generated section has been edited
-or its markers are damaged, Sports reports a conflict and leaves that note alone.
-Move personal changes outside the section and restore the previous generated
-content before refreshing. Other notes can still update when one conflicts.
+Sports uses hidden `sports:begin` / `sports:end` comments to identify generated
+sections. Keep the markers and write reflections outside them. They appear in
+source mode and stay hidden in Reading view. Edited generated content or damaged
+markers cause a conflict; other notes can still update.
 
-Keep managed filenames stable. Deleted notes are not silently recreated: use
-**Recreate missing notes** in settings or the command palette. Use **Generate
-notes from imported data** to refresh from the cache without downloading again.
+Choose the recovery action that matches the problem:
 
-**Clear cached data** removes imported workbook and Garmin data, note baselines,
-and errors while keeping settings and note files. On the next sync, existing
-target notes are backed up under `Backups/<timestamp>/` in your notes folder before
-rebuilding generated sections. Personal text outside the markers is preserved.
-Recovery remembers notes that return later with Garmin data, even after the
-workbook has already refreshed. A reset cannot recover results that were never
-saved in the workbook.
+| Situation | Action |
+| --- | --- |
+| Refresh notes from the last import | **Generate notes from imported data** |
+| A generated note was deleted | **Recreate missing notes** |
+| A generated section was edited | Move personal changes outside it, restore the previous generated section, then refresh |
+| Rebuild generated sections after persistent sync-state problems | **Clear cached data**, then **Sync now** |
+
+A cache reset keeps settings and note files, but clears imported workbook/Garmin
+data and saved generated-section baselines. Existing target notes are backed up
+to `Backups/<timestamp>/` inside your notes folder before their generated sections
+are rebuilt. Reflections outside those sections and unrelated properties stay in
+place. Changes inside a rebuilt section survive in its backup, not in the new output.
+
+Recovery remembers pending notes across refreshes, including Garmin-backed day
+and historical week notes that return after the workbook refresh. You do not need
+to reset again just because one source returns later. Missing or damaged markers
+still need repair; a reset does not bypass those checks. Results absent from both
+the workbook and Garmin cannot be restored by syncing.
+
+Backups are recovery copies, not active notes or sync inputs. Normal sync does
+not create them. After checking the rebuilt notes, you can delete old backups;
+Sports does not remove them automatically. Keep managed note filenames stable.
+See [the workbook guide](Workbook.md#sync-recovery) for recovery details.
 
 ## Training charts
 
@@ -276,7 +333,7 @@ Do not commit generated bundles or local plugin data.
 Use `npm version patch`, `npm version minor`, or `npm version major` to update
 package.json, manifest.json, and versions.json. Push the commit and version tag.
 Tags must exactly match the manifest version without a `v` prefix. The release
-workflow builds a draft release with the plugin files and both example workbooks;
+workflow builds a draft release with the plugin files and the template and example in both formats;
 review and publish it on GitHub.
 
 ## Help and support

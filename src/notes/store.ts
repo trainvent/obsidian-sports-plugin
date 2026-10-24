@@ -1,3 +1,4 @@
+import { ensureSportsBase } from './base';
 import { noteProperties, mergeNoteTags, type NoteProperties } from './properties';
 import { starterBullets } from './writing-prompts';
 import { initialNoteTitle, withoutNoteTitle } from './titles';
@@ -9,6 +10,7 @@ import { queueNoteWrite } from './write-queue';
 
 export function updateNote(plugin: SportsPlugin, relativePath: string, id: string, body: string, initial: string, recreateMissing = false, metadata?: NoteProperties): Promise<TFile> {
  return queueNoteWrite(plugin, async () => {
+  if (id === 'analytics') await ensureSportsBase(plugin);
   const file = await writeNote(plugin, relativePath, id, body, initial, recreateMissing);
   const metadataValues = metadata ?? noteProperties(id, plugin.data.plan, plugin.data.notesFolder);
   if (Object.keys(metadataValues).length) await plugin.app.fileManager.processFrontMatter(file, (properties: Record<string, unknown>) => {
