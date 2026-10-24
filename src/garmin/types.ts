@@ -5,6 +5,7 @@ export interface GarminActivity {
 }
 export interface GarminCache {
  activities: GarminActivity[];
+ zonesImported?: boolean;
  lastAttempt: string; lastSuccess: string; error: string;
  start: string; end: string;
 }

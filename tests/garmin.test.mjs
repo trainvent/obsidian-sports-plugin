@@ -217,3 +217,32 @@ test('Coach opt-in, successful snapshot replacement, throttle and failure preser
  assert.doesNotMatch(plugin.data.garminCoachCache.error, /private diagnostic/);
  assert.deepEqual(plugin.data.garminCache.activities, [activity]);
 });
+
+test('an existing activity cache backfills zones immediately despite a recent refresh', async () => {
+ const plugin = fixture(); await tokenStore(plugin.app, 'sports-test').save(tokens);
+ const recent = new Date().toISOString();
+ plugin.data.garminCache = { activities: [{ ...activity }], lastSuccess: recent, lastAttempt: recent, start: '2026-10-01', end: '2026-10-23', error: '' };
+ let zoneCalls = 0;
+ state.request = async input => {
+  if (input.url.endsWith('/hrTimeInZones')) { zoneCalls++; return response([{ zoneNumber: 3, secsInZone: 1200 }]); }
+  return response(new URL(input.url).searchParams.get('start') === '0' ? [{ activityId: 123, startTimeLocal: '2026-10-20 20:00:00', duration: 3600 }] : []);
+ };
+ await syncGarmin(plugin);
+ assert.equal(zoneCalls, 1);
+ assert.equal(plugin.data.garminCache.zonesImported, true);
+ assert.deepEqual(plugin.data.garminCache.activities[0].hr_zones, [0, 0, 1200, 0, 0]);
+ await syncGarmin(plugin);
+ assert.equal(zoneCalls, 1);
+});
+
+test('zone request failures keep activities and explain missing chart data without leaking responses', async () => {
+ const plugin = fixture(); await tokenStore(plugin.app, 'sports-test').save(tokens);
+ state.request = async input => {
+  if (input.url.endsWith('/hrTimeInZones')) throw new Error('private response');
+  return response(new URL(input.url).searchParams.get('start') === '0' ? [{ activityId: 123, startTimeLocal: '2026-10-20 20:00:00', duration: 3600 }] : []);
+ };
+ await syncGarmin(plugin, true);
+ assert.equal(plugin.data.garminCache.activities.length, 1);
+ assert.match(plugin.data.garminCache.error, /zones could not be fetched/);
+ assert.ok(!JSON.stringify(plugin.data.garminCache).includes('private response'));
+});

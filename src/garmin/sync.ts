@@ -13,9 +13,10 @@ export async function syncGarmin(plugin: SportsPlugin, force = false, createClie
  if (!plugin.data.garminEnabled || !Platform.isDesktop) return;
  await syncCoach(plugin, force, createClient);
  const previous = plugin.data.garminCache ?? EMPTY_GARMIN_CACHE;
- if (!force && Date.now() - Date.parse(previous.lastAttempt) < 60 * 60_000) return;
+ const needsZones = previous.activities.length > 0 && !previous.zonesImported;
+ if (!force && !needsZones && Date.now() - Date.parse(previous.lastAttempt) < 60 * 60_000) return;
  const attempt = new Date().toISOString();
- plugin.data.garminCache = { ...previous, lastAttempt: attempt, error: '' };
+ plugin.data.garminCache = { ...previous, zonesImported: true, lastAttempt: attempt, error: '' };
  await plugin.save();
  try {
   const timezone = plugin.data.plan?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -28,16 +29,17 @@ export async function syncGarmin(plugin: SportsPlugin, force = false, createClie
   const rows = await garmin.getActivitiesByDate(start, end);
   const activities = normalizeGarmin(rows, timezone, start, end);
   const cached = new Map(previous.activities.map(a => [a.id, a]));
+  let zoneFailures = 0;
   for (const activity of activities) {
    const known = cached.get(activity.id);
    if (known?.hr_zones && known.date < end) { activity.hr_zones = known.hr_zones; continue; }
    try { activity.hr_zones = parseZones(await garmin.getActivityHrInTimezones(activity.id)); }
-   catch { activity.hr_zones = known?.hr_zones ?? null; }
+   catch { activity.hr_zones = known?.hr_zones ?? null; zoneFailures++; }
   }
-  plugin.data.garminCache = { activities, lastAttempt: attempt, lastSuccess: new Date().toISOString(), start, end, error: '' };
+  plugin.data.garminCache = { activities, zonesImported: true, lastAttempt: attempt, lastSuccess: new Date().toISOString(), start, end, error: zoneFailures ? 'Activities synced, but some heart-rate zones could not be fetched. Try syncing Garmin again later.' : '' };
  } catch {
   // API failures can include credentials or full responses. Never persist or display them.
-  plugin.data.garminCache = { ...previous, lastAttempt: attempt, error: 'Garmin refresh failed. Check the history date, or reconnect Garmin and try again later.' };
+  plugin.data.garminCache = { ...previous, zonesImported: true, lastAttempt: attempt, error: 'Garmin refresh failed. Check the history date, or reconnect Garmin and try again later.' };
  }
  await plugin.save();
 }

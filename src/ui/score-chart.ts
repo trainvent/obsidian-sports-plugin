@@ -17,7 +17,7 @@ export function registerScoreCharts(plugin: Plugin): void {
   if (performanceOnly) headers = ['Date', '', 'Performance (%)'];
   if (rows.some(row => row.length !== 3 || !/^\d{4}-\d{2}-\d{2}$/.test(row[0]!) || !Number.isFinite(Date.parse(`${row[0]}T12:00:00Z`)) || row.slice(1).some(value => value !== '—' && (!/^\d+(?:\.\d+)?$/.test(value) || !Number.isFinite(Number(value)))))) { element.createEl('pre', { text: source }); return; }
   const values = rows.flatMap(row => row.slice(1).filter(value => value !== '—').map(Number));
-  if (!values.length && !performanceOnly) { element.createEl('p', { text: 'No values recorded for this chart yet. Leave optional ratings blank, or enter values in the workbook, save, then sync.' }); return; }
+  if (!values.length && !performanceOnly) { element.createEl('p', { text: headers[2] === 'Watch HR zone (1–5)' ? 'No effort ratings or HR zones available yet. Sync Garmin to import zones; activities without zone data stay blank.' : 'No values recorded for this chart yet. Leave optional ratings blank, or enter values in the workbook, save, then sync.' }); return; }
   const root = element.createDiv({ cls: 'sports-score-chart' });
   const ratingScale = headers[1] === 'Planned intensity';
   const scaledPerformance = headers[1] === 'Performance × intensity';
