@@ -9,15 +9,15 @@ import { pathToFileURL } from 'node:url';
 const temp = mkdtempSync(`${tmpdir()}/sports-note-tests-`);
 process.on('exit', () => rmSync(temp, { recursive: true, force: true }));
 const output = await build({
- stdin: { contents: "export { calendarMarkdown } from './src/notes/calendar'; export { syncCoachOnlyPlans } from './src/notes/coach-plans'; export { syncNotes } from './src/notes/sync'; export { clearImportCache } from './src/notes/cache'; export { updateNote } from './src/notes/store'; export { mergeBlock } from './src/notes/blocks'; export { reconcileNoteWarning } from './src/notes/warnings';", resolveDir: process.cwd(), loader: 'ts' }, bundle: true, format: 'esm', platform: 'browser', write: false, loader: { '.md': 'text' },
+ stdin: { contents: "export { calendarMarkdown } from './src/notes/calendar'; export { syncCoachOnlyPlans } from './src/notes/coach-plans'; export { syncNotes } from './src/notes/sync'; export { clearImportCache, collectRecoveryNotes } from './src/notes/cache'; export { updateNote } from './src/notes/store'; export { mergeBlock } from './src/notes/blocks'; export { reconcileNoteWarning } from './src/notes/warnings';", resolveDir: process.cwd(), loader: 'ts' }, bundle: true, format: 'esm', platform: 'browser', write: false, loader: { '.md': 'text' },
  plugins: [{ name: 'obsidian-test-vault', setup(builder) {
   builder.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'obsidian', namespace: 'test' }));
-  builder.onLoad({ filter: /.*/, namespace: 'test' }, () => ({ contents: 'export class Notice {} export class TFile { constructor(path) { this.path = path; } } export const normalizePath = path => path;' }));
+  builder.onLoad({ filter: /.*/, namespace: 'test' }, () => ({ contents: 'export class Notice {} export class TFile { constructor(path) { this.path = path; } get extension() { return this.path.split(".").at(-1); } } export class TFolder { constructor(path) { this.path = path; this.children = []; } } export const normalizePath = path => path;' }));
  } }],
 });
-writeFileSync(`${temp}/sync.mjs`, output.outputFiles[0].text + '\nexport { TFile };');
+writeFileSync(`${temp}/sync.mjs`, output.outputFiles[0].text + '\nexport { TFile, TFolder };');
 // eslint-disable-next-line no-unsanitized/method -- Imports our own esbuild output from a private temporary directory.
-const { calendarMarkdown, syncCoachOnlyPlans, syncNotes, clearImportCache, updateNote, mergeBlock, reconcileNoteWarning, TFile } = await import(pathToFileURL(`${temp}/sync.mjs`).href);
+const { calendarMarkdown, syncCoachOnlyPlans, syncNotes, clearImportCache, collectRecoveryNotes, updateNote, mergeBlock, reconcileNoteWarning, TFile, TFolder } = await import(pathToFileURL(`${temp}/sync.mjs`).href);
 
 function fixture() {
  const files = new Map();
@@ -911,4 +911,29 @@ test('Days migration never overwrites an existing Analytics day note', async () 
  files.set(source.path,source);files.set(target.path,target);plugin.data.generatedBlocks[source.path+':day:2020-01-01']=body;
  assert.ok((await syncNotes(plugin,plan)).some(issue=>issue.includes('Both Days/2020-01-01.md and Analytics/Days/2020-01-01.md exist')));
  assert.ok(source.content.endsWith('My old review\n'));assert.equal(target.content,'My destination note');
+});
+
+
+test('recovery traverses only the configured folder, skipping backups and non-Markdown files', async () => {
+ const { plugin, files } = fixture();
+ const folder = new TFolder('Sports'), nested = new TFolder('Sports/Analytics'), backups = new TFolder('Sports/Backups');
+ const note = (path, content) => Object.assign(new TFile(path), { content });
+ const overview = note('Sports/Overview.md', '<!-- sports:begin analytics -->');
+ const daily = note('Sports/Analytics/Day.md', '<!-- sports:begin day:2026-10-24 -->\n<!-- sports:begin second -->');
+ nested.children = [daily, note('Sports/Analytics/Personal.md', 'Personal writing')];
+ backups.children = [note('Sports/Backups/Old.md', '<!-- sports:begin old -->')];
+ folder.children = [overview, nested, backups, note('Sports/Data.xlsx', '<!-- sports:begin spreadsheet -->')];
+ files.set('Sports', folder);
+ files.set('Private/Note.md', note('Private/Note.md', '<!-- sports:begin private -->'));
+ const reads = [];
+ plugin.app.vault.read = async file => { reads.push(file.path); return file.content; };
+ plugin.app.vault.getMarkdownFiles = () => { throw new Error('Must not enumerate the vault'); };
+ assert.deepEqual((await collectRecoveryNotes(plugin)).sort(), ['Sports/Analytics/Day.md:day:2026-10-24', 'Sports/Analytics/Day.md:second', 'Sports/Overview.md:analytics']);
+ assert.deepEqual(reads.sort(), ['Sports/Analytics/Day.md', 'Sports/Analytics/Personal.md', 'Sports/Overview.md']);
+ files.delete('Sports');
+ assert.deepEqual(await collectRecoveryNotes(plugin), []);
+ for (const path of ['', '/', '/Sports', '../Private', '.hidden']) {
+  plugin.data.notesFolder = path;
+  await assert.rejects(collectRecoveryNotes(plugin), /normal vault folder/);
+ }
 });

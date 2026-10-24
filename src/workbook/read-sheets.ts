@@ -21,5 +21,5 @@ export async function readWorkbookSheets(buffer: ArrayBuffer, selected: Set<stri
  // followed by a stored archive keeps its public reader on the safe path.
  const stored = Uint8Array.from(zipSync(unzipSync(new Uint8Array(buffer)), { level: 0 }));
  // The XLSX library's declaration uses typeof Date; its runtime returns Date instances.
- return await readXlsxFile(new Blob([stored])) as unknown as WorkbookSheet[];
+ return await readXlsxFile(new Blob([stored])) as WorkbookSheet[];
 }

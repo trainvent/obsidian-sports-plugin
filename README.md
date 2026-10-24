@@ -347,8 +347,9 @@ fail if either is present in the bundle. The release workflow uses this build.
 Use `npm version patch`, `npm version minor`, or `npm version major` to update
 package.json, manifest.json, and versions.json. Push the commit and version tag.
 Tags must exactly match the manifest version without a `v` prefix. The release
-workflow builds a draft release with the plugin files and the template and example in both formats;
-review and publish it on GitHub.
+workflow builds a draft release with only the plugin files; review and publish it
+on GitHub. Download the workbook template and example from settings or the links
+in this README.
 
 ## Help and support
 

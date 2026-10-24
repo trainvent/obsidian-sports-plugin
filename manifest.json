@@ -1,7 +1,7 @@
 {
 	"id": "sports",
 	"name": "Sports",
-	"version": "0.5.0",
+	"version": "0.5.1",
 	"minAppVersion": "1.11.4",
 	"description": "Plan fitness and sports training from spreadsheets, track workouts and exercise progress, and review training logs for calisthenics, running, and swimming, with optional Garmin Connect imports.",
 	"author": "Trainvent",

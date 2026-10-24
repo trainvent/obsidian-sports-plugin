@@ -48,6 +48,4 @@ jobs:
                   gh release create "$tag" \
                     --title="$tag" \
                     --draft \
-                    main.js manifest.json ${{ steps.styles.outputs.exists == 'true' && 'styles.css' || '' }} \
-                    templates/Training-Example.xlsx templates/Training-Example.ods \
-                    templates/Training-Template.xlsx templates/Training-Template.ods
+                    main.js manifest.json ${{ steps.styles.outputs.exists == 'true' && 'styles.css' || '' }}

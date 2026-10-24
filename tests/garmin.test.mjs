@@ -14,7 +14,7 @@ const output = await build({
  bundle: true, format: 'cjs', platform: 'node', write: false,
  plugins: [{ name: 'stub-obsidian', setup(builder) {
   builder.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'obsidian', namespace: 'test' }));
-  builder.onLoad({ filter: /.*/, namespace: 'test' }, () => ({ contents: 'export const normalizePath = value => value; export class TFile {} export const Platform = globalThis.__sportsGarminTest.platform; export const requestUrl = (...args) => globalThis.__sportsGarminTest.request(...args);' }));
+  builder.onLoad({ filter: /.*/, namespace: 'test' }, () => ({ contents: 'export const normalizePath = value => value; export class TFile {} export class TFolder {} export const Platform = globalThis.__sportsGarminTest.platform; export const requestUrl = (...args) => globalThis.__sportsGarminTest.request(...args);' }));
  } }],
 });
 writeFileSync(`${temp}/garmin.cjs`, output.outputFiles[0].text);

@@ -1,4 +1,4 @@
-import { normalizePath } from 'obsidian';
+import { normalizePath, TFile, TFolder } from 'obsidian';
 import type SportsPlugin from '../main';
 import type { SportsData } from '../model/types';
 
@@ -30,12 +30,24 @@ export async function backupBeforeReset(plugin: SportsPlugin, path: string, cont
 
 /** Capture recovery scope before discarding source caches, including lost baselines. */
 export async function collectRecoveryNotes(plugin: SportsPlugin): Promise<string[]> {
- const prefix = `${plugin.data.notesFolder}/`;
+ const configured = plugin.data.notesFolder;
+ if (!configured || configured.startsWith('/') || configured.split(/[\\/]/).some(part => part === '..' || part.startsWith('.'))) throw new Error('Choose a normal vault folder for Sports notes.');
+ const folderPath = normalizePath(configured);
+ const folder = plugin.app.vault.getAbstractFileByPath(folderPath);
  const pending: string[] = [];
- for (const file of plugin.app.vault.getMarkdownFiles()) {
-  if (!file.path.startsWith(prefix) || file.path.startsWith(`${prefix}Backups/`)) continue;
-  const content = await plugin.app.vault.read(file);
-  for (const match of content.matchAll(/<!-- sports:begin ([^\r\n]+) -->/g)) pending.push(`${file.path}:${match[1]}`);
+ if (!(folder instanceof TFolder)) return pending;
+ const folders = [folder];
+ while (folders.length) {
+  const current = folders.pop();
+  if (!current) continue;
+  for (const file of current.children) {
+   if (file instanceof TFolder) {
+    if (file.path !== `${folderPath}/Backups`) folders.push(file);
+   } else if (file instanceof TFile && file.extension === 'md') {
+    const content = await plugin.app.vault.read(file);
+    for (const match of content.matchAll(/<!-- sports:begin ([^\r\n]+) -->/g)) pending.push(`${file.path}:${match[1]}`);
+   }
+  }
  }
  return pending;
 }
