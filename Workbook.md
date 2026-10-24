@@ -126,9 +126,9 @@ green; the calculated Minutes column stays neutral. Strategy's `max_sets` and
   Preserve references when changing IDs in a new, unrecorded plan.
 - Use real dates formatted `yyyy-mm-dd`, or explicit `YYYY-MM-DD` text. Use
   nonnegative numbers for minutes. Blank means unrecorded, not zero.
-- Keep formulas and save calculated results. A chatbot that writes formulas must
-  also calculate and save their cached values using a spreadsheet engine before
-  handing the file back. The plugin reads saved values, not formula expressions.
+- Formulas are optional in the blank template. If you add formulas or adapt the
+  filled example, calculate and save their cached results before returning the
+  file. The plugin reads saved values, not formula expressions.
 
 ## Strategy
 
@@ -265,7 +265,9 @@ details in Plan; the rep entry cells contain no explanatory words.
 as `2` or `5`; timed entries use native spreadsheet durations displayed as
 `mm:ss`, such as `00:15` or `02:00`. When entering native times, use `0:00:15`
 for fifteen seconds so the spreadsheet does not interpret it as fifteen minutes.
-Unused fields stay blank. Prefilled values are targets, not completed training.
+Unused fields stay blank. In the blank template, you can leave future rep/time
+fields empty and put targets in Plan, such as `A) Band squat: 3 x 10`. Enter
+actual reps after training. Prefilled values are targets, not completed training.
 Adjust the values to what you did, then select TRUE in **Session done** to record
 them. FALSE or blank leaves the prefilled values unrecorded. For a partial
 attempt, clear unused set values before selecting TRUE.
@@ -287,8 +289,9 @@ Running route to **Routines/<topic>.md**. Routine goal links appear in the
 only the selected goal receives the reflection. No note text is interpreted as
 a measured result or automatic goal achievement.
 
-- One row represents one manual session. Keep Date and Plan formulas connected
-  to the correct week and block. Copying a row requires checking every reference.
+- One row represents one manual session. In the blank template, enter Date and
+  Plan directly. If your workbook uses formulas, check their references when
+  copying rows or changing weeks and blocks.
 - Block must match a Parts `part_id`. Use `Part version` if that ID has multiple
   versions. Blank or `empty` Block means no linked strategy part.
 - The current template uses **Session done** to mark the session completed.
@@ -458,6 +461,14 @@ Recalculate and save the workbook before syncing.
 
 **Library** holds the reference data. Keep this tab name: it is imported
 automatically alongside Strategy or Daily.
+
+Preserve section labels and header rows; write entries underneath them. In the
+unchanged XLSX layout, Equipment is the section label at **A60**, headers are
+**A61:D61**, and the first equipment entry belongs in **A62:D62**.
+For resistance bands, leave Min kg and Max kg blank unless you have a meaningful
+measured range. Describe the band/resistance in Notes and name it in the workout
+prescription. Loads is for added kilograms; bands do not require a Loads entry.
+Base intensity and Growth per kg may stay blank when you are not using scoring.
 
 | Table | Headers |
 | --- | --- |

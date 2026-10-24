@@ -36,6 +36,7 @@ export default class SportsPlugin extends Plugin {
  private garminDialog: GarminConnectModal | undefined;
  async onload(): Promise<void> {
   this.data = Object.assign({}, DEFAULT_DATA, await this.loadData() as Partial<SportsData>);
+  if (typeof __SPORTS_DEV__ !== 'undefined' && __SPORTS_DEV__) (await import('./dev/local-workbook-command')).registerLocalWorkbookOverride(this);
   addIcon(SPORTS_ICON_ID, SPORTS_ICON_SVG);
   registerPerformanceCharts(this);
   registerScoreCharts(this);

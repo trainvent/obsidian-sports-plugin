@@ -18,6 +18,7 @@ export default defineConfig(
 		languageOptions: {
 			globals: {
 				...globals.browser,
+    __SPORTS_DEV__: 'readonly',
 			},
 			parserOptions: {
 				projectService: {

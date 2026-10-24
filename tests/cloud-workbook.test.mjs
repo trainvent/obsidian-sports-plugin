@@ -119,3 +119,51 @@ test('blank workbook downloads use a distinct template filename', () => {
   }
  } finally { URL.createObjectURL = create; URL.revokeObjectURL = revoke; }
 });
+
+async function compile(dev) {
+ const result = await build({ stdin: { contents: "export { readWorkbookSource } from './src/workbook/source';" + (dev ? "export { setLocalWorkbook, hasLocalWorkbook } from './src/dev/local-workbook';" : ''), resolveDir: process.cwd() }, define: { __SPORTS_DEV__: String(dev) }, bundle: true, platform: 'node', format: 'cjs', write: false, metafile: true, plugins: [{ name: 'obsidian', setup(builder) {
+  builder.onResolve({ filter: /^obsidian$/ }, () => ({ path: 'obsidian', namespace: 'stub' }));
+  builder.onLoad({ filter: /.*/, namespace: 'stub' }, () => ({ contents: 'export class Modal {} export class Notice {} export class Setting {} export const Platform = {isDesktop: true};' }));
+ } }] });
+ const file = `${temp}/${dev ? 'dev' : 'production'}.cjs`;
+ writeFileSync(file, result.outputFiles[0].text);
+ return { api: createRequire(import.meta.url)(file), result };
+}
+const dev = await compile(true);
+const prod = await compile(false);
+
+test('development override reads current vault bytes without touching the cloud or workbook', async () => {
+ let bytes = new Uint8Array([80, 75, 3, 4]).buffer;
+ const paths = [];
+ const adapter = { async readBinary(path) { paths.push(path); return bytes; } };
+ dev.api.setLocalWorkbook(adapter, 'Agent-Plan-Test/Resistance-Band-Plan.xlsx');
+ assert.equal(await dev.api.readWorkbookSource('invalid cloud link', adapter), bytes);
+ bytes = new Uint8Array([80, 75, 3, 4, 5]).buffer;
+ assert.equal(await dev.api.readWorkbookSource('', adapter), bytes);
+ assert.deepEqual(paths, Array(2).fill('Agent-Plan-Test/Resistance-Band-Plan.xlsx'));
+ const other = { async readBinary() { throw new Error('Wrong vault'); } };
+ assert.equal(dev.api.hasLocalWorkbook(other), false);
+ dev.api.setLocalWorkbook(adapter, '');
+ assert.equal(dev.api.hasLocalWorkbook(adapter), false);
+ await assert.rejects(dev.api.readWorkbookSource('local.xlsx', adapter), /HTTPS/);
+});
+
+test('development paths stay in the vault and local read failures stay visible', async () => {
+ const adapter = { async readBinary() { throw new Error('Missing debug workbook'); } };
+ for (const path of ['/tmp/test.xlsx', '../test.xlsx', 'a/../test.xlsx', '.hidden/test.xlsx', 'C:\\test.xlsx', 'file:test.xlsx', 'folder//test.xlsx', 'test.txt']) assert.throws(() => dev.api.setLocalWorkbook(adapter, path));
+ dev.api.setLocalWorkbook(adapter, 'test.ods');
+ await assert.rejects(dev.api.readWorkbookSource('https://unused.invalid', adapter), /Missing debug workbook/);
+ const oversized = { async readBinary() { return new ArrayBuffer(5 * 1024 * 1024 + 1); } };
+ dev.api.setLocalWorkbook(oversized, 'large.xlsx');
+ await assert.rejects(dev.api.readWorkbookSource('', oversized), /5 MB/);
+});
+
+test('production source eliminates the override module and rejects local paths without reading them', async () => {
+ assert.ok(!Object.keys(prod.result.metafile.inputs).some(path => path.includes('/dev/')));
+ assert.ok(!prod.result.outputFiles[0].text.includes('dev-local-workbook'));
+ let reads = 0;
+ const adapter = { async readBinary() { reads++; return new ArrayBuffer(0); } };
+ dev.api.setLocalWorkbook(adapter, 'test.xlsx');
+ await assert.rejects(prod.api.readWorkbookSource('test.xlsx', adapter), /HTTPS/);
+ assert.equal(reads, 0);
+});

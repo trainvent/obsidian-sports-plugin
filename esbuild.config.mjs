@@ -13,12 +13,14 @@ ${readFileSync(new URL('./THIRD_PARTY_NOTICES.md', import.meta.url), 'utf8')}
 `;
 
 const prod = process.argv[2] === 'production';
+const once = prod || process.argv.includes('--once');
 
 const context = await esbuild.context({
 	banner: {
 		js: banner,
 	},
 	entryPoints: ['src/main.ts'],
+ define: { __SPORTS_DEV__: JSON.stringify(!prod) },
  bundle: true,
  metafile: true,
  plugins: [{ name: 'drop-unused-sdk-filesystem-imports', setup(build) {
@@ -54,11 +56,16 @@ const context = await esbuild.context({
 	minify: prod,
 });
 
-if (prod) {
+if (once) {
  const result = await context.rebuild();
+ if (prod) {
+  if (Object.keys(result.metafile.inputs).some(path => /(?:^|\/)src\/dev\//.test(path))) throw new Error('Development modules must not be included in release builds.');
+  if (readFileSync('main.js', 'utf8').includes('dev-local-workbook')) throw new Error('Development workbook override leaked into release build.');
  const filesystemImports = Object.values(result.metafile.outputs).flatMap(output => output.imports)
   .filter(item => /^(?:node:)?fs(?:\/|$)/.test(item.path));
  if (filesystemImports.length) throw new Error('Runtime filesystem access is forbidden in the cloud-only plugin.');
+ }
+	await context.dispose();
 	process.exit(0);
 } else {
 	await context.watch();

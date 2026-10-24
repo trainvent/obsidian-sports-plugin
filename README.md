@@ -330,6 +330,15 @@ For manual installation, copy `main.js`, `manifest.json`, and `styles.css` from 
 to `<vault>/.obsidian/plugins/sports/`, then reload Obsidian and enable Sports.
 Do not commit generated bundles or local plugin data.
 
+For local workbook debugging, build once with `node esbuild.config.mjs --once`
+(or use `npm run dev` to watch), then reload Sports. Run **Sports: Development:
+override workbook with a vault file**, enter a vault-relative XLSX/ODS path, and
+use **Sync now**. The override reads the file without modifying it, takes priority
+over the cloud link, and clears on reload or when you apply an empty path.
+Use a separate test notes folder and plan to avoid mixing training history.
+`npm run build` removes the development module and command; release builds also
+fail if either is present in the bundle. The release workflow uses this build.
+
 Use `npm version patch`, `npm version minor`, or `npm version major` to update
 package.json, manifest.json, and versions.json. Push the commit and version tag.
 Tags must exactly match the manifest version without a `v` prefix. The release

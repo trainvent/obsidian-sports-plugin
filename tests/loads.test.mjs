@@ -8,9 +8,9 @@ import { createRequire } from 'node:module';
 import { odsArchive } from './ods-fixtures.mjs';
 const temp = mkdtempSync(`${tmpdir()}/sports-loads-`);
 process.on('exit', () => rmSync(temp, { recursive: true, force: true }));
-const result = await build({ stdin: { contents: "export { parseWorkbook } from './src/workbook/parse'; export { exerciseTracking } from './src/model/exercise-tracking'; export { performanceMarkdown } from './src/notes/performance';", resolveDir: process.cwd() }, bundle: true, platform: 'node', format: 'cjs', write: false });
+const result = await build({ stdin: { contents: "export { parseWorkbook } from './src/workbook/parse'; export { exerciseTracking } from './src/model/exercise-tracking'; export { performanceMarkdown } from './src/notes/performance'; export { strategyMarkdown } from './src/notes/render';", resolveDir: process.cwd() }, bundle: true, platform: 'node', format: 'cjs', write: false });
 writeFileSync(`${temp}/loads.cjs`, result.outputFiles[0].text);
-const { parseWorkbook, exerciseTracking, performanceMarkdown } = createRequire(import.meta.url)(`${temp}/loads.cjs`);
+const { parseWorkbook, exerciseTracking, performanceMarkdown, strategyMarkdown } = createRequire(import.meta.url)(`${temp}/loads.cjs`);
 
 test('current XLSX imports recorded pull-up/dip kg and renders separate load comparisons', async () => {
  const files = unzipSync(new Uint8Array(readFileSync('templates/Training-Example.xlsx')));
@@ -81,4 +81,19 @@ test('loads reject duplicates, unmatched sessions/exercises and invalid equipmen
   const row = [...load]; row[column] = value;
   await assert.rejects(parseWorkbook(workbook([row]), config));
  }
+});
+
+
+test('resistance bands without a kg range render as equipment without inventing a range', async () => {
+ const bytes = odsArchive([
+  { sheet: 'Daily', data: [['Date', 'Block', 'Plan']] },
+  { sheet: 'Library', data: [['Exercise arsenal'], ['Group', 'Exercise'], [], ['Equipment'], ['Equipment', 'Min kg', 'Max kg', 'Notes'], ['Resistance band', null, null, 'Medium resistance']] },
+ ]);
+ const plan = await parseWorkbook(bytes, config);
+ assert.equal(plan.equipment[0].maxKg, null);
+ const rendered = strategyMarkdown(plan);
+ assert.ok(rendered.includes('| Resistance band | — | Medium resistance |'));
+ assert.ok(!rendered.includes('0–—'));
+ plan.equipment = [{name: 'Weight vest', minKg: 6, maxKg: 10, notes: ''}];
+ assert.ok(strategyMarkdown(plan).includes('| Weight vest | 6–10 |'));
 });
