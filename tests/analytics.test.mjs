@@ -66,7 +66,7 @@ test('daily notes follow the plan timezone and also support Garmin-only dates in
  const plan = { timezone: 'Europe/Berlin', parts: [], sessions };
  const now = new Date('2026-10-20T22:30:00Z');
  const tasks = dailyNoteTasks(plan, 'My sports', undefined, now);
- assert.deepEqual(tasks.map(t => t.path), ['Days/2026-10-21.md']);
+ assert.deepEqual(tasks.map(t => t.path), ['Analytics/Days/2026-10-21.md']);
  assert.ok(tasks[0].body.startsWith('## Sheet sessions'));
  const cache = { lastSuccess: '', activities: [{ id: '1', date: '2020-01-01', time: '08:00', name: 'Only watch', type: 'running', duration: null, distance: null, average_hr: null }] };
  const watch = dailyNoteTasks(null, 'My sports', cache, now);
@@ -139,7 +139,7 @@ test('scoring workbook imports saved formulas, no invented actuals, and rebases 
 test('analytics pages separate their content and graph preserves missing values without plotting zeros', () => {
  const plan = { parts: [], sessions: [{ date: '2026-10-26', title: 'Training', result: '', status: 'planned', notes: '', sport: 'training', plannedMinutes: 30, actualMinutes: null, scores: { expectedPerformance: 100, actualPerformance: null, plannedIntensity: 3, effortRating: null, scoredMetrics: 0, plannedMetrics: 3 } }] };
  const pages = analyticsNoteTasks(plan, 'Custom sports');
- assert.deepEqual(pages.map(page => page.path), ['Overview.md', 'Days/_Index.md', 'Analytics/Sheet.md', 'Analytics/Smartwatch.md', 'Stats.md']);
+ assert.deepEqual(pages.map(page => page.path), ['Overview.md', 'Analytics/Days/_Index.md', 'Analytics/Sheet.md', 'Analytics/Smartwatch.md', 'Stats.md']);
  const graph = analyticsGraphMarkdown(plan, 'Custom sports');
  assert.ok(graph.includes('2026-10-26\t—'));
  assert.equal((graph.match(/```sports-trend/g) ?? []).length, 3);

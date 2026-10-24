@@ -1,14 +1,19 @@
 ## Flexible Daily tracking
 
 A/B/C, Cal-Intervals, and five set columns describe the example workbook only. They are
-not required exercises or limits. Choose either format below. The plugin reads
+not required exercises or limits. Preserve the supplied layout while filling it; choose a different format below
+only when deliberately redesigning tracking. The plugin reads
 your selected tracking tab; its name does not have to be Daily.
 
 Start with **Settings → Sports → Workbook guide → Open guide**. Choose **Blank
 template** for empty training inputs or **Example workbook** for filled workouts
-and scoring. XLSX retains the full six-sheet structure; the ODS template currently
-uses simpler session tables. Use [Workbook.md](Workbook.md)
+and scoring. Both blank formats retain the full six-sheet structure without
+training data or cell formulas. Use [Workbook.md](Workbook.md)
 to fill or adapt your file, manually or with a chatbot, before uploading and syncing.
+
+Keep activities managed in Recurring out of Daily. Only manual Daily sessions
+receive set results and Scoring summaries. For durations, prefer `minutes` with
+`20` for a 20-minute effort; use seconds for short holds.
 
 ### Recommended: one row per set or measurement
 
@@ -69,8 +74,8 @@ does not infer exercise relationships or automatically score a regime.
 
 ### Existing format: one row per session
 
-Existing grouped or flat Daily workbooks remain supported. Rename exercise groups,
-add/remove groups, and add as many numbered set columns as you need. A grouped
+Existing grouped or flat Daily workbooks remain supported. When a tracking
+redesign is requested, rename/add/remove exercise groups or extend set columns. A grouped
 heading can be `Squat`, `D`, `Intervals`, or any other name, above **Done** and
 **1, 2, 3, …** (or **Rounds**). Structural columns retain their existing names.
 Do not merge two exercise groups under the same name.
@@ -108,8 +113,8 @@ changes. Confirm **Settings → Sports → Tracking sheet** selects the intended
 Upcoming manual prescriptions appear in **Plans**. Results and comparisons live
 in day notes and **Analytics/Log.md**. **Open analytics** opens **Stats.md** for
 source totals and trends. Open **Analytics/Sheet.md** and
-**Analytics/Smartwatch.md** from Overview or find them with `sports/analytics`. **Days/_Index.md** links to
-`Days/YYYY-MM-DD.md`, combining that day's sheet sessions, scores,
+**Analytics/Smartwatch.md** from Overview or find them with `sports/analytics`. Weeks remain the primary planning pages. **Analytics/Days/_Index.md** links to
+`Analytics/Days/YYYY-MM-DD.md`, combining that day's sheet sessions, scores,
 individual sets, and Garmin activities. Log dates link there too. Only today and
 earlier dates with source entries receive day notes; upcoming sessions stay in
 Plans. Existing day-index reflections stay on the index. Each day has a protected

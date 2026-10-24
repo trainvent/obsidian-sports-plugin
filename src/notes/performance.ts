@@ -7,9 +7,18 @@ export function safeText(value: string | number): string {
 }
 function number(value: number): string { return String(Math.round(value * 100) / 100); }
 
+/** Keep storage canonical while presenting requested minutes and long durations naturally. */
+function displayTracking(session: Session) {
+ return exerciseTracking(session).map(exercise => {
+  const values = [...exercise.targets, ...exercise.actual].filter((value): value is number => value !== null && value > 0);
+  if (exercise.unit !== 'seconds' || (exercise.displayUnit !== 'minutes' && (!values.length || values.some(value => value < 600)))) return exercise;
+  return { ...exercise, unit: 'minutes', targets: exercise.targets.map(value => value === null ? null : value / 60), actual: exercise.actual.map(value => value === null ? null : value / 60) };
+ });
+}
+
 /** A small table holds the sets; the graph compares totals within each exercise's own unit. */
 export function performanceMarkdown(session: Session, explain = true): string {
- const exercises = exerciseTracking(session);
+ const exercises = displayTracking(session);
  if (!exercises.length) return '';
  const graph: string[] = [];
  const rows = exercises.map(exercise => {
@@ -51,7 +60,7 @@ function renderSessionDetails(session: Session, scores: string): string {
 
 /** Keep numbered input-column names out of the narrow overview; retain custom measurements. */
 export function compactResults(session: Session): string {
- const exercises = exerciseTracking(session);
+ const exercises = displayTracking(session);
  if (!exercises.length || !session.results || !session.checks) return session.result;
  const groups = new Set(exercises.map(exercise => exercise.group));
  const summary = exercises.map(exercise => {

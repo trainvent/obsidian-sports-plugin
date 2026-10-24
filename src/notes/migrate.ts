@@ -8,10 +8,11 @@ export async function migrateNoteNames(plugin: SportsPlugin): Promise<string[]> 
  if (!folder || folder.startsWith('/') || folder.split(/[\\/]/).some(part => part === '..' || part.startsWith('.'))) throw new Error('Choose a normal vault folder for Sports notes.');
  const issues: string[] = [];
  const days: [string,string,string][] = Object.keys(plugin.data.generatedBlocks).flatMap(key => {
-  const prefix = `${folder}/Analytics/Daily/`;
-  if (!key.startsWith(prefix)) return [];
+  const oldFolder = ['Days', 'Analytics/Daily'].find(name => key.startsWith(`${folder}/${name}/`));
+  if (!oldFolder) return [];
+  const prefix = `${folder}/${oldFolder}/`;
   const match = /^(\d{4}-\d{2}-\d{2})\.md:day:\1$/.exec(key.slice(prefix.length));
-  return match ? [[`Analytics/Daily/${match[1]}.md`, `Days/${match[1]}.md`, `day:${match[1]}`]] : [];
+  return match ? [[`${oldFolder}/${match[1]}.md`, `Analytics/Days/${match[1]}.md`, `day:${match[1]}`]] : [];
  });
  for (const [oldName, name, id] of [...NOTE_RENAMES, ...days]) {
   const oldPath = normalizePath(`${plugin.data.notesFolder}/${oldName}`);
@@ -38,8 +39,16 @@ export async function migrateNoteNames(plugin: SportsPlugin): Promise<string[]> 
    // A missing source and target retain the baseline, preserving deletion protection.
    plugin.data.generatedBlocks[key] = baseline;
    delete plugin.data.generatedBlocks[oldKey];
+   plugin.data.noteRecoveryPending = plugin.data.noteRecoveryPending?.map(pending => pending === oldKey ? key : pending) ?? [];
    await plugin.save();
   } catch (error) { issues.push(`${name}: ${error instanceof Error ? error.message : 'Note migration failed.'}`); }
+ }
+ for (const oldName of ['Days', 'Analytics/Daily']) {
+  const directory = plugin.app.vault.getAbstractFileByPath(normalizePath(`${folder}/${oldName}`));
+  if (directory && 'children' in directory && Array.isArray(directory.children) && !directory.children.length) {
+   try { await plugin.app.fileManager.trashFile(directory); }
+   catch (error) { issues.push(`${oldName}: ${error instanceof Error ? error.message : 'Empty folder cleanup failed.'}`); }
+  }
  }
  return issues;
 }

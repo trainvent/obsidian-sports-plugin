@@ -41,7 +41,7 @@ export function combinedLogMarkdown(plan: TrainingPlan | null, cache?: GarminCac
   const activities = (recordedByDate.get(date) ?? []).sort((a, b) => a.time.localeCompare(b.time) || a.id.localeCompare(b.id));
   const recorded = activities.map(activity => `[${text(activity.name)}](https://connect.garmin.com/modern/activity/${activity.id}) · ${text(activityDetails(activity))}`).join('<br>');
   const missing = cache?.lastSuccess && date >= cache.start && date <= cache.end ? 'None recorded' : 'Not imported';
-  const dateLabel = folder ? noteLink(folder, `Days/${date}`, date).replaceAll('|', '\\|') : date;
+  const dateLabel = folder ? noteLink(folder, `Analytics/Days/${date}`, date).replaceAll('|', '\\|') : date;
   return `| ${dateLabel} | ${plans.join('<br><br>') || '—'} | ${results.join('<br><br>') || '—'} | ${recorded || missing} | ${notes.join('<br><br>') || '—'} |`;
  });
  return `${status}## Recent and recorded\n\n| Date | Manual plan | Manual results | Garmin activities | Manual notes |\n| --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nGarmin records do not mark manual sessions complete.${dates.flatMap(date => (manual.get(date) ?? []).map(scoredSessionDetails)).filter(Boolean).map(detail => `\n\n${detail}`).join('')}`;

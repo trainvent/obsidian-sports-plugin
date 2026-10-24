@@ -31,7 +31,7 @@ export function analyticsGraphMarkdown(plan: TrainingPlan | null, folder: string
 export function analyticsNoteTasks(plan: TrainingPlan | null, folder: string, garmin?: GarminCache, now = new Date()): { path: string; id: string; body: string; initial: string }[] {
  return [
   { path: 'Overview.md', id: 'analytics', body: overviewMarkdown(plan, folder, garmin, now), initial: '# Sports\n\n## Reflections\n' },
-  { path: 'Days/_Index.md', id: 'analytics-daily', body: dailyIndexMarkdown(plan, folder, garmin, now), initial: '# Index\n\n## Reflections\n' },
+  { path: 'Analytics/Days/_Index.md', id: 'analytics-daily', body: dailyIndexMarkdown(plan, folder, garmin, now), initial: '# Index\n\n## Reflections\n' },
   { path: 'Analytics/Sheet.md', id: 'analytics-graph', body: analyticsGraphMarkdown(plan, folder), initial: '# Sheet\n\n## Reflections\n' },
   { path: 'Analytics/Smartwatch.md', id: 'analytics-smartwatch', body: smartwatchMarkdown(garmin, folder), initial: '# Smartwatch\n\n## Reflections\n' },
   { path: 'Stats.md', id: 'analytics-combined', body: combinedAnalyticsMarkdown(plan, folder, garmin, now), initial: '# Stats\n\n## Reflections\n' },

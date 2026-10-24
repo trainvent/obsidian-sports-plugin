@@ -211,18 +211,19 @@ test('blank XLSX and ODS templates import empty and rebase metadata without inve
   assert.equal(plan.timezone, Intl.DateTimeFormat().resolvedOptions().timeZone);
   for (const field of ['goals','parts','sessions','weeklySchedule','weekPlans','exerciseArsenal','equipment']) assert.deepEqual(plan[field], []);
   const sheets = await readWorkbookSheets(bytes, new Set(['Strategy','Daily','Recurring']));
-  assert.deepEqual(sheets.map(sheet=>sheet.sheet), format === 'xlsx' ? ['Strategy','Recurring','Daily','Scoring','Library','Loads'] : ['Strategy','Recurring','Daily']);
+  assert.deepEqual(sheets.map(sheet=>sheet.sheet), ['Strategy','Recurring','Daily','Scoring','Library','Loads']);
   const start = sheets.find(sheet=>sheet.sheet==='Strategy').data[2][4];
   assert.ok(start instanceof Date);
   assert.equal(start.toISOString().slice(0,10), '2027-01-04');
-  const header = sheets.find(sheet=>sheet.sheet==='Daily').data[format === 'xlsx' ? 1 : 0];
+  const header = sheets.find(sheet=>sheet.sheet==='Daily').data[1];
   for (const field of ['Date','Block','Plan','Title','Planned minutes','Actual minutes','Session done','Notes','Notes topic']) assert.ok(header.includes(field));
  }
 });
 
 
 test('blank templates accept an entered session without requiring example exercises or scoring', async () => {
- const row = ['2027-01-04','','Easy training','My session',20,0,true,'My reflection','General','session-1','','training'];
+ const row = Array(27).fill(null);
+ for(const [index,value]of [[0,'2027-01-04'],[2,'Easy training'],[3,'My session'],[4,20],[5,0],[6,true],[23,'My reflection'],[24,'General']]) row[index]=value;
  for (const format of ['xlsx','ods']) {
   const files = unzipSync(new Uint8Array(templateWorkbook(new Date(2026,11,31,12), format, 'blank')));
   if (format === 'xlsx') {
@@ -234,7 +235,8 @@ test('blank templates accept an entered session without requiring example exerci
   } else {
    const xml = strFromU8(files['content.xml']);
    const start = xml.indexOf('table:name="Daily"');
-   const position = xml.indexOf('</table:table-row>', start) + '</table:table-row>'.length;
+   const firstEnd = xml.indexOf('</table:table-row>', start) + '</table:table-row>'.length;
+   const position = xml.indexOf('</table:table-row>', firstEnd) + '</table:table-row>'.length;
    files['content.xml'] = strToU8(xml.slice(0,position) + `<table:table-row>${row.map(odsCell).join('')}</table:table-row>` + xml.slice(position));
   }
   const packed = Uint8Array.from(zipSync(files)).buffer;
@@ -271,4 +273,27 @@ test('formula-free XLSX template preserves every example sheet, table and layout
  const archiveText = Object.values(template).map(bytes=>strFromU8(bytes)).join('\n');
  for (const sample of ['Band-assisted or first strict rep','Weight vest','12-week hybrid plan','Regular weekly swim training','Muscle-up,HSPU,Pistol']) assert.ok(!archiveText.includes(sample), sample);
  assert.ok(strFromU8(template['xl/worksheets/sheet3.xml']).includes('INDIRECT'));
+});
+
+
+test('full blank ODS preserves XLSX section content, ranges, controls and no cell formulas', async () => {
+ const names=['Strategy','Recurring','Daily','Scoring','Library','Loads'];
+ const snapshots=[];
+ for(const format of ['xlsx','ods']){
+  const bytes=templateWorkbook(new Date(2026,11,31,12),format,'blank');
+  const sheets=await readWorkbookSheets(bytes,new Set(names));
+  const populated=[];
+  for(const sheet of sheets)for(const [r,row]of sheet.data.entries())for(const [c,value]of row.entries())if(value!==null&&value!==undefined&&value!=='')populated.push([sheet.sheet,r,c,value]);
+  snapshots.push(populated);
+ }
+ assert.deepEqual(snapshots[1],snapshots[0]);
+ const files=unzipSync(new Uint8Array(readFileSync('templates/Training-Template.ods')));
+ const content=strFromU8(files['content.xml']);
+ assert.doesNotMatch(content,/<table:table-cell\b[^>]*table:formula=/);
+ for(const [name,range]of [['TrainingScoring','Scoring.A4:Scoring.S172'],['ScoringAssumptions','Scoring.A176:Scoring.C177'],['ExerciseArsenal','Library.A2:Library.E58']]){
+  assert.ok(content.includes(`table:name="${name}"`),name);
+  assert.ok(content.includes(`table:target-range-address="${range}"`),range);
+ }
+ assert.ok(content.includes('<table:content-validations>'));
+ for(const name of ['Session done','Notes topic','Plan recap','Added load'])assert.ok(content.includes(name));
 });

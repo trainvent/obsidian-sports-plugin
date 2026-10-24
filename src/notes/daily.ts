@@ -33,9 +33,9 @@ export function dailyIndexMarkdown(plan: TrainingPlan | null, folder: string, ca
  const links = dates.map(date => {
   const sessions = sheet.get(date)?.length ?? 0;
   const activities = watch.get(date)?.length ?? 0;
-  return `- ${noteLink(folder, `Days/${date}`, date)} — ${sessions} sheet session${sessions === 1 ? '' : 's'}, ${activities} smartwatch activit${activities === 1 ? 'y' : 'ies'}`;
+  return `- ${noteLink(folder, `Analytics/Days/${date}`, date)} — ${sessions} sheet session${sessions === 1 ? '' : 's'}, ${activities} smartwatch activit${activities === 1 ? 'y' : 'ies'}`;
  });
- return `## Daily notes\n\n${links.join('\n') || 'No logged dates yet.'}\n\nEach day combines its sheet sessions, scores, sets, and recorded Garmin activities. Only today and earlier dates with source entries get notes; upcoming sessions remain in Plans. Reflections below stay here when this index refreshes.`;
+ return `## Recorded days\n\n${links.join('\n') || 'No logged dates yet.'}\n\nEach day combines its sheet sessions, scores, sets, and recorded Garmin activities. Only today and earlier dates with source entries get notes; upcoming sessions remain in Weeks. Reflections below stay here when this index refreshes.`;
 }
 
 export function dailyNoteTasks(plan: TrainingPlan | null, _folder: string, cache?: GarminCache, now = new Date()): { path: string; id: string; body: string; initial: string }[] {
@@ -44,7 +44,7 @@ export function dailyNoteTasks(plan: TrainingPlan | null, _folder: string, cache
   const sessions = sheet.get(date) ?? [];
   const dayCache = cache ? { ...cache, activities: watch.get(date) ?? [] } : undefined;
   return {
-   path: `Days/${date}.md`, id: `day:${date}`,
+   path: `Analytics/Days/${date}.md`, id: `day:${date}`,
    body: `## Sheet sessions\n\n${sessions.map(s => sheetSession(s, plan)).join('\n\n') || 'No sheet sessions for this date.'}${garminMarkdown(dayCache) || '\n\n## Recorded Garmin activities\n\nNo smartwatch data imported.'}\n\nSheet completion and Garmin recordings remain independent.`,
    initial: `# ${date}\n\n## Reflections\n`,
   };

@@ -479,3 +479,17 @@ test('weekly layout groups workouts by day, folds comparisons, and retains parti
  assert.ok(!text.includes('Each bar uses its own'));
  assert.ok(!text.includes('## Imported schedule'));
 });
+
+test('an explicitly Daily-recorded schedule copy is not shown or counted twice', () => {
+ const plan = { timezone:'Europe/Berlin', goals:[], parts:[], sessions:[{id:'band',date:'2026-10-26',title:'Band strength',plannedMinutes:30,actualMinutes:null,status:'planned',sport:'training',notes:'',result:''}], weeklySchedule:[{id:'copy',weekday:1,time:'18:00',minutes:30,title:'Band strength',recordedBy:'Daily',notes:''},{id:'run',weekday:1,time:'09:00',minutes:20,title:'Easy run',recordedBy:'Garmin',notes:''}] };
+ assert.deepEqual(scheduleOn(plan,'2026-10-26').map(s=>s.id),['run']);
+ assert.equal(scheduleOn(plan,'2026-10-26',false).length,2);
+ const week=weekMarkdown(plan,['2026-10-26'],true);
+ assert.ok(week.includes('| 50 |'));
+ assert.ok(!week.includes('18:00 Band strength · recurring'));
+ assert.ok(week.includes('09:00 Easy run · recurring'));
+ assert.equal(plan.weeklySchedule.length,2);
+ const separate={...plan,weeklySchedule:[{...plan.weeklySchedule[0],minutes:15}]};
+ assert.equal(scheduleOn(separate,'2026-10-26').length,1);
+ assert.equal(scheduleOn(plan,'2026-11-02').length,2);
+});

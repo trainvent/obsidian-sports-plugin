@@ -54,7 +54,7 @@ test('row-based Daily supports variable targets, arbitrary set labels, units, an
  assert.equal(session.status, 'in-progress');
  assert.equal(sessions[1].status, 'planned');
  const markdown = performanceMarkdown(session);
- for (const text of ['(reps)\t14\t7', '(kg) · average\t55\t50', '(seconds)\t165\t90', '(custom) · last\t—\t12', '8 / 6 reps', 'Set 1 / 6: 7 / 0', 'partial']) assert.ok(markdown.includes(text), text);
+ for (const text of ['(reps)\t14\t7', '(kg) · average\t55\t50', '(minutes)\t2.75\t1.5', '(custom) · last\t—\t12', '8 / 6 reps', 'Set 1 / 6: 7 / 0', 'partial']) assert.ok(markdown.includes(text), text);
  assert.ok(compactResults(session).includes('Squat: 50 kg'));
  assert.equal(JSON.stringify(rows), original);
 });
@@ -144,4 +144,18 @@ test('all comparison aggregations preserve missing values and recorded zeros', (
  assert.equal(aggregateValues(values, 'max'), 20);
  assert.equal(aggregateValues(values, 'last'), 20);
  assert.equal(aggregateValues([null], 'average'), null);
+});
+
+test('minute-based measurements retain canonical timing but display readable minutes', () => {
+ const plan=dailyLog([headers,[date,'run','Easy run',1,'minutes',20,22,true,'total']],[],false);
+ const metric=exerciseTracking(plan[0])[0];
+ assert.equal(metric.unit,'seconds');assert.equal(metric.displayUnit,'minutes');
+ assert.deepEqual(metric.targets,[1200]);assert.deepEqual(metric.actual,[1320]);
+ const md=performanceMarkdown(plan[0]);
+ assert.ok(md.includes('(minutes)\t20\t22'));
+ assert.ok(md.includes('1 × 20 minutes'));
+ assert.ok(!md.includes('1200 seconds'));
+ assert.ok(compactResults(plan[0]).includes('22 minutes'));
+ const zero=dailyLog([headers,[date,'run','Easy run',1,'minutes',20,0,true,'total']],[],false)[0];
+ assert.ok(performanceMarkdown(zero).includes('(minutes)\t20\t0'));
 });

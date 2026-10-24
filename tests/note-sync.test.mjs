@@ -45,7 +45,7 @@ test('folder restructuring moves trusted notes and dated pages without losing wr
  const {plugin,plan,files}=fixture();
  plan.sessions=[{id:'old-day',date:'2020-01-01',title:'Practice',sport:'training',partId:'',partVersion:'',plannedMinutes:20,actualMinutes:null,status:'planned',result:'',notes:''}];
  assert.deepEqual(await syncNotes(plugin,plan),[]);
- const moves=[['Analytics/_Index.md','Overview.md','analytics'],['Analytics/Combined.md','Stats.md','analytics-combined'],['Plans.md','Structure/Plans.md','plan'],['Calendar.md','Structure/Calendar.md','calendar'],['Strategy.md','Structure/Strategy.md','strategy'],['Log.md','Analytics/Log.md','training-log'],['Analytics/Daily/_Index.md','Days/_Index.md','analytics-daily'],['Analytics/Daily/2020-01-01.md','Days/2020-01-01.md','day:2020-01-01']];
+ const moves=[['Analytics/_Index.md','Overview.md','analytics'],['Analytics/Combined.md','Stats.md','analytics-combined'],['Plans.md','Structure/Plans.md','plan'],['Calendar.md','Structure/Calendar.md','calendar'],['Strategy.md','Structure/Strategy.md','strategy'],['Log.md','Analytics/Log.md','training-log'],['Analytics/Daily/_Index.md','Analytics/Days/_Index.md','analytics-daily'],['Analytics/Daily/2020-01-01.md','Analytics/Days/2020-01-01.md','day:2020-01-01']];
  for(const [oldName,name,id]of moves){
   const oldPath=`Sports/${oldName}`,path=`Sports/${name}`,file=files.get(path);
   file.content+=`\nPersonal writing: ${id}\n`;
@@ -134,22 +134,22 @@ test('automatic link rewrites during Daily migration do not look like edits on r
  plugin.app.fileManager.renameFile = async (file, path) => {
   files.delete(file.path); file.path = path; files.set(path, file);
   // Obsidian updates referring files, but does not update plugin metadata.
-  for (const note of files.values()) if (note instanceof TFile) note.content = note.content.replaceAll('[[Sports/Analytics/Daily|', '[[Sports/Days/_Index|');
+  for (const note of files.values()) if (note instanceof TFile) note.content = note.content.replaceAll('[[Sports/Analytics/Daily|', '[[Sports/Analytics/Days/_Index|');
  };
  for (let i = 0; i < 3; i++) assert.deepEqual(await syncNotes(plugin, plan), []);
- assert.ok(index.content.includes('[[Sports/Days/_Index'));
+ assert.ok(index.content.includes('[[Sports/Analytics/Days/_Index'));
  assert.ok(index.content.endsWith('Keep index reflections\n'));
  assert.equal(files.has('Sports/Analytics/Daily.md'), false);
 });
 
 test('link migration tolerance rejects changes to prose, aliases and unrelated destinations', () => {
  const previous = '<!-- sports:begin test -->\n[[Sports/Analytics/Daily|Daily]] · original prose\n<!-- sports:end test -->';
- const rewritten = previous.replace('Analytics/Daily|', 'Days/_Index|');
+ const rewritten = previous.replace('Analytics/Daily|', 'Analytics/Days/_Index|');
  const current = `${rewritten}\n\nMy commentary\n`;
  assert.ok(mergeBlock(current, 'test', 'New source output', previous, 'Sports').endsWith('My commentary\n'));
- for (const edited of [current.replace('original prose', 'My prose'), current.replace('|Daily', '|My alias'), current.replace('Days/_Index|', 'Other|')]) assert.throws(() => mergeBlock(edited, 'test', 'New source output', previous, 'Sports'), /generated section was edited/);
+ for (const edited of [current.replace('original prose', 'My prose'), current.replace('|Daily', '|My alias'), current.replace('Analytics/Days/_Index|', 'Other|')]) assert.throws(() => mergeBlock(edited, 'test', 'New source output', previous, 'Sports'), /generated section was edited/);
  const escaped = previous.replace('|Daily', '\\|Daily');
- assert.doesNotThrow(() => mergeBlock(escaped.replace('Analytics/Daily\\|', 'Days/_Index\\|'), 'test', 'New source output', escaped, 'Sports'));
+ assert.doesNotThrow(() => mergeBlock(escaped.replace('Analytics/Daily\\|', 'Analytics/Days/_Index\\|'), 'test', 'New source output', escaped, 'Sports'));
 });
 
 test('sync creates browsable notes and future weeks without first opening the dashboard', async () => {
@@ -192,7 +192,7 @@ test('all generated notes omit Garmin and Coach sync timestamps while keeping so
   assert.ok(!file.content.includes(stamp), file.path);
   assert.doesNotMatch(file.content, /Last successful.*sync|[Ll]ast synced:/, file.path);
  }
- assert.ok(files.get('Sports/Days/2020-01-01.md').content.includes('Imported 2020-01-01 to 2020-01-02'));
+ assert.ok(files.get('Sports/Analytics/Days/2020-01-01.md').content.includes('Imported 2020-01-01 to 2020-01-02'));
  assert.ok(files.get('Sports/Analytics/Smartwatch.md').content.includes('Cached activity warning'));
  assert.ok(files.get('Sports/Structure/Calendar.md').content.includes('Cached Coach warning'));
  const before = new Map(notes.map(file => [file.path, file.content]));
@@ -211,22 +211,22 @@ test('dated Daily notes combine sources, link from Log, and preserve old Daily r
  plan.sessions = [session, { ...session, id: 'sheet-only', date: '2020-01-03' }, { ...session, id: 'future', date: '2099-01-01' }];
  plugin.data.garminCache = { start: '2020-01-01', end: '2020-01-03', lastSuccess: '2020-01-03T12:00:00Z', error: '', activities: [{ id: '123', date: '2020-01-01', time: '08:00', name: 'Morning swim', type: 'lap_swimming', duration: 1800, distance: 1000, average_hr: 130 }, { id: '124', date: '2020-01-02', time: '08:00', name: 'Watch-only run', type: 'running', duration: 1200, distance: 2000, average_hr: 140 }] };
  assert.deepEqual(await syncNotes(plugin, plan), []);
- const path = 'Sports/Days/2020-01-01.md';
+ const path = 'Sports/Analytics/Days/2020-01-01.md';
  const day = files.get(path);
  for (const value of ['Morning swim', 'sports-compare', '4 / 0', 'Status: planned', 'Actual: 0 min', 'Performance: 40%', 'Scored metrics: 1 / 2', 'Sheet note']) assert.ok(day.content.includes(value), value);
  assert.ok(!day.content.includes('Watch-only run'));
- assert.ok(files.get('Sports/Days/2020-01-02.md').content.includes('No sheet sessions'));
- assert.ok(files.get('Sports/Days/2020-01-03.md').content.includes('No recorded activities'));
- assert.ok(!files.has('Sports/Days/2099-01-01.md'));
- assert.ok(files.get('Sports/Analytics/Log.md').content.includes('[[Sports/Days/2020-01-01\\|2020-01-01]]'));
- assert.ok(daily.content.includes('[[Sports/Days/2020-01-02|2020-01-02]]'));
+ assert.ok(files.get('Sports/Analytics/Days/2020-01-02.md').content.includes('No sheet sessions'));
+ assert.ok(files.get('Sports/Analytics/Days/2020-01-03.md').content.includes('No recorded activities'));
+ assert.ok(!files.has('Sports/Analytics/Days/2099-01-01.md'));
+ assert.ok(files.get('Sports/Analytics/Log.md').content.includes('[[Sports/Analytics/Days/2020-01-01\\|2020-01-01]]'));
+ assert.ok(daily.content.includes('[[Sports/Analytics/Days/2020-01-02|2020-01-02]]'));
  assert.ok(!daily.content.includes('Old all-days details'));
  assert.ok(daily.content.endsWith('Original Daily reflections\n'));
  assert.equal(files.has('Sports/Analytics/Daily.md'), false);
- assert.equal(daily.path, 'Sports/Days/_Index.md');
- assert.ok(files.get('Sports/Overview.md').content.includes('[[Sports/Days/_Index'));
+ assert.equal(daily.path, 'Sports/Analytics/Days/_Index.md');
+ assert.ok(files.get('Sports/Overview.md').content.includes('[[Sports/Analytics/Days/_Index'));
  assert.equal(plugin.data.generatedBlocks['Sports/Analytics/Daily.md:analytics-daily'], undefined);
- assert.ok(plugin.data.generatedBlocks['Sports/Days/_Index.md:analytics-daily']);
+ assert.ok(plugin.data.generatedBlocks['Sports/Analytics/Days/_Index.md:analytics-daily']);
  day.content += '\nMy day reflection\n';
  plan.sessions[0].results['A 1 result'] = '3';
  assert.deepEqual(await syncNotes(plugin, plan), []);
@@ -235,20 +235,20 @@ test('dated Daily notes combine sources, link from Log, and preserve old Daily r
  day.content = day.content.replace('sports-compare', 'my-edited-chart');
  const snapshot = day.content;
  const issues = await syncNotes(plugin, plan);
- assert.ok(issues.some(issue => issue.startsWith('Days/2020-01-01.md:')));
+ assert.ok(issues.some(issue => issue.startsWith('Analytics/Days/2020-01-01.md:')));
  assert.equal(day.content, snapshot);
- assert.ok(files.get('Sports/Days/2020-01-02.md').content.includes('Watch-only run'));
+ assert.ok(files.get('Sports/Analytics/Days/2020-01-02.md').content.includes('Watch-only run'));
 });
 
 test('moving the Daily index never overwrites an existing destination', async () => {
  const { plugin, plan, files } = fixture();
  const baseline = '<!-- sports:begin analytics-daily -->\nOld index\n<!-- sports:end analytics-daily -->';
  const source = new TFile('Sports/Analytics/Daily.md'); source.content = `${baseline}\nOld reflections\n`;
- const target = new TFile('Sports/Days/_Index.md'); target.content = 'My existing index';
+ const target = new TFile('Sports/Analytics/Days/_Index.md'); target.content = 'My existing index';
  files.set(source.path, source); files.set(target.path, target);
  plugin.data.generatedBlocks[`${source.path}:analytics-daily`] = baseline;
  const issues = await syncNotes(plugin, plan);
- assert.ok(issues.some(issue => issue.startsWith('Days/_Index.md:')));
+ assert.ok(issues.some(issue => issue.startsWith('Analytics/Days/_Index.md:')));
  assert.equal(source.path, 'Sports/Analytics/Daily.md');
  assert.ok(source.content.endsWith('Old reflections\n'));
  assert.equal(target.content, 'My existing index');
@@ -652,7 +652,7 @@ test('Plans starts with content while Analytics owns protected comparisons', asy
  const { plugin, plan, files } = fixture();
  plan.sessions = [{ id: 'future', date: '2020-01-01', title: 'Practice', sport: 'training', partId: '', partVersion: '', prescription: 'Squat) Back squat: 3 x 5', checks: { 'Squat done': true }, results: { 'Squat 1 result': '4' }, plannedMinutes: 20, actualMinutes: 10, result: 'Recorded result', status: 'in-progress', notes: 'Session note' }];
  assert.deepEqual(await syncNotes(plugin, plan), []);
- const analytics = files.get('Sports/Days/2020-01-01.md');
+ const analytics = files.get('Sports/Analytics/Days/2020-01-01.md');
  assert.ok(analytics.content.includes('sports-compare'));
  assert.ok(analytics.content.includes('(reps)\t15\t4'));
  const plans = files.get('Sports/Structure/Plans.md');
@@ -672,7 +672,7 @@ test('Plans starts with content while Analytics owns protected comparisons', asy
  analytics.content = analytics.content.replace('sports-compare', 'edited-graph');
  const snapshot = analytics.content;
  const issues = await syncNotes(plugin, plan);
- assert.ok(issues.some(issue => issue.startsWith('Days/2020-01-01.md:')));
+ assert.ok(issues.some(issue => issue.startsWith('Analytics/Days/2020-01-01.md:')));
  assert.equal(analytics.content, snapshot);
 });
 
@@ -689,10 +689,10 @@ test('Analytics folder separates table, daily details and score graphs, and migr
  assert.ok(!files.has('Sports/Analytics.md'));
  const index = files.get('Sports/Overview.md');
  assert.ok(index.content.endsWith('My existing analytics reflections\n'));
- for (const name of ['Days/_Index', 'Analytics/Sheet', 'Analytics/Smartwatch', 'Stats']) assert.ok(index.content.includes(`Sports/${name}`));
+ for (const name of ['Analytics/Days/_Index', 'Analytics/Sheet', 'Analytics/Smartwatch', 'Stats']) assert.ok(index.content.includes(`Sports/${name}`));
  assert.ok(!files.has('Sports/Analytics/Table.md'));
  assert.ok(!index.content.includes('Analytics/Table'));
- assert.ok(!files.get('Sports/Days/_Index.md').content.includes('sports-compare'));
+ assert.ok(!files.get('Sports/Analytics/Days/_Index.md').content.includes('sports-compare'));
  const graph = files.get('Sports/Analytics/Sheet.md');
  assert.ok(graph.content.includes('2026-12-28\t80'));
  assert.ok(graph.content.includes('2026-12-28\t4\t3'));
@@ -756,8 +756,8 @@ test('goal and calendar properties refresh without duplicating metadata in bodie
  assert.deepEqual(properties('Goals/running.md').garmin_types, ['running']);
  assert.ok(files.get('Sports/Goals/running.md').content.includes('**Target:** Run steadily'));
  assert.ok(!files.get('Sports/Goals/running.md').content.includes('**Category:**'));
- assert.equal(properties('Days/2020-01-01.md').date, '2020-01-01');
- assert.equal(properties('Days/2020-01-01.md').week, '[[Sports/Weeks/2019-12-30]]');
+ assert.equal(properties('Analytics/Days/2020-01-01.md').date, '2020-01-01');
+ assert.equal(properties('Analytics/Days/2020-01-01.md').week, '[[Sports/Weeks/2019-12-30]]');
  const week = properties('Weeks/2026-12-28.md');
  assert.equal(week.week_start, '2026-12-28');
  assert.equal(week.week_end, '2027-01-03');
@@ -783,8 +783,8 @@ test('Overview owns navigation while generated content keeps its contextual link
  }
  assert.ok(files.get('Sports/Overview.md').content.includes('[[Sports/Structure/Plans\\|Plans]]'));
  assert.ok(files.get('Sports/Structure/Plans.md').content.includes('[[Sports/Goals/strength'));
- assert.ok(files.get('Sports/Analytics/Log.md').content.includes('[[Sports/Days/2020-01-01'));
- assert.ok(files.get('Sports/Days/_Index.md').content.includes('[[Sports/Days/2020-01-01'));
+ assert.ok(files.get('Sports/Analytics/Log.md').content.includes('[[Sports/Analytics/Days/2020-01-01'));
+ assert.ok(files.get('Sports/Analytics/Days/_Index.md').content.includes('[[Sports/Analytics/Days/2020-01-01'));
  assert.ok(files.get('Sports/Routines/_Index.md').content.includes('[[Sports/Routines/Skills A|Skills A]]'));
 });
 
@@ -815,22 +815,22 @@ test('cache recovery remains authorized for Garmin notes returning after workboo
  const activity = {id:'late',date:'2020-01-01',time:'08:00',name:'Run',type:'running',duration:1800,distance:5000,average_hr:140};
  plugin.data.garminCache = {activities:[activity],lastSuccess:'2026-10-24',start:'2020-01-01',end:'2026-10-24',error:''};
  assert.deepEqual(await syncNotes(plugin, plan), []);
- const day = files.get('Sports/Days/2020-01-01.md');
+ const day = files.get('Sports/Analytics/Days/2020-01-01.md');
  day.content += '\nKeep my day reflection\n';
  clearImportCache(plugin.data);
  assert.deepEqual(await syncNotes(plugin, plan), []);
  assert.equal(plugin.data.resetNoteBaselines, false);
- assert.ok(plugin.data.noteRecoveryPending.includes('Sports/Days/2020-01-01.md:day:2020-01-01'));
+ assert.ok(plugin.data.noteRecoveryPending.includes('Sports/Analytics/Days/2020-01-01.md:day:2020-01-01'));
  plugin.data.garminCache = {activities:[{...activity,duration:1900}],lastSuccess:'2026-10-24',start:'2020-01-01',end:'2026-10-24',error:''};
  assert.deepEqual(await syncNotes(plugin, plan), []);
  assert.ok(day.content.includes('Keep my day reflection'));
- assert.ok(!plugin.data.noteRecoveryPending.includes('Sports/Days/2020-01-01.md:day:2020-01-01'));
- const backups = [...files.entries()].filter(([path])=>path.includes('/Backups/')&&path.endsWith('/Days/2020-01-01.md'));
+ assert.ok(!plugin.data.noteRecoveryPending.includes('Sports/Analytics/Days/2020-01-01.md:day:2020-01-01'));
+ const backups = [...files.entries()].filter(([path])=>path.includes('/Backups/')&&path.endsWith('/Analytics/Days/2020-01-01.md'));
  assert.equal(backups.length, 1);
  assert.ok(backups[0][1].content.includes('Keep my day reflection'));
  day.content = day.content.replace('Run', 'My edited activity');
  const edited = day.content;
- assert.ok((await syncNotes(plugin, plan)).some(issue=>issue.startsWith('Days/2020-01-01.md:')));
+ assert.ok((await syncNotes(plugin, plan)).some(issue=>issue.startsWith('Analytics/Days/2020-01-01.md:')));
  assert.equal(day.content, edited);
 });
 
@@ -867,8 +867,48 @@ test('stock workbook guides receive blank-template onboarding without losing per
  assert.ok(guide.content.includes('## Fill the blank template'));
  assert.ok(guide.content.includes('## Optional sections and sheets'));
  assert.ok(guide.content.includes('## Fill it with a chatbot') || guide.content.includes('### Fill it with a chatbot'));
+ assert.ok(guide.content.includes('do not delete structure unless I request it.'));
+ assert.ok(guide.content.includes('Agree on recurring activities'));
+ assert.ok(guide.content.includes('Check before returning the workbook'));
  assert.ok(guide.content.includes('Keep my custom workbook conventions.'));
  const once = guide.content;
  assert.deepEqual(await syncNotes(plugin, plan), []);
  assert.equal(guide.content, once);
+});
+
+test('Days moves under Analytics with reflections, properties and rewritten links intact', async () => {
+ const {plugin,plan,files}=fixture();
+ plan.sessions=[{id:'s',date:'2020-01-01',title:'Band workout',sport:'training',partId:'',partVersion:'',status:'completed',notes:'',result:'',plannedMinutes:30,actualMinutes:30}];
+ await syncNotes(plugin,plan);
+ const root='Sports/Analytics/Days/';
+ for(const [path,file] of [...files])if(file instanceof TFile&&path.startsWith(root)){
+  file.content+='\nKeep my day review.\n';
+  const old=path.replace(root,'Sports/Days/');
+  await plugin.app.fileManager.renameFile(file,old);
+  for(const key of Object.keys(plugin.data.generatedBlocks))if(key.startsWith(path+':')){
+   plugin.data.generatedBlocks[key.replace(path,old)]=plugin.data.generatedBlocks[key];delete plugin.data.generatedBlocks[key];
+  }
+ }
+ for(const file of files.values())if(file instanceof TFile)file.content=file.content.replaceAll(root,'Sports/Days/');
+ for(const key of Object.keys(plugin.data.generatedBlocks))plugin.data.generatedBlocks[key]=plugin.data.generatedBlocks[key].replaceAll(root,'Sports/Days/');
+ plugin.app.fileManager.renameFile=async(file,path)=>{files.delete(file.path);file.path=path;files.set(path,file);for(const note of files.values())if(note instanceof TFile)note.content=note.content.replaceAll('Sports/Days/','Sports/Analytics/Days/');};
+ for(let i=0;i<2;i++)assert.deepEqual(await syncNotes(plugin,plan),[]);
+ for(const suffix of ['_Index.md','2020-01-01.md']){
+  assert.equal(files.has('Sports/Days/'+suffix),false);
+  assert.ok(files.get(root+suffix).content.includes('Keep my day review.'));
+ }
+ assert.ok(files.get(root+'2020-01-01.md').content.includes('week:'));
+ const overview=files.get('Sports/Overview.md').content;
+ assert.ok(overview.indexOf('Open week')<overview.indexOf('Training stats'));
+ assert.ok(overview.includes('Sports/Analytics/Days/_Index'));
+});
+
+test('Days migration never overwrites an existing Analytics day note', async () => {
+ const {plugin,plan,files}=fixture();
+ const body='<!-- sports:begin day:2020-01-01 -->\nTrusted day\n<!-- sports:end day:2020-01-01 -->';
+ const source=new TFile('Sports/Days/2020-01-01.md');source.content=body+'\nMy old review\n';
+ const target=new TFile('Sports/Analytics/Days/2020-01-01.md');target.content='My destination note';
+ files.set(source.path,source);files.set(target.path,target);plugin.data.generatedBlocks[source.path+':day:2020-01-01']=body;
+ assert.ok((await syncNotes(plugin,plan)).some(issue=>issue.includes('Both Days/2020-01-01.md and Analytics/Days/2020-01-01.md exist')));
+ assert.ok(source.content.endsWith('My old review\n'));assert.equal(target.content,'My destination note');
 });

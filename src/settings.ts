@@ -60,7 +60,7 @@ export class SportsSettingTab extends PluginSettingTab {
     { name: 'Workbook guide', desc: 'Read before filling a blank template or adapting the example. You can share it with your chatbot.', render: setting => {
      setting.addButton(button => button.setButtonText('Open guide').onClick(() => openSheetGuide(plugin)));
     } },
-    { name: 'Blank template', desc: 'XLSX: full workbook with empty training inputs and no formulas. ODS: basic tables. Fill using the workbook guide.', render: setting => {
+    { name: 'Blank template', desc: 'Full six-sheet workbook in XLSX or ODS, with empty training inputs and no formulas. Fill using the workbook guide.', render: setting => {
      setting.addButton(button => button.setButtonText('Download XLSX').onClick(() => plugin.downloadTrainingWorkbook('xlsx', 'blank')));
      setting.addButton(button => button.setButtonText('Download ODS').onClick(() => plugin.downloadTrainingWorkbook('ods', 'blank')));
     } },

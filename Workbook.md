@@ -9,7 +9,7 @@ starting point in XLSX or ODS:
 | Option | Contents | Choose it when |
 | --- | --- | --- |
 | **Blank XLSX template** (`Training-Template.xlsx`) | All six example sheets, tables and formatting; training data and formulas cleared | You want to fill the full workbook yourself or with a chatbot |
-| **Blank ODS template** (`Training-Template.ods`) | Basic Strategy, Recurring and Daily tables | You want the simpler ODS starting point |
+| **Blank ODS template** (`Training-Template.ods`) | All six sheets, tables and formatting; training data and formulas cleared | You prefer LibreOffice Calc or ODS |
 | **Example workbook** (`Training-Example`) | A filled 12-week plan, library, loads, and scoring | You want to learn the format or adapt a working example |
 
 Use this guide with either file. Adapt goals, exercises, schedule, equipment and
@@ -18,59 +18,81 @@ recommendation. Sports reads the workbook and never writes results back to it.
 
 ## Fill the blank template
 
+Keep all sheets, section labels, header rows, native Excel tables, formatting and
+input controls by default. Unused **data cells** may remain blank. Do not clear
+whole sections or remove their headers to disable a feature. Remove or redesign
+structure only when the user explicitly requests it.
+
 1. In **Strategy → Plan**, set a stable plan_id, your plan_name, timezone and
-   Monday start_date. Keep schema_version at 1. Downloaded files use your local
-   timezone and next Monday as the initial date.
-2. Fill **Goals** and **Parts** as needed. Use part goal_ids to link them. Add
-   **Week plans** if you want weekly phases and targets. Enter consecutive rows
-   under each header; a blank row ends a Strategy table. Insert rows before the
-   next section when more space is needed.
-3. In **Daily**, enter a Date, readable Plan and Title for each session. Block
-   may be blank or refer to a Parts ID. The XLSX template has no automatic dates,
-   prescriptions or scores: enter values manually or add formulas suited to your
-   own plan. Leave actual values blank until training, then record them and select
-   Session done. Add stable Session IDs when multiple sessions share a date and
-   block. See [Tracking.md](Tracking.md) for custom groups and set counts.
-4. In **Recurring**, fill Activity to enable a weekly entry. Times are optional
-   `HH:mm` text; enter positive Minutes or supply both start and end times.
-   Blank activities remain inactive. Add rows to schedule more than one activity per day.
-5. Save, upload, configure the three sheet mappings, then **Sync now**.
+   Monday start_date. Keep schema_version at 1. Fill Goals, Parts and Week plans
+   for the agreed plan, retaining their IDs and links. Put data directly below
+   each header; blank rows end Strategy tables. Preserve Plan summary's labels
+   and Plan recap's prompts, even before any training has been recorded.
+2. In **Daily**, enter dated sessions with readable Plan, Title and planned
+   minutes. Block links to a Parts ID. Write explicit exercise targets such as
+   `A) Band squat: 3 x 10` in Plan. Put each exercise on its own actual line,
+   with group names matching its input columns. Put time, warm-up, rest and
+   other instructions on separate lines, never before/after a dose on the same
+   line. Visual cell wrapping is not a line break. For blank future results, leave
+   the numbered rep/time cells empty until training; targets still come from Plan.
+   Alternatively prefill targets there and replace them with actuals before
+   selecting Session done. Never treat planned targets as completed results.
+   Add stable Session IDs if a date and block contain multiple sessions.
+3. In **Recurring**, enter activities managed as a repeating timetable, such as
+   a weekly run recorded by Garmin. Do **not** expand those activities into dated
+   Daily rows. Daily is for the separate manual workouts you plan and record
+   there. If a workout needs manual set results, choose Daily instead of Recurring;
+   repeating on the calendar alone does not make a manual workout a Recurring row.
+   Activity enables an entry; use positive Minutes or start/end times. Recorded by
+   identifies the actual recording source (for example Garmin), not a request to
+   copy events into Daily. Enable **Show regular activities** to display the
+   timetable alongside the separate manual workouts. Recurring supplies no manual
+   results, Daily scoring rows or recorded-performance statistics.
+4. In **Library**, add exercises, units and equipment. Use minutes for runs
+   (20 minutes, not 1200 seconds) and seconds for short holds. Intensity ratings and
+   Growth per kg are optional for tracking, but required inputs where the agreed
+   scoring method uses them. Do not invent measured resistance for bands. Describe
+   the band in Equipment Notes and the prescription; Loads accepts added kg only.
+5. Agree on scoring before filling the workbook. If requested, populate Scoring's
+   exercise targets, formulas and per-session summaries, and Daily's planned
+   intensity. Scoring Date/Session must match Daily Date/exact Title, not Block.
+   Use the calculation reference below only when the user chooses
+   that method; label provisional ratings as planning estimates. If scoring is
+   declined or still undecided, keep its structure and say it remains unconfigured.
+6. Save calculated formula results, verify the workbook as described below, then
+   upload it, configure the sheet mappings and select **Sync now**.
 
 The XLSX template retains the full example layout, including A/B/C set columns,
 Cal-Intervals, Library, Loads, Scoring, Plan summary and Plan recap. These labels
-and calculation slots are structure, not prescribed exercises. Goals, workouts,
-results, exercise definitions, equipment and added weights are empty. Plan metadata
-and the layout's set-count and timed-work conversion defaults remain editable.
-
-All cell formulas and their saved results are removed from the XLSX template,
-including dates, Loads links, Scoring, summaries and recurring durations. Fill
-these fields explicitly, or have your agent build calculations for your own
-strategy. The calculation sections later in this guide describe the filled
-example's method; they are optional reference material, not formulas included
-in the template. Do not copy its fixed row references without adapting them.
-
-Formatting is retained, so some neutral cells that previously held formulas are
-now empty fields. The filled example keeps the working calculations for reference.
-The ODS template is still the basic three-sheet version for now.
+and calculation slots are structure, not prescribed exercises. Training data and
+all cell formulas/cached results are empty; layout defaults remain editable.
+Enter dates and prescriptions directly. Build only the calculations agreed with
+the user. The later formula examples describe the filled example, not formulas
+already present in this template. The ODS template has the same full six-sheet
+layout. See [Tracking.md](Tracking.md) for alternative tracking layouts when a
+user requests a redesign.
 
 ## Optional sections and sheets
 
-The XLSX template includes every table but requires no calculations. Leave unused
-optional tables empty or remove them as described below.
+Optional means their **use** can be declined, not that an agent should delete
+provided structure. Keep every supplied section and sheet unless removal is
+explicitly requested. Report which features are configured, unused or awaiting
+input. Do not silently choose a reduced workbook.
 
-| Section or sheet | Optional when | How to omit it |
+| Area | When unused | When enabled |
 | --- | --- | --- |
-| Goals and Parts | You do not need goals or linked training blocks | With Strategy import enabled, keep empty Goals and Parts labels/headers; leave Block blank for unlinked sessions |
-| Week plans | You do not need weekly phases or targets | Leave empty or remove the section; enter Daily dates and plans directly |
-| Plan summary and Plan recap | You do not want summaries or review prompts | Clear or remove these sections |
-| Recurring | You have no weekly recurring activities | Leave Activity empty, or disable the weekly schedule sheet mapping before removing the sheet |
-| Scoring | You do not need intensity/performance calculations or manual scores | Leave empty or remove the sheet |
-| Library | You do not need exercise, equipment or interval references | Leave empty or remove it; keep equipment definitions if you use Loads |
-| Loads | You do not track added weight | Leave empty or remove the sheet; enter Date and Session explicitly if using it |
+| Goals and Parts | Keep labels/headers; leave unused data empty | Fill goals, prescriptions and their ID links |
+| Week plans | Keep labels/headers | Fill weekly dates, focus, targets and minutes |
+| Plan summary | Keep Metric/Value headers and metric labels | Add summary formulas suited to the plan; unrecorded performance stays blank |
+| Plan recap | Keep Prompt/Response headers and prompts | Leave future reflections blank; record useful setup decisions without inventing outcomes |
+| Recurring | Keep weekdays and headers; leave Activity empty only when no schedule is agreed | Fill the repeating activities and identify where results are recorded |
+| Scoring | Keep title, headers, assumptions and native table | Add agreed calculations and cached results; no fabricated actual performance |
+| Library | Keep exercise/equipment/interval headers | Add references actually used, with ratings only when scoring needs them |
+| Loads | Keep Added load and its headers; no rows needed without added kg | Record known planned kg and leave actual kg blank until measured |
 
-If you or your agent add formulas later, check their dependencies before removing
-referenced cells or sheets. Unused exercise groups and set columns may also be
-removed. Retain the supported headers for the sections you keep.
+Unused Cal-Intervals or set inputs can remain blank without erasing their headers.
+If removal or a new tracking layout is requested, check formulas, table ranges,
+validations and import mappings before changing structure.
 
 ### Fill it with a chatbot
 
@@ -78,15 +100,39 @@ Attach the workbook and this guide. For example:
 
 ```text
 Use Workbook.md to fill the attached Training-Template workbook for my needs.
-Ask for my goals, availability, experience, equipment and known starting levels
-before planning. Preserve the supported sheet names, headers and stable IDs.
-Do not invent completed workouts, measured baselines or results. Leave future
-actual values blank. If you add formulas, recalculate and save their results.
-Return an XLSX or ODS file and summarize the changes for me to review.
+Ask for missing goals, availability, experience, equipment and starting levels.
+Agree on recurring activities and whether/how to calculate intensity and scoring.
+Keep all supplied sheets, tables, section labels, header rows, formatting and
+controls. Leave unused data blank; do not delete structure unless I request it.
+Do not invent completed workouts, measured baselines, equipment kg or results.
+Leave future actuals blank. Recalculate and save any formulas you add.
+Check the entire workbook against the original template, including unused areas.
+Return the workbook and a short list of configured features, unused features,
+assumptions and any missing input. Do not call the plan complete if requested
+features are still missing.
 ```
 
-For an existing plan, also preserve all recorded history. Review the completed
-file before syncing. A chatbot is optional; the same guide supports manual edits.
+### Check before returning the workbook
+
+Compare every supplied sheet with the original, including all Strategy sections,
+Scoring's header/assumptions, Library sections and Loads. Preserve native Excel
+tables and their header ranges, not just visible text. Write beneath headers;
+for example Equipment's first entry is Library!A62, not A61.
+
+Verify dates and stable session/part references, the agreed recurring schedule,
+equipment and planned intensity/scoring coverage. Check that Recurring activities
+have not also been generated as Daily sessions. Scoring summaries belong only to
+Daily sessions; do not invent Daily rows just to score a recurring activity. There is no need to make up
+load rows for bands or write future recap answers merely to fill empty cells.
+With scoring enabled, verify every dated session has its intended summary. A
+future session can have planned intensity and Planned metrics; its Result and
+Performance must stay blank, with Scored metrics 0. Test a completed session in a
+disposable copy: results, performance and coverage must update and save correctly.
+Check that clearing results returns them to blank, rather than a fabricated zero.
+
+For an existing plan, also preserve recorded history. Report a missing input or
+unsupported metric rather than deleting the affected table. Successful import
+alone does not establish that the requested workbook is complete.
 
 ## Reading the filled example
 
@@ -126,15 +172,14 @@ green; the calculated Minutes column stays neutral. Strategy's `max_sets` and
   Preserve references when changing IDs in a new, unrecorded plan.
 - Use real dates formatted `yyyy-mm-dd`, or explicit `YYYY-MM-DD` text. Use
   nonnegative numbers for minutes. Blank means unrecorded, not zero.
-- Formulas are optional in the blank template. If you add formulas or adapt the
+- The blank template has no cell formulas. If you add formulas or adapt the
   filled example, calculate and save their cached results before returning the
   file. The plugin reads saved values, not formula expressions.
 
 ## Strategy
 
-The XLSX template and filled example retain the following sections and headers.
-Optional sections may be left empty or removed as described above. The ODS
-template contains only the basic Plan, Goals, Parts and Week plans sections:
+The XLSX and ODS templates and filled examples retain these sections and headers.
+Leave unused section data empty; remove structure only at the user’s request:
 
 | Section | Headers |
 | --- | --- |
@@ -192,7 +237,9 @@ values refer to these IDs. In `goal_ids`, separate goal IDs with commas, for exa
 `part_id`, `version`, `goal_id` is also supported.
 
 **Week plans:** use unique positive week numbers and unique Monday Start dates.
-Preserve the formulas linking Start to `$E$3`. `Minutes` is the manual training
+In the filled example, Start formulas link to `$E$3`; preserve or adapt those
+when using that example. Enter explicit Start dates in the formula-free template.
+`Minutes` is the manual training
 budget; recurring tracker activities are separate. `A` and `B` contain the weekly
 block prescriptions and feed Daily Plan formulas. Changing block names or adding
 other block columns requires adapting the Daily formulas as well. The plugin
@@ -241,7 +288,8 @@ See [Flexible Daily tracking](Tracking.md) or **Guide/Tracking** in your vault f
 examples, multiple metrics, variable set targets, and recording rules.
 
 The existing example uses two header rows with A/B/C/Cal-Intervals exercise groups.
-Rename, add, or remove these groups and their numbered set subcolumns as needed.
+When a tracking redesign is requested, rename, add or remove groups and their
+numbered set subcolumns. Otherwise preserve them and leave unused inputs blank.
 Keep structural headers and each group's subcolumn alignment intact.
 
 | Columns | Row 2 headings | Use |
@@ -260,6 +308,20 @@ Keep structural headers and each group's subcolumn alignment intact.
 separate lines, just like Technique. The session's Block A/B and the exercise
 groups A/B/C are separate labels. Keep tempo, rest, per-leg instructions and other
 details in Plan; the rep entry cells contain no explanatory words.
+
+For grouped tracking, preserve actual line breaks in Plan. Example:
+
+```text
+18:00; warm up 5 minutes.
+A) Band squat: 3 x 10
+B) Band bent-over row: 3 x 10
+C) Band chest press: 3 x 10
+Rest 60 seconds between sets.
+```
+
+Check that every planned exercise becomes a comparison with the correct group,
+set count and target, not merely that the workbook imports. Keep extra coaching
+text out of each dose line so it cannot become part of a group or unit.
 
 **Exercise groups (A/B/C in the example):** numbered fields record reps or time. Counts use plain numbers such
 as `2` or `5`; timed entries use native spreadsheet durations displayed as
@@ -328,7 +390,7 @@ properties, a weekly-note link on each day, and dated links in logs and plans.
 | --- | --- | --- |
 | `Goals/<goal_id>.md` | `goal_id`, `category`, `result_column`, `garmin_types` | Goals table and resolved source mappings |
 | `Routines/<name>.md` | `targets` (list of goal links) | Part/goal relationships; running and swimming goal mappings |
-| `Days/YYYY-MM-DD.md` | `date`, `week` (weekly-note link) | Entry date and its Monday-start week |
+| `Analytics/Days/YYYY-MM-DD.md` | `date`, `week` (weekly-note link) | Entry date and its Monday-start week |
 | `Weeks/YYYY-MM-DD.md` | `week_start`, `week_end`, `program_week`, `phase` | Calendar dates and matching Week plans row |
 
 Goal categories appear as **Aspiration** or **Maintenance**. Baseline, target, and
@@ -442,6 +504,12 @@ mappings on Strategy, Daily, and Recurring. The XLSX example uses one Scoring
 table for exercise targets, results, intensity and performance. Scoring is read
 automatically alongside Daily; keep its tab name.
 
+**Scoring session key:** Date and Session must match a dated Daily row’s Date
+and exact **Title**. Session is not the Block/Parts ID or Session ID. Repeat that
+date/title for its exercise rows; place the P:S summary on only the first row of
+each session. Different sessions on the same date need distinct titles for this
+summary lookup. Daily Planned intensity must link to its Scoring summary value.
+
 Result links to explicit Done and result fields in Daily. Exercise performance
 is result / target × 100. The first row of each session contains its planned
 intensity, median Performance, Scored metrics and Planned metrics. Coverage
@@ -508,6 +576,20 @@ until recorded; **Session done does not invent an actual weight**. Actual 0 mean
 bodyweight. A Done flag is still required before a load appears as a recorded
 result in the exercise comparison.
 
+### Duration units
+
+Use human-sized units: a run lasting 20 minutes is Unit `minutes`, Amount per set
+`20`, not `seconds` and `1200`. Short holds can stay in seconds. Keep target and
+result in the same unit. If scoring needs seconds for its volume weighting,
+convert inside that formula without changing the visible input unit. A running
+activity kept only in Recurring uses its Minutes field and needs no Scoring row.
+
+For manual grouped tracking, `A) Easy run: 1 x 20 minutes` supplies a minute target;
+a plain numeric result `22` means 22 minutes. Clock-style `22:00` also means 22
+minutes. For second-based prescriptions, numeric results are seconds. Obsidian
+normalizes times internally and presents minute-based measurements in minutes;
+short seconds-based holds retain their seconds unit.
+
 ### Load-adjusted intensity formula
 
 ```text
@@ -515,7 +597,8 @@ loaded_intensity_i = MIN(10, base_intensity_i × (1 + planned_kg_i × growth_per
 planned_amount_i = sets_i × reps_or_seconds_per_set_i
 volume_weight_i = planned_amount_i                 for reps
 volume_weight_i = 2 × planned_amount_i             for reps per leg
-volume_weight_i = planned_amount_i / seconds_per_rep for timed work
+volume_weight_i = planned_amount_i / seconds_per_rep for seconds
+volume_weight_i = planned_amount_i * 60 / seconds_per_rep for minutes
 session_intensity = ROUND(SUM(loaded_intensity_i × volume_weight_i)
                           / SUM(volume_weight_i), 1)
 ```
@@ -560,7 +643,8 @@ layouts. Tracker imports and exercise-specific Done flags do not complete a sess
 
 The plugin creates **Analytics/Sheet.md** and **Analytics/Smartwatch.md** for source
 charts, and **Stats.md** for source totals and intensity/heart-rate timelines.
-`Days/_Index.md` is the date index; `Days/YYYY-MM-DD.md` holds that day's
+Weeks are the primary planning notes. Under Analytics,
+`Analytics/Days/_Index.md` is the date index; `Analytics/Days/YYYY-MM-DD.md` holds that day's
 sheet sessions, scores, sets, and Garmin activities. Log dates link to these
 notes. Existing day-index reflections remain on the index, and each day has its
 own preserved reflections section.
@@ -594,5 +678,5 @@ does not evaluate formulas. Verify calculated intensity and Done values after
 conversion. Choose **Download XLSX** or **Download ODS** in settings. Both start next Monday.
 Both starting points use a manual TRUE/FALSE **Session done** dropdown. In the
 filled example, Notes topics, Loads, Library, Scoring and Cal-Intervals use the
-same structure in both formats. The XLSX template keeps the full layout with all cell formulas removed; the ODS
-template remains the basic three-sheet version.
+same structure in both formats. Both blank templates keep all six sheets and
+their tables, formatting and controls, with training data and cell formulas cleared.

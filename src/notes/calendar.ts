@@ -32,11 +32,11 @@ export function calendarMarkdown(plan: TrainingPlan | null, coachEnabled: boolea
   const cursor = new Date(`${today}T12:00:00Z`);
   for (let index = 0; index < 28; index++) {
    const date = cursor.toISOString().slice(0, 10);
-   if (scheduleOn(plan, date).length) day(date);
+   if (scheduleOn(plan, date, specializedEnabled).length) day(date);
    cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
   for (const [date, row] of dates) {
-   row.weekly = scheduleOn(plan, date).sort((a, b) => a.time.localeCompare(b.time)).map(item =>
+   row.weekly = scheduleOn(plan, date, specializedEnabled).sort((a, b) => a.time.localeCompare(b.time)).map(item =>
     [item.time, item.title, item.minutes === null ? '' : `${item.minutes} min`, item.recordedBy, item.notes].filter(Boolean).map(text).join(' · '));
   }
  }

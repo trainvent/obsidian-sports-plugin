@@ -49,9 +49,11 @@ Charts render locally without another community plugin or chart service.
 
 The XLSX template is an empty copy of the full six-sheet example, retaining its
 tables and formatting, with all cell formulas and cached calculation results removed.
-Optional sections can be left empty or removed; see the
-[optional sections guide](Workbook.md#optional-sections-and-sheets) before removing any.
-The ODS template currently retains the simpler three-sheet layout. The example contains a filled
+Keep every sheet and table when filling the template. Optional features may have
+empty data; remove structure only when deliberately requested. Agree on recurring
+activities and scoring with your agent, then check workbook completeness using
+[Workbook.md](Workbook.md#check-before-returning-the-workbook).
+Both blank formats use the full six-sheet layout. The example contains a filled
 12-week calisthenics plan, exercise library, loads, and scoring. It is a worked
 example to adapt, not a personalized training recommendation.
 
@@ -62,7 +64,8 @@ zero or blank means that circuit was not done. Leave actual kg blank until recor
 
 Enable **Show regular activities** to include your Recurring schedule in the
 dashboard and weekly notes. It is off by default. Recurring entries describe
-plans; they never prove that an activity was completed.
+plans; they never prove that an activity was completed. Keep Recurring activities
+out of Daily: Daily records separate manual workouts, not copies of the timetable.
 
 Each sheet mapping is optional and accepts an exact tab name. Leave it blank to
 disable that import. Garmin can be used independently by leaving all three blank.
@@ -81,8 +84,9 @@ made by Trainvent. Save changes to the cloud workbook before syncing Sports.
 | Blank template | [Training-Template.xlsx](templates/Training-Template.xlsx) | [Training-Template.ods](templates/Training-Template.ods) |
 | Filled example | [Training-Example.xlsx](templates/Training-Example.xlsx) | [Training-Example.ods](templates/Training-Example.ods) |
 
-The XLSX template and filled example include Strategy, Daily, Recurring, Scoring,
-Library, and Loads. The ODS template currently contains Strategy, Daily and Recurring. The example’s
+The XLSX and ODS templates and filled examples include Strategy, Daily, Recurring,
+Scoring, Library, and Loads. Both blank templates keep the full layout without
+training data or cell formulas. The example’s
 exercises and five set columns are illustrations; the
 importer supports custom layouts described in the guides. To adapt a workbook with a chatbot, give it a
 copy and the workbook guide. Preserve recorded history and stable session IDs.
@@ -102,20 +106,21 @@ The default notes folder is `Sports/`. Files are created as their source data be
 | `Overview.md` | Starting page with today, this week, and navigation |
 | `Sports.base` | Sortable Weeks and Routines views over note properties |
 | `Stats.md` | Source totals and training trends |
+| `Weeks/YYYY-MM-DD.md` | Primary weekly planning, results, and review |
 | `Structure/Plans.md` | Goals, weekly progression, and upcoming sessions |
 | `Structure/Strategy.md` | Program structure and recurring schedule |
 | `Structure/Calendar.md` | Upcoming workbook sessions, recurring activities, and optional Coach workouts |
 | `Analytics/Log.md` | Manual results and Garmin activities, grouped by date |
 | `Analytics/Sheet.md` | Planned intensity, performance, and felt-effort trends |
 | `Analytics/Smartwatch.md` | Garmin volume, running, and swimming graphs |
-| `Days/_Index.md` and `Days/YYYY-MM-DD.md` | Day index, session details, sets, and reflections |
-| `Weeks/YYYY-MM-DD.md` | Weekly plans, results, and review |
+| `Analytics/Days/_Index.md` and `Analytics/Days/YYYY-MM-DD.md` | Day index, session details, sets, and reflections |
 | `Goals/<goal_id>.md` | Goal targets, mapped results, matching activities, and reviews |
 | `Routines/` | Routine explanations, exercises, and progressions |
 | `Guide/` | Workbook and tracking guides |
 
 Weekly notes cover the current week, imported sessions, and Week plans.
-Day notes cover today and earlier dates with workbook or Garmin entries.
+Day notes under Analytics cover today and earlier dates with workbook or Garmin
+entries. Start in Weeks for planning; use Analytics/Days to review recorded days.
 Goal categories distinguish aspiration and maintenance; either can use workbook
 results and Garmin activities. Configure their source mappings in Strategy.
 

@@ -10,7 +10,10 @@ export function weekDates(anchor = new Date()): string[] {
   const day = new Date(start); day.setDate(day.getDate() + index); return localDate(day);
  });
 }
-export function scheduleOn(plan: TrainingPlan | null, date: string): WeeklyScheduleItem[] {
+export function scheduleOn(plan: TrainingPlan | null, date: string, manualVisible = true): WeeklyScheduleItem[] {
  const weekday = new Date(`${date}T12:00:00`).getDay();
- return (plan?.weeklySchedule ?? []).filter(item => item.weekday === weekday);
+ return (plan?.weeklySchedule ?? []).filter(item => item.weekday === weekday && !(
+  manualVisible && /^(?:daily|training log|manual)$/i.test(item.recordedBy.trim()) && item.minutes !== null &&
+  plan?.sessions.some(session => session.date === date && session.title.trim().toLowerCase() === item.title.trim().toLowerCase() && session.plannedMinutes === item.minutes)
+ ));
 }

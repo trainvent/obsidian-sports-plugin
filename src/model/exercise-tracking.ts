@@ -2,6 +2,7 @@ import type { Session } from './types';
 
 export interface ExerciseTracking {
  group: string; name: string; unit: string;
+ displayUnit?: 'minutes';
  targets: (number | null)[]; actual: (number | null)[]; done: boolean | null;
  aggregation?: 'total' | 'average' | 'min' | 'max' | 'last';
  resultKeys?: string[]; setNumbers?: number[]; setChecks?: (boolean | null)[];
@@ -42,10 +43,10 @@ export function exerciseTracking(session: Session): ExerciseTracking[] {
    const raw = session.results?.[key]?.trim() ?? '';
    if (done !== true || !raw) return null;
    const time = /^(\d+):([0-5]\d)(?::([0-5]\d))?$/.exec(raw);
-   const value = timed && time ? time[3] ? Number(time[1]) * 3600 + Number(time[2]) * 60 + Number(time[3]) : Number(time[1]) * 60 + Number(time[2]) : /^\d+(?:\.\d+)?$/.test(raw) ? Number(raw) : NaN;
+   const value = timed && time ? time[3] ? Number(time[1]) * 3600 + Number(time[2]) * 60 + Number(time[3]) : Number(time[1]) * 60 + Number(time[2]) : /^\d+(?:\.\d+)?$/.test(raw) ? Number(raw) * (timed && suffix.startsWith('min') ? 60 : 1) : NaN;
    return Number.isFinite(value) && value >= 0 ? value : null;
   });
-  exercises.push({ group, name: match[2]!, unit: rounds ? 'rounds' : timed ? 'seconds' : suffix === '/leg' ? 'reps/leg' : suffix || 'reps', targets: Array<number>(count).fill(target), actual, done, resultKeys });
+  exercises.push({ group, name: match[2]!, unit: rounds ? 'rounds' : timed ? 'seconds' : suffix === '/leg' ? 'reps/leg' : suffix || 'reps', ...(timed && suffix.startsWith('min') ? { displayUnit: 'minutes' as const } : {}), targets: Array<number>(count).fill(target), actual, done, resultKeys });
  }
  return withLoads(session, exercises);
 }

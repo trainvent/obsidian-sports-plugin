@@ -146,3 +146,14 @@ test('exercise chart uses shared count/time scales, outlined target pipes and re
  const invalid = new Element(); render('Exercise\tPlan\tResult\n<script>\tInfinity\t0', invalid);
  assert.equal(invalid.children[0].tag, 'pre');
 });
+
+test('minute prescriptions interpret numeric results in minutes and long seconds display as minutes', () => {
+ const session={...base,prescription:'A) Easy run: 1 x 20 minutes',checks:{'A done':true},results:{'A 1 result':'22'}};
+ const metric=exerciseTracking(session)[0];
+ assert.deepEqual(metric.targets,[1200]);assert.deepEqual(metric.actual,[1320]);
+ assert.ok(performanceMarkdown(session).includes('(minutes)\t20\t22'));
+ assert.ok(compactResults(session).includes('22 minutes'));
+ const seconds={...session,prescription:'A) Easy run: 1 x 1200 seconds',results:{'A 1 result':'1320'}};
+ assert.ok(performanceMarkdown(seconds).includes('(minutes)\t20\t22'));
+ assert.equal(exerciseTracking(seconds)[0].unit,'seconds');
+});

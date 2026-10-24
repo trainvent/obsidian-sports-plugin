@@ -15,6 +15,7 @@ export function setLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bool
  const sessions = new Map<string, Session>();
  const metrics = new Map<string, Map<string, Map<number, { target: number | null; actual: number | null; done: boolean | null }>>>();
  const aggregations = new Map<string, ExerciseTracking['aggregation']>();
+ const minuteDisplays = new Set<string>();
  const metadata = new Map<string, Record<string, string>>();
  for (const [index, row] of rows.slice(first + 1).entries()) {
   if (!row.some(value => cellText(value))) continue;
@@ -70,6 +71,7 @@ export function setLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bool
   const aggregate = (entry.Aggregate || 'total') as ExerciseTracking['aggregation'];
   if (!['total', 'average', 'min', 'max', 'last'].includes(aggregate!)) throw new Error(`${context}: Aggregate must be total, average, min, max, or last.`);
   const aggregationKey = JSON.stringify([id, key]);
+  if (timed && /^min/i.test(unitInput)) minuteDisplays.add(aggregationKey);
   if (aggregations.has(aggregationKey) && aggregations.get(aggregationKey) !== aggregate) throw new Error(`${context}: conflicting Aggregate for exercise/unit.`);
   aggregations.set(aggregationKey, aggregate);
   let sets = metrics.get(id)!.get(key);
@@ -94,7 +96,7 @@ export function setLog(rows: SheetData, parts: TrainingPart[], hasStrategy: bool
   for (const [key, sets] of metrics.get(session.id)!) {
    const [name, unit] = JSON.parse(key) as [string, string];
    const ordered = [...sets.entries()].sort(([left], [right]) => left - right);
-   const exercise: ExerciseTracking = { group: name, name, unit, aggregation: aggregations.get(JSON.stringify([session.id, key])), targets: ordered.map(([, value]) => value.target), actual: ordered.map(([, value]) => value.actual), done: ordered.some(([, value]) => value.done === true) ? true : ordered.every(([, value]) => value.done === false) ? false : null, setNumbers: ordered.map(([number]) => number), setChecks: ordered.map(([, value]) => value.done) };
+   const exercise: ExerciseTracking = { group: name, name, unit, ...(minuteDisplays.has(JSON.stringify([session.id, key])) ? { displayUnit: 'minutes' as const } : {}), aggregation: aggregations.get(JSON.stringify([session.id, key])), targets: ordered.map(([, value]) => value.target), actual: ordered.map(([, value]) => value.actual), done: ordered.some(([, value]) => value.done === true) ? true : ordered.every(([, value]) => value.done === false) ? false : null, setNumbers: ordered.map(([number]) => number), setChecks: ordered.map(([, value]) => value.done) };
    session.tracking!.push(exercise);
   }
   const hasResults = typeof session.scores?.effortRating === 'number' || typeof session.scores?.actualPerformance === 'number' || typeof session.scores?.actualEffort === 'number' || session.tracking!.some(exercise => exercise.actual.some(value => value !== null) || exercise.done === true) || Object.values(session.results!).some(Boolean);
