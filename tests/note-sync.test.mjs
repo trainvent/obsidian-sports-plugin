@@ -1,3 +1,4 @@
+import { parse, stringify } from 'yaml';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
@@ -24,7 +25,12 @@ function fixture() {
  const plugin = {
   data: { notesFolder: 'Sports', strategySheet: 'Strategy', trackingSheet: 'Training log', generatedBlocks: {}, events: [] },
   save: async () => {},
-  app: { fileManager: { renameFile: async (file, path) => { files.delete(file.path); file.path = path; files.set(path, file); } }, vault: {
+  app: { fileManager: { processFrontMatter: async (file, transform) => {
+   const match = file.content.match(/^---\n([\s\S]*?)\n---\n/);
+   const properties = match ? parse(match[1]) : {};
+   transform(properties);
+   file.content = `---\n${stringify(properties)}---\n${file.content.slice(match?.[0].length ?? 0)}`;
+  }, renameFile: async (file, path) => { files.delete(file.path); file.path = path; files.set(path, file); } }, vault: {
    read: async file => file.content,
    getAbstractFileByPath: path => files.get(path),
    createFolder: async path => { files.set(path, { path }); },
@@ -516,7 +522,7 @@ test('calendar sync preserves reviews, protects generated edits and supports Coa
  const standalone = fixture(); standalone.plugin.data.showGarminCoachPlans = true;
  await syncCoachOnlyPlans(standalone.plugin);
  assert.ok(standalone.files.has('Sports/Structure/Calendar.md'));
- assert.match(standalone.files.get('Sports/Structure/Plans.md').content, /Calendar/);
+ assert.match(standalone.files.get('Sports/Structure/Plans.md').content, /Upcoming Garmin Coach workouts/);
 });
 
 test('calendar expands workbook weekly training across DST and on later dated plans without legacy events', () => {
@@ -572,13 +578,13 @@ test('Calendar relies on the inline filename title and removes only its legacy g
  await syncNotes(plugin, plan);
  const note = files.get('Sports/Structure/Calendar.md');
  assert.doesNotMatch(note.content, /^# Calendar/m);
- note.content = '# Calendar\n\n' + note.content.trimStart() + '\nPersonal review\n';
+ note.content = note.content.replace(/^(---\n[\s\S]*?\n---\n)/, '$1# Calendar\n\n') + '\nPersonal review\n';
  assert.deepEqual(await syncNotes(plugin, plan), []);
  assert.doesNotMatch(note.content, /^# Calendar/m);
  assert.match(note.content, /Personal review/);
- note.content = '# My custom calendar\n\n' + note.content;
+ note.content = note.content.replace(/^(---\n[\s\S]*?\n---\n)/, '$1# My custom calendar\n\n');
  await syncNotes(plugin, plan);
- assert.match(note.content, /^# My custom calendar/);
+ assert.match(note.content, /^# My custom calendar/m);
 });
 
 test('all generated notes omit redundant titles and migrate legacy headings while preserving frontmatter and reviews', async () => {
@@ -601,7 +607,8 @@ test('all generated notes omit redundant titles and migrate legacy headings whil
   assert.doesNotMatch(files.get(path).content, /^# /m, path);
   assert.match(files.get(path).content, /Personal review stays/);
  }
- assert.match(files.get('Sports/Goals/running.md').content, /^---\ntags: \[sports\/goal\]\ngoal_id: "running"\n---/);
+ assert.match(files.get('Sports/Goals/running.md').content, /^---\n/);
+ assert.equal(parse(files.get('Sports/Goals/running.md').content.split('---')[1]).goal_id, 'running');
  assert.doesNotMatch(files.get('Sports/Guide/Workbook.md').content, /^# /m);
  assert.match(files.get('Sports/Structure/Plans.md').content, /sports:end plan -->\n\n## Reflections/);
 });
@@ -641,7 +648,7 @@ test('legacy sheet guide is renamed to Workbook without losing edits or overwrit
 });
 
 
-test('Analytics owns comparisons, links from Plans, preserves reflections, and protects edited graphs', async () => {
+test('Plans starts with content while Analytics owns protected comparisons', async () => {
  const { plugin, plan, files } = fixture();
  plan.sessions = [{ id: 'future', date: '2020-01-01', title: 'Practice', sport: 'training', partId: '', partVersion: '', prescription: 'Squat) Back squat: 3 x 5', checks: { 'Squat done': true }, results: { 'Squat 1 result': '4' }, plannedMinutes: 20, actualMinutes: 10, result: 'Recorded result', status: 'in-progress', notes: 'Session note' }];
  assert.deepEqual(await syncNotes(plugin, plan), []);
@@ -649,7 +656,11 @@ test('Analytics owns comparisons, links from Plans, preserves reflections, and p
  assert.ok(analytics.content.includes('sports-compare'));
  assert.ok(analytics.content.includes('(reps)\t15\t4'));
  const plans = files.get('Sports/Structure/Plans.md');
- assert.ok(plans.content.includes('[[Sports/Overview|Overview]]'));
+ const metadata = parse(plans.content.split('---')[1]);
+ assert.equal(metadata.calendar, undefined);
+ assert.equal(metadata.strategy, undefined);
+ assert.ok(plans.content.includes('<!-- sports:begin plan -->\n## Starting point and goals'));
+ assert.ok(!plans.content.includes('[[Sports/Overview|Overview]]'));
  assert.ok(!plans.content.includes('sports-compare'));
  assert.ok(!plans.content.includes('Recorded result'));
  assert.ok(!plans.content.includes('| Results |'));
@@ -714,4 +725,111 @@ test('Calendar table editor formatting survives source changes while real edits 
  assert.ok((await syncNotes(plugin, plan)).some(issue => issue.startsWith('Structure/Calendar.md:')));
  assert.equal(calendar.content, edited);
  assert.throws(() => mergeBlock('<!-- sports:begin calendar -->\n| A |\n| ------ |\n<!-- sports:end calendar -->', 'calendar', '| B |\n| --- |'), /trusted baseline/);
+});
+
+
+test('routine targets stay in properties while other properties and reflections survive sync', async () => {
+ const {plugin, plan, files} = fixture();
+ plan.goals = [{id:'strength', title:'Strength', benchmark:'A full rep'}];
+ plan.parts = [{id:'Cal-Intervals', version:'1', prescription:'Circuit', goalIds:['strength']}];
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ const file = files.get('Sports/Routines/Cal-Intervals.md');
+ assert.deepEqual(parse(file.content.split('---')[1]).targets, ['[[Sports/Goals/strength|Strength]]']);
+ assert.ok(!file.content.includes('## Targets'));
+ file.content = file.content.replace('---\n', '---\ncustom: "Keep this"\n') + '\nMy reflection\n';
+ plan.goals[0].title = 'Updated strength';
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.deepEqual(parse(file.content.split('---')[1]).targets, ['[[Sports/Goals/strength|Updated strength]]']);
+ assert.equal(parse(file.content.split('---')[1]).custom, 'Keep this');
+ assert.ok(file.content.includes('My reflection'));
+});
+
+
+test('goal and calendar properties refresh without duplicating metadata in bodies', async () => {
+ const {plugin, plan, files} = fixture();
+ plan.goals = [{id:'running', title:'Running', category:'maintenance', baseline:'Starting level', benchmark:'Run steadily', test:'Easy run', resultColumn:'Running result', garminTypes:['running']}];
+ plan.sessions = [{id:'one',date:'2020-01-01',title:'Run',sport:'running',partId:'',partVersion:'',plannedMinutes:20,actualMinutes:null,status:'planned',notes:'',result:''}];
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ const properties = path => parse(files.get(`Sports/${path}`).content.split('---')[1]);
+ assert.equal(properties('Goals/running.md').category, 'Maintenance');
+ assert.equal(properties('Goals/running.md').result_column, 'Running result');
+ assert.deepEqual(properties('Goals/running.md').garmin_types, ['running']);
+ assert.ok(files.get('Sports/Goals/running.md').content.includes('**Target:** Run steadily'));
+ assert.ok(!files.get('Sports/Goals/running.md').content.includes('**Category:**'));
+ assert.equal(properties('Days/2020-01-01.md').date, '2020-01-01');
+ assert.equal(properties('Days/2020-01-01.md').week, '[[Sports/Weeks/2019-12-30]]');
+ const week = properties('Weeks/2026-12-28.md');
+ assert.equal(week.week_start, '2026-12-28');
+ assert.equal(week.week_end, '2027-01-03');
+ assert.equal(week.program_week, 1);
+ assert.equal(week.phase, 'Foundation');
+ plan.weekPlans = [];
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.equal(properties('Weeks/2026-12-28.md').phase, undefined);
+ assert.equal(properties('Weeks/2026-12-28.md').program_week, undefined);
+});
+
+
+test('Overview owns navigation while generated content keeps its contextual links', async () => {
+ const {plugin, plan, files} = fixture();
+ plan.goals = [{id:'strength',title:'Strength',benchmark:'A rep'}];
+ plan.parts = [{id:'A',version:'1',title:'Strength',prescription:'Pull-up',goalIds:['strength']}];
+ plan.sessions = [{id:'one',date:'2020-01-01',title:'Training',sport:'training',block:'A',partId:'A',partVersion:'1',plannedMinutes:20,actualMinutes:null,status:'planned',notes:'',result:''}];
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ for (const file of files.values()) {
+  if (!(file instanceof TFile) || file.path === 'Sports/Overview.md') continue;
+  assert.doesNotMatch(file.content, /^\[\[Sports\/[^\n]+\]\](?: · \[\[Sports\/[^\n]+\]\])+$/m, file.path);
+  assert.ok(!file.content.includes('[[Sports/Overview|Overview]]'), file.path);
+ }
+ assert.ok(files.get('Sports/Overview.md').content.includes('[[Sports/Structure/Plans\\|Plans]]'));
+ assert.ok(files.get('Sports/Structure/Plans.md').content.includes('[[Sports/Goals/strength'));
+ assert.ok(files.get('Sports/Analytics/Log.md').content.includes('[[Sports/Days/2020-01-01'));
+ assert.ok(files.get('Sports/Days/_Index.md').content.includes('[[Sports/Days/2020-01-01'));
+ assert.ok(files.get('Sports/Routines/_Index.md').content.includes('[[Sports/Routines/Skills A|Skills A]]'));
+});
+
+
+test('shared tags group related notes while preserving custom tags on repeated refresh', async () => {
+ const {plugin, plan, files} = fixture();
+ plan.goals = [{id:'running',title:'Running',benchmark:'Run',garminTypes:['running']}];
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ const file = files.get('Sports/Goals/running.md');
+ const front = file.content.match(/^---\n([\s\S]*?)\n---\n/);
+ const properties = parse(front[1]);
+ properties.tags.push('personal/fitness');
+ file.content = `---\n${stringify(properties)}---\n${file.content.slice(front[0].length)}`;
+ plan.goals[0].garminTypes = ['swimming'];
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ const tags = parse(file.content.split('---')[1]).tags;
+ assert.ok(tags.includes('personal/fitness'));
+ assert.ok(tags.includes('sports/goals'));
+ assert.ok(tags.includes('sports/swimming'));
+ assert.ok(!tags.includes('sports/running'));
+ assert.ok(parse(files.get('Sports/Structure/Plans.md').content.split('---')[1]).tags.includes('sports/planning'));
+ assert.ok(parse(files.get('Sports/Routines/Running.md').content.split('---')[1]).tags.includes('sports/planning'));
+});
+
+
+test('cache recovery remains authorized for Garmin notes returning after workbook-only refresh', async () => {
+ const {plugin, plan, files} = fixture();
+ const activity = {id:'late',date:'2020-01-01',time:'08:00',name:'Run',type:'running',duration:1800,distance:5000,average_hr:140};
+ plugin.data.garminCache = {activities:[activity],lastSuccess:'2026-10-24',start:'2020-01-01',end:'2026-10-24',error:''};
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ const day = files.get('Sports/Days/2020-01-01.md');
+ day.content += '\nKeep my day reflection\n';
+ clearImportCache(plugin.data);
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.equal(plugin.data.resetNoteBaselines, false);
+ assert.ok(plugin.data.noteRecoveryPending.includes('Sports/Days/2020-01-01.md:day:2020-01-01'));
+ plugin.data.garminCache = {activities:[{...activity,duration:1900}],lastSuccess:'2026-10-24',start:'2020-01-01',end:'2026-10-24',error:''};
+ assert.deepEqual(await syncNotes(plugin, plan), []);
+ assert.ok(day.content.includes('Keep my day reflection'));
+ assert.ok(!plugin.data.noteRecoveryPending.includes('Sports/Days/2020-01-01.md:day:2020-01-01'));
+ const backups = [...files.entries()].filter(([path])=>path.includes('/Backups/')&&path.endsWith('/Days/2020-01-01.md'));
+ assert.equal(backups.length, 1);
+ assert.ok(backups[0][1].content.includes('Keep my day reflection'));
+ day.content = day.content.replace('Run', 'My edited activity');
+ const edited = day.content;
+ assert.ok((await syncNotes(plugin, plan)).some(issue=>issue.startsWith('Days/2020-01-01.md:')));
+ assert.equal(day.content, edited);
 });

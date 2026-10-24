@@ -8,7 +8,7 @@ const dayLabel = (date: string): string => new Date(`${date}T12:00:00Z`).toLocal
 export function weekMarkdown(plan: TrainingPlan | null, dates: string[], showRegularActivities = false): string {
  const sessions = (plan?.sessions ?? []).filter(session => dates.includes(session.date));
  const strategy = plan?.weekPlans?.find(week => week.start === dates[0]);
- const heading = strategy ? `Week ${strategy.week} · ${safeText(strategy.phase)}` : 'This week';
+ const heading = 'Week';
  const focus = strategy ? callout('tip', 'This week’s focus', [
   safeText(strategy.focus),
   strategy.targets ? `\n**Targets** · ${safeText(strategy.targets)}` : '',
@@ -38,5 +38,5 @@ export function weekMarkdown(plan: TrainingPlan | null, dates: string[], showReg
   return `### ${date}\n\n${[...cards, ...recurring].join('\n\n')}`;
  }).filter(Boolean);
  const blocks = Object.entries(strategy?.blocks ?? {}).map(([name, prescription]) => `**${safeText(name)}** · ${safeText(prescription)}`).join('\n\n');
- return `## ${heading}\n\n${dates.length ? `**${dayLabel(dates[0]!)} — ${dayLabel(dates.at(-1)!)}**\n\n` : ''}${focus}\n\n## At a glance\n\n| Day | Training | Planned min |\n| --- | --- | --- |\n${rows.join('\n')}\n\n${blocks ? `${callout('info-', 'Strategy reference', blocks)}\n\n` : ''}## Day by day\n\n${days.join('\n\n') || 'No sessions planned for these dates.'}`;
+ return `## ${heading}\n\n${focus}\n\n## At a glance\n\n| Day | Training | Planned min |\n| --- | --- | --- |\n${rows.join('\n')}\n\n${blocks ? `${callout('info-', 'Strategy reference', blocks)}\n\n` : ''}## Day by day\n\n${days.join('\n\n') || 'No sessions planned for these dates.'}`;
 }

@@ -18,8 +18,7 @@ import { templateWorkbook } from './workbook/template-file';
 import { syncSources } from './garmin/orchestrate';
 import { GarminConnectModal } from './ui/garmin-connect';
 import { garminMarkdown } from './garmin/render';
-import { noteLink } from './notes/plan';
-import { clearImportCache } from './notes/cache';
+import { clearImportCache, collectRecoveryNotes } from './notes/cache';
 import { migrateNoteNames } from './notes/migrate';
 import { syncNotes } from './notes/sync';
 import { updateNote } from './notes/store';
@@ -102,7 +101,9 @@ export default class SportsPlugin extends Plugin {
   if (this.syncing || this.noteBusy) { new Notice('Wait for the current sync to finish before clearing cached data.'); return; }
   this.noteBusy = true;
   try {
+   const pending = await collectRecoveryNotes(this);
    clearImportCache(this.data);
+   this.data.noteRecoveryPending = [...new Set([...this.data.noteRecoveryPending, ...pending])];
    await this.save(); this.refreshViews();
    new Notice('Cached training data cleared. Sync the workbook to rebuild notes. Existing notes will be backed up before rebuilding.');
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not clear cached data.'); }
@@ -169,7 +170,7 @@ export default class SportsPlugin extends Plugin {
   try {
    const issues = await migrateNoteNames(this);
    if (issues.length) throw new Error(issues[0]);
-   const file = await updateNote(this, 'Analytics/Log.md', 'training-log', `${noteLink(this.data.notesFolder, 'Structure/Plans', 'Plans')} · ${noteLink(this.data.notesFolder, 'Overview', 'Overview')}\n\n${combinedLogMarkdown(this.data.plan, this.data.garminCache, new Date(), this.data.notesFolder)}`, '# Log\n\n## Commentary\n');
+   const file = await updateNote(this, 'Analytics/Log.md', 'training-log', `${combinedLogMarkdown(this.data.plan, this.data.garminCache, new Date(), this.data.notesFolder)}`, '# Log\n\n## Commentary\n');
    await this.app.workspace.getLeaf(false).openFile(file);
   } catch (error) { new Notice(error instanceof Error ? error.message : 'Could not update the training log.'); }
   finally { this.noteBusy = false; }
@@ -180,7 +181,7 @@ export default class SportsPlugin extends Plugin {
   this.noteBusy = true;
   try {
    const dates = weekDates(anchor);
-   const file = await updateNote(this, `Weeks/${dates[0]}.md`, `week:${dates[0]}`, `${noteLink(this.data.notesFolder, 'Structure/Plans', 'Plans')} · ${noteLink(this.data.notesFolder, 'Analytics/Log', 'Log')} · ${noteLink(this.data.notesFolder, 'Overview', 'Overview')}\n\n${weekMarkdown(this.data.plan, dates, this.data.showRegularActivities) + garminMarkdown(this.data.garminCache, dates)}`, `# Week of ${dates[0]}\n\n## Reflections\n\n### What improved\n\n- \n\n### Recovery and comfort\n\n- \n\n### What to adjust\n\n- \n\n### Next week's focus\n\n- \n`);
+   const file = await updateNote(this, `Weeks/${dates[0]}.md`, `week:${dates[0]}`, `${weekMarkdown(this.data.plan, dates, this.data.showRegularActivities) + garminMarkdown(this.data.garminCache, dates)}`, `# Week of ${dates[0]}\n\n## Reflections\n\n### What improved\n\n- \n\n### Recovery and comfort\n\n- \n\n### What to adjust\n\n- \n\n### Next week's focus\n\n- \n`);
    if (review) {
     const content = await this.app.vault.read(file);
     const personal = content.slice(content.indexOf(`<!-- sports:end week:${dates[0]} -->`) + `<!-- sports:end week:${dates[0]} -->`.length);

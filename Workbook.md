@@ -3,7 +3,8 @@
 This guide lives in `Guide/Workbook.md` under the configured Sports notes folder
 in your vault. Existing guide edits are preserved on template download and sync.
 
-Give this guide and a copy of `templates/Training-example.xlsx` or `templates/Training-example.ods` to your chatbot.
+Download an example with **Settings → Sports → Download XLSX** or **Download ODS**.
+Use this guide when adapting it yourself, or give both to your chatbot.
 The example is a fixed starting point, not a personalized recommendation. Adapt
 its goals, exercises, prescriptions, schedule and training volume to your needs.
 Work on a copy. The plugin reads the workbook and never writes training results
@@ -23,8 +24,8 @@ stays A or B; planned and actual added kg are recorded in **Loads**.
 Both editable and reference areas alternate row tones to help you follow a session
 across the sheet. Colors are cues, not access restrictions.
 
-In **Daily**, actual minutes, status, A/B/C entries, Cal-Intervals, Notes and the final three
-manual result columns are green. Dates, plans, titles and planned minutes stay
+In **Daily**, actual minutes, Session done, A/B/C entries, Cal-Intervals, Notes,
+Notes topic, and effort inputs are editable. Dates, plans, titles and planned minutes stay
 neutral. In **Recurring**, start/end times, activity, recorded-by and notes are
 green; the calculated Minutes column stays neutral. Strategy's `max_sets` and
 `max_reps` cells and all headings stay neutral.
@@ -79,6 +80,9 @@ measurements or achievements.
 Each goal creates a note at `Goals/<goal_id>.md` under the configured Sports notes
 folder. Keep the ID stable so reviews stay attached when renaming a goal. The
 review area is outside the generated section and is preserved on every sync.
+Goal category, result-column mapping and Garmin types appear in note properties;
+baseline, target and test standard stay in the body. These properties follow the
+workbook on sync. Edit their values in Strategy; unrelated custom properties are preserved.
 
 The optional `result_column` and `garmin_types` fields control two independent
 sources. **Both sources work for every goal, regardless of its category.**
@@ -193,7 +197,8 @@ value, never a formula. TRUE marks the session completed; there is no separate
 Status column in the XLSX. Notes topic replaces the three manual goal-result
 columns. General notes stay with the session; selected Muscle-up, HSPU and Pistol
 notes also appear on their goal page. Skills A, Skills B, Technique, Swimming and
-Running route to **Routines/<topic>.md**. Cal-Intervals routes to
+Running route to **Routines/<topic>.md**. Routine goal links appear in the
+**targets** note property. Cal-Intervals routes to
 **Routines/Cal-Intervals.md**. Reflections do not count as measured performance.
 
 **Goal reflections:** write in Notes and select its topic. General is the default;
@@ -204,14 +209,13 @@ a measured result or automatic goal achievement.
   to the correct week and block. Copying a row requires checking every reference.
 - Block must match a Parts `part_id`. Use `Part version` if that ID has multiple
   versions. Blank or `empty` Block means no linked strategy part.
-- Status is one of `planned`, `in-progress`, `completed`, `skipped`, `cancelled`.
-  Set `completed` explicitly only after doing the session. A Done flag records
-  an exercise, not the whole session. The template's explicit `planned` Status
-  remains planned until you change it. Without Status, actual results imply
-  in-progress.
-- Leave Actual minutes and manual goal results blank until recorded. Keep the
-  prefilled rep and round targets separate from actual recorded training by
-  leaving their Done flags FALSE or blank until recording.
+- The current template uses **Session done** to mark the session completed.
+  Other layouts can use **Status**: `planned`, `in-progress`, `completed`,
+  `skipped`, or `cancelled`. Exercise-specific Done flags record exercise results;
+  they do not complete a session. Without an explicit completion field, actual
+  results imply `in-progress`.
+- Leave Actual minutes and Actual kg blank until recorded. Leave Session done
+  FALSE or blank until the prefilled set values have been adjusted to actual results.
 - Without Session ID, the plugin uses Date plus Block as the session identity.
   For two sessions with the same date and block, add distinct stable Session IDs.
 
@@ -248,7 +252,7 @@ sections against accidental edits; change plans in the workbook instead.
 2. Adapt a copy of the example; preserve headers, sections, IDs and formulas.
 3. Update goal links, arsenal names, weekly prescriptions and Daily consistently.
 4. Preserve recorded history. Leave future actual minutes and manual results blank;
-   prefilled rep/round targets must have FALSE or blank Done flags.
+   prefilled rep/round targets must have Session done FALSE or blank.
 5. Recalculate and save the workbook. Check for formula errors, broken references,
    duplicate IDs, unknown blocks/goals and commas or colons in arsenal names.
 6. In Obsidian, select the file and sheet names, then **Sync now**. Confirm the
@@ -312,10 +316,9 @@ session is supported. Copy a row and edit it to add another weighted exercise.
 The lookup ranges cover rows 3–1000. To increase that capacity, extend the
 ranges in Scoring too.
 
-The template lists your **6–10 kg weight vest**. Three sessions pair **3 × 3
+The example equipment includes a **6–10 kg weight vest**. Three sessions pair **3 × 3
 vest pull-ups** and **3 × 5 vest dips** at 6 kg, then remove the vest before the
-unweighted Cal-Intervals circuit. Your best single sets at 10 kg (5 pull-ups / 8 dips)
-are recorded as context, not repeated-set targets.
+unweighted Cal-Intervals circuit. Adapt the equipment and loads to your training.
 Set planned kg to 0 or remove the load row for bodyweight. Leave actual kg blank
 until recorded; **Session done does not invent an actual weight**. Actual 0 means
 bodyweight. A Done flag is still required before a load appears as a recorded
@@ -368,13 +371,14 @@ separate; added kg is shown as its own comparison metric, not added to reps.
 At the bottom of Strategy, **Plan summary** shows planned/completed sessions,
 recorded manual minutes, and median recorded performance. **Plan recap** has six
 short response fields for goal progress, what worked, changes, recovery, load
-observations, and the next plan. Completion still uses the explicit Daily Status;
-tracker imports and exercise Done flags do not mark a whole session completed.
+observations, and the next plan. Completion uses **Session done** in the template, or explicit **Status** in other
+layouts. Tracker imports and exercise-specific Done flags do not complete a session.
 
-The plugin's Analytics folder separates **Daily**, **Sheet**, and
-**Smartwatch**, plus **Combined** for source totals and intensity/heart-rate timelines. `Daily/_Index.md` is the date index; `Daily/YYYY-MM-DD.md` holds that day's
+The plugin creates **Analytics/Sheet.md** and **Analytics/Smartwatch.md** for source
+charts, and **Stats.md** for source totals and intensity/heart-rate timelines.
+`Days/_Index.md` is the date index; `Days/YYYY-MM-DD.md` holds that day's
 sheet sessions, scores, sets, and Garmin activities. Log dates link to these
-notes. Existing Daily reflections remain on the index, and each day has its
+notes. Existing day-index reflections remain on the index, and each day has its
 own preserved reflections section.
 Sheet shows three time-series charts, all with dates on the horizontal axis:
 

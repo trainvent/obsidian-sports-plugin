@@ -1,3 +1,4 @@
+import { noteProperties, mergeNoteTags, type NoteProperties } from './properties';
 import { starterBullets } from './writing-prompts';
 import { initialNoteTitle, withoutNoteTitle } from './titles';
 import { normalizePath, TFile } from 'obsidian';
@@ -6,8 +7,19 @@ import { backupBeforeReset } from './cache';
 import { generatedBlock, mergeBlock } from './blocks';
 import { queueNoteWrite } from './write-queue';
 
-export function updateNote(plugin: SportsPlugin, relativePath: string, id: string, body: string, initial: string, recreateMissing = false): Promise<TFile> {
- return queueNoteWrite(plugin, () => writeNote(plugin, relativePath, id, body, initial, recreateMissing));
+export function updateNote(plugin: SportsPlugin, relativePath: string, id: string, body: string, initial: string, recreateMissing = false, metadata?: NoteProperties): Promise<TFile> {
+ return queueNoteWrite(plugin, async () => {
+  const file = await writeNote(plugin, relativePath, id, body, initial, recreateMissing);
+  const metadataValues = metadata ?? noteProperties(id, plugin.data.plan, plugin.data.notesFolder);
+  if (Object.keys(metadataValues).length) await plugin.app.fileManager.processFrontMatter(file, (properties: Record<string, unknown>) => {
+   for (const [key, value] of Object.entries(metadataValues)) {
+    if (key === 'tags' && Array.isArray(value)) { properties.tags = mergeNoteTags(properties.tags, value); continue; }
+    if (value === null || (Array.isArray(value) && !value.length)) delete properties[key];
+    else properties[key] = value;
+   }
+  });
+  return file;
+ });
 }
 
 async function writeNote(plugin: SportsPlugin, relativePath: string, id: string, body: string, initial: string, recreateMissing: boolean): Promise<TFile> {
@@ -32,7 +44,7 @@ async function writeNote(plugin: SportsPlugin, relativePath: string, id: string,
  };
  let file: TFile;
  if (existing instanceof TFile) {
-  if (plugin.data.resetNoteBaselines && plugin.data.generatedBlocks[key] === undefined) {
+  if ((plugin.data.resetNoteBaselines || plugin.data.noteRecoveryPending?.includes(key)) && plugin.data.generatedBlocks[key] === undefined) {
    const snapshot = await plugin.app.vault.read(existing);
    if (/<!-- complete-(?:log|plans):start -->/.test(snapshot)) throw new Error(`${path} is managed by the existing Fitness refresh scripts. Choose a separate notes folder to avoid mixing generators.`);
    const begin = snapshot.indexOf(`<!-- sports:begin ${id} -->`);
@@ -47,6 +59,7 @@ async function writeNote(plugin: SportsPlugin, relativePath: string, id: string,
     return starterBullets(removeGeneratedHeading(restored));
    });
    plugin.data.generatedBlocks[key] = generatedBlock(id, body);
+   plugin.data.noteRecoveryPending = (plugin.data.noteRecoveryPending ?? []).filter(pending => pending !== key);
    await plugin.save();
    return existing;
   }
@@ -67,6 +80,7 @@ async function writeNote(plugin: SportsPlugin, relativePath: string, id: string,
   file = await plugin.app.vault.create(path, starterBullets(`${mergeBlock(title, id, body)}${commentary ? `\n${commentary}\n` : ''}`));
  }
  plugin.data.generatedBlocks[key] = generatedBlock(id, body);
+ plugin.data.noteRecoveryPending = (plugin.data.noteRecoveryPending ?? []).filter(pending => pending !== key);
  await plugin.save();
  return file;
 }

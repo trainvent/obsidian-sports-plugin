@@ -5,16 +5,22 @@ import { goalGarminTypes } from './goal-sources';
 import { noteLink } from './plan';
 
 const cell = (value: string): string => value.replaceAll('|','&#124;').replaceAll('<','&lt;').replaceAll('>','&gt;').replace(/[\r\n]+/g,'<br>');
-/** Explanations and targets stay tied to the imported workbook, never inferred achievements. */
-export function routineStrategyMarkdown(name: string, plan: TrainingPlan, folder: string, sessions: Session[]): string {
+export function routineTargetLinks(name: string, plan: TrainingPlan, folder: string): string[] {
  const id = name === 'Skills A' ? 'A' : name === 'Skills B' ? 'B' : name;
  const parts = (plan.parts ?? []).filter(part => part.id.toLowerCase() === id.toLowerCase());
  const goalIds = new Set(parts.flatMap(part => part.goalIds));
  const type = name === 'Swimming' ? 'swimming' : name === 'Running' ? 'running' : '';
  const goals = (plan.goals ?? []).filter(goal => goalIds.has(goal.id) || (type && goalGarminTypes(goal).includes(type)));
+ return goals.map(goal => goalNoteLink(goal, folder));
+}
+
+/** Explanations and targets stay tied to the imported workbook, never inferred achievements. */
+export function routineStrategyMarkdown(name: string, plan: TrainingPlan, folder: string, sessions: Session[]): string {
+ const id = name === 'Skills A' ? 'A' : name === 'Skills B' ? 'B' : name;
+ const parts = (plan.parts ?? []).filter(part => part.id.toLowerCase() === id.toLowerCase());
+ const type = name === 'Swimming' ? 'swimming' : name === 'Running' ? 'running' : '';
  const sections: string[] = [];
  if (parts.length) sections.push(`## Routine\n\n${parts.map(part=>cell(part.prescription)).join('\n\n')}`);
- if (goals.length) sections.push(`## Targets\n\n| Goal | Target | Test |\n| --- | --- | --- |\n${goals.map(goal=>`| ${goalNoteLink(goal,folder).replace('|','\\|')} | ${cell(goal.benchmark)} | ${cell(goal.test??'')} |`).join('\n')}`);
  if (name === 'Cal-Intervals') {
   if (plan.intervals?.length) sections.push(`## Exercises per round\n\n| Exercise | Work (s) | Rest (s) |\n| --- | --- | --- |\n${plan.intervals.map(item=>`| ${cell(item.exercise)} | ${item.workSeconds} | ${item.restSeconds} |`).join('\n')}`);
  } else if (!type) {

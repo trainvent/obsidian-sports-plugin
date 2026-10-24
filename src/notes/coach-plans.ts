@@ -21,5 +21,5 @@ export function coachPlansMarkdown(enabled: boolean | undefined, cache?: CoachCa
 export async function syncCoachOnlyPlans(plugin: SportsPlugin, recreateMissing = false): Promise<void> {
  if (plugin.data.plan || (!plugin.data.showGarminCoachPlans && !plugin.data.garminCoachCache)) return;
  await updateNote(plugin, 'Structure/Calendar.md', 'calendar', calendarMarkdown(null, plugin.data.showGarminCoachPlans, plugin.data.garminCoachCache, new Date(), !!plugin.data.trackingSheet?.trim()), '\n\n## Reflections\n', recreateMissing);
- await updateNote(plugin, 'Structure/Plans.md', 'plan', `[[${plugin.data.notesFolder}/Structure/Calendar|Calendar]]\n\nNo workbook plan imported.${coachPlansMarkdown(plugin.data.showGarminCoachPlans, plugin.data.garminCoachCache)}`, '# Plans\n\n## Reflections\n', recreateMissing);
+ await updateNote(plugin, 'Structure/Plans.md', 'plan', `No workbook plan imported.${coachPlansMarkdown(plugin.data.showGarminCoachPlans, plugin.data.garminCoachCache)}`, '# Plans\n\n## Reflections\n', recreateMissing);
 }

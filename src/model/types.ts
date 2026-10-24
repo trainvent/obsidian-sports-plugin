@@ -33,11 +33,11 @@ export interface SportsData {
  garminEnabled: boolean; garminSecretId: string; garminHistoryStart: string; garminCache?: GarminCache;
  workbookPath: string; strategySheet: string; trackingSheet: string; scheduleSheet: string; notesFolder: string; syncMinutes: number;
  showRegularActivities: boolean; syncOnStartup: boolean; plan: TrainingPlan | null;
- resetNoteBaselines: boolean; generatedBlocks: Record<string, string>; lastError: string;
+ noteRecoveryPending: string[]; resetNoteBaselines: boolean; generatedBlocks: Record<string, string>; lastError: string;
 }
 export const DEFAULT_DATA: SportsData = {
  showGarminCoachPlans: false,
  garminEnabled: false, garminSecretId: '', garminHistoryStart: '',
  workbookPath: '', strategySheet: 'Strategy', trackingSheet: 'Daily', scheduleSheet: 'Recurring', notesFolder: 'Sports', syncMinutes: 10, syncOnStartup: true, showRegularActivities: false,
- plan: null, resetNoteBaselines: false, generatedBlocks: {}, lastError: '',
+ plan: null, noteRecoveryPending: [], resetNoteBaselines: false, generatedBlocks: {}, lastError: '',
 };

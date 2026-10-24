@@ -48,7 +48,7 @@ test('zero or missing distance/duration never invents pace, and absent heart rat
 test('smartwatch note contains three chart blocks, cached-source status, and safe activity labels', () => {
  const body = smartwatchMarkdown({ ...cache, error: 'Refresh failed', activities: [{ ...cache.activities[0], name: '```\n<script>bad</script>' }] }, 'My sports');
  assert.equal((body.match(/```sports-watch/g) ?? []).length, 3);
- assert.ok(body.includes('[[My sports/Overview|Overview]]'));
+ assert.ok(!body.includes('[[My sports/Overview|Overview]]'));
  assert.ok(body.includes('Cached activities remain visible'));
  assert.ok(!body.includes('```\\n<script>'));
  assert.ok(body.includes('\\u0060\\u0060\\u0060'));

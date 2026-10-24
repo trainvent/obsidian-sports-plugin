@@ -1,7 +1,7 @@
 {
 	"name": "obsidian-sports-plugin",
 	"version": "0.4.0",
-	"description": "Follow athletic, street workout, and calisthenics plans from spreadsheets, with workout logs, progress charts, and optional Garmin Connect support.",
+	"description": "Plan training from spreadsheets, track workout results and progress, and review your week with optional Garmin Connect imports.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
@@ -23,7 +23,8 @@
 		"jiti": "^2.6.1",
 		"obsidian": "latest",
 		"typescript": "^5.8.3",
-		"typescript-eslint": "^8.59.1"
+		"typescript-eslint": "^8.59.1",
+		"yaml": "^2.9.1"
 	},
 	"allowScripts": {
 		"esbuild@0.25.5": true

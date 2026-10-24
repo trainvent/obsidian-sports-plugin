@@ -67,7 +67,7 @@ test('daily notes follow the plan timezone and also support Garmin-only dates in
  const now = new Date('2026-10-20T22:30:00Z');
  const tasks = dailyNoteTasks(plan, 'My sports', undefined, now);
  assert.deepEqual(tasks.map(t => t.path), ['Days/2026-10-21.md']);
- assert.ok(tasks[0].body.includes('[[My sports/Days/_Index|All days]]'));
+ assert.ok(tasks[0].body.startsWith('## Sheet sessions'));
  const cache = { lastSuccess: '', activities: [{ id: '1', date: '2020-01-01', time: '08:00', name: 'Only watch', type: 'running', duration: null, distance: null, average_hr: null }] };
  const watch = dailyNoteTasks(null, 'My sports', cache, now);
  assert.equal(watch.length, 1);
@@ -309,5 +309,5 @@ test('Combined keeps source minutes separate and preserves missing measurements'
  assert.ok(body.includes('2019-12-01\t—\t—'));
  assert.ok(body.includes('2020-01-03\t—\t—'));
  assert.ok(!body.includes('2099-01-01'));
- assert.ok(body.includes('[[Custom/Analytics/Sheet|Sheet]]'));
+ assert.ok(!body.includes('[[Custom/Overview|Overview]]'));
 });

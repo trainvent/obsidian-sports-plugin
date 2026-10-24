@@ -71,11 +71,11 @@ Do not merge two exercise groups under the same name.
 
 Flat equivalents are `Squat done`, `Squat 1 result`, `Squat 2 result`, etc.
 `Circuit done` with `Circuit rounds result` also works. Numbered inputs and rounds
-remain gated by the corresponding Done flag. The current XLSX uses one manual
+remain gated by the corresponding Done flag. Both current templates use one manual
 **Session done** flag for all skill results. Adjust values before selecting TRUE.
 Cal-Intervals rounds greater than zero are then recorded; zero or blank means
 not done and remains unscored. Session done TRUE marks the session completed;
-the XLSX has no separate Status column.
+the templates have no separate Status column.
 
 For numeric comparisons, match the group name in Plan, one prescription per line:
 
@@ -94,20 +94,19 @@ import limits or automatically resize a workbook.
 
 ### Where the changes appear
 
-Reload **Sports** under **Settings → Community plugins** after installing a build.
-Then open its dashboard and select **Open analytics**, **Open plans**, **Open weekly note**, or
+Open the Sports dashboard and select **Open analytics**, **Open plans**, **Open weekly note**, or
 **Open training log**. The dashboard also exposes **Tracking guide** and expandable
 **Sets and plan/result comparison** panels. Use **Sync now** to import workbook
 changes. Confirm **Settings → Sports → Tracking sheet** selects the intended tab.
 
 Upcoming manual prescriptions appear in **Plans**. Results and comparisons live
-in **Analytics**, available through **Open analytics** on the dashboard or the link
-in Plans. Session results live in **Log**. The Analytics folder contains **Daily**
-(the `Daily/_Index.md` date index), **Sheet** (sheet score trends), and **Smartwatch** (Garmin graphs), and **Combined** (both sources over time).
-Daily links to `Daily/YYYY-MM-DD.md`, combining that day's sheet sessions, scores,
+in day notes and **Analytics/Log.md**. **Open analytics** opens **Stats.md** for
+source totals and trends, with links to **Analytics/Sheet.md** and
+**Analytics/Smartwatch.md**. **Days/_Index.md** links to
+`Days/YYYY-MM-DD.md`, combining that day's sheet sessions, scores,
 individual sets, and Garmin activities. Log dates link there too. Only today and
 earlier dates with source entries receive day notes; upcoming sessions stay in
-Plans. Existing Daily reflections stay on the index. Each day has a protected
+Plans. Existing day-index reflections stay on the index. Each day has a protected
 generated section and a separate reflections area. Exercise details contain a
 four-column table and a compact pipe chart: exercises along the x-axis,
 reps/rounds on the left and time on the right. Purple hollow points show the plan;
@@ -124,13 +123,13 @@ service is used. Existing notes and commentary retain their conflict protection.
 
 ### Intensity, performance, and optional felt effort
 
-The XLSX template keeps **Planned intensity** and **Effort rating** in Daily.
-Its unified Scoring table holds performance and coverage, imported automatically.
+The templates keep **Planned intensity** and **Effort rating** in Daily.
+The unified Scoring table holds performance and coverage, imported automatically.
 
 - **Intensity:** the example calculates planned intensity from 0 to 10 using
   the exercise arsenal's base values and Scoring's planned sets and amounts.
   Update those numeric inputs when changing the written plan. See
-  [Workbook.md](Workbook.md#exercise-based-planned-intensity-formula) for the formula.
+  [Workbook.md](Workbook.md#load-adjusted-intensity-formula) for the formula.
 - **Performance:** compare recorded results with positive targets using
   result/target × 100. Performance is the median of available metric scores;
   100 meets the target. Session summaries appear on the first exercise row.

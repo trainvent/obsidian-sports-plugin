@@ -1,367 +1,173 @@
 # Sports
 
-An Obsidian plugin tailored to athletic training, street workout, and calisthenics plans, developed by [Trainvent](https://github.com/trainvent).
+Plan your training in a spreadsheet. Follow it, track progress, and reflect in Obsidian.
 
-## Alpha release
+Sports brings XLSX and ODS training plans, recurring activities, workout results,
+and optional Garmin Connect imports into a dashboard and linked Markdown notes.
+Built by [Trainvent](https://github.com/trainvent) for athletic training,
+street workout, calisthenics, and other sports.
 
-Plan training in spreadsheets and follow it in Obsidian: recurring schedules,
-a combined calendar, workout logs, and individual goal notes. Read an XLSX or ODS workbook from a downloadable
-cloud link, with optional Garmin activity and Coach imports.
+## Install
 
-Version 0.4.0 is an early alpha. Obsidian 1.11.4 or later is required. Sports is desktop-only because workbook and Garmin connections use Node.js APIs.
-Garmin uses unofficial endpoints and Coach integration still needs live account
-verification. Keep a backup of your workbook and vault when trying the alpha.
+Sports is available in Obsidian's community plugins directory.
 
-Download `main.js`, `manifest.json`, and `styles.css` from the GitHub release.
-Place them in `<vault>/.obsidian/plugins/sports/`, reload Obsidian, and
-enable **Sports** under **Settings → Community plugins**. The alpha is not yet
-listed in Obsidian's community directory.
+1. Open **Settings → Community plugins → Browse**.
+2. Search for **Sports**, select **Install**, then **Enable**.
+3. Open **Settings → Sports** to set up your workbook or connect Garmin.
+
+Requires **Obsidian 1.11.4 or later** on desktop. Mobile is not supported.
+Garmin integration is experimental and uses unofficial endpoints.
+
+## What you can do
+
+- **Plan:** connect goals, training parts, weekly targets, and dated sessions.
+- **Record:** enter sets, time, rounds, added weight, and other measurements in your workbook.
+- **Review:** compare plans and results, follow training trends, and write weekly reflections.
+- **Combine sources:** see workbook sessions, recurring activities, and Garmin activities together.
+- **Keep your notes:** browse ordinary Markdown files with space for your own commentary.
+
+Sync flows **workbook → Obsidian**. Edit plans and results in your spreadsheet;
+write reflections in Obsidian. Sports never uploads changes to your workbook.
+Charts render locally without another community plugin or chart service.
 
 ## Get started
 
-1. Build the plugin, reload Obsidian, and enable **Sports**.
-2. Select **Download XLSX** or **Download ODS** in settings, or run
-   **Sports: Download example workbook** and choose a format. Your browser saves it; the plugin does not choose a filesystem path.
-3. Upload it to Nextcloud or another cloud service. Paste its HTTPS download/share
-   link into **Settings → Sports → Cloud workbook link**, then select **Sync now**.
-4. Edit the workbook in your cloud spreadsheet editor, or upload a revised copy,
-   then sync again. The plugin reads it without modifying the cloud file.
-5. Edit recurring activities in the workbook **Recurring** tab. Select **Open weekly
-   note** to create or refresh that week's note.
+1. In **Settings → Sports**, select **Download XLSX** or **Download ODS**.
+   The example starts next Monday. Adapt its goals and training to your needs.
+2. Upload the file to Nextcloud or another service that provides an HTTPS download link.
+3. Paste that link into **Cloud workbook link**. Keep the default sheet mappings:
+   **Strategy**, **Daily**, and **Recurring**.
+4. Select **Sync now**, then **Open dashboard**.
+5. Record training in the workbook, recalculate and save, then sync again.
 
-For everyday edits to your **Daily** sheet, try [Calcrow](https://calcrow.com/),
-also developed by Trainvent. Save your changes to the cloud workbook, then sync Sports.
+In the example, adjust the set values to what you did, clear unused sets, and
+select TRUE under **Session done**. FALSE or blank leaves the prefilled targets
+unrecorded. Positive Cal-Intervals rounds are recorded with Session done;
+zero or blank means that circuit was not done. Leave actual kg blank until recorded.
 
-**Settings → Sports** offers a cloud workbook link, notes folder, startup sync,
-and intervals of five, ten, or fifteen minutes, or one hour. Startup sync is on
-and the interval is ten minutes by default. Select **Manual only** to disable periodic sync.
-Scheduling runs inside Obsidian; closed apps and mobile suspension stop or delay it. No external scheduler or Python installation is required.
+Enable **Show regular activities** to include your Recurring schedule in the
+dashboard and weekly notes. It is off by default. Recurring entries describe
+plans; they never prove that an activity was completed.
 
-Generated notes default to `Sports/Structure/Strategy.md` and `Sports/Weeks/YYYY-MM-DD.md`
-inside the user's vault. Sync refreshes the strategy and previously generated weekly
-notes. Edit recurring activities in the workbook, then sync to refresh the dashboard
-and weekly notes.
+Each sheet mapping is optional and accepts an exact tab name. Leave it blank to
+disable that import. Garmin can be used independently by leaving all three blank.
+Disabling a mapping retains previously imported data and notes.
 
-Only HTTPS cloud sources are supported. Old local paths are rejected with guidance
-to upload the workbook and paste its share link. Failed downloads retain the last
-imported plan. No external filesystem access is used by the plugin.
+For everyday Daily-sheet edits, you can also use [Calcrow](https://calcrow.com/),
+made by Trainvent. Save changes to the cloud workbook before syncing Sports.
 
-## Add today to your own dashboard
+## Workbook and tracking guides
 
-Paste this into any note:
+- [Workbook guide](Workbook.md): sheet structure, goals, schedules, scoring, loads, and safe customization.
+- [Flexible tracking guide](Tracking.md): custom exercises, any number of sets, variable targets, and multiple metrics.
+- Example files: [XLSX](templates/Training-example.xlsx) · [ODS](templates/Training-example.ods).
 
+The templates include Strategy, Daily, Recurring, Library, Loads, and Scoring.
+Their exercises and five set columns are examples; the importer supports custom
+layouts described in the guides. To adapt a workbook with a chatbot, give it a
+copy and the workbook guide. Preserve recorded history and stable session IDs.
+
+Sports reads saved formula results and does not recalculate spreadsheets.
+Recalculate and save in your spreadsheet editor before syncing. Keep Library,
+Loads, and Scoring tab names: they are discovered automatically.
+A workbook guide is copied into your notes folder; existing guide edits are preserved.
+The tracking guide is also available from the dashboard and command palette.
+
+## Your notes
+
+The default notes folder is `Sports/`. Files are created as their source data becomes available.
+
+| Path | Contents |
+| --- | --- |
+| `Overview.md` | Starting page with today, this week, and navigation |
+| `Stats.md` | Source totals and training trends |
+| `Structure/Plans.md` | Goals, weekly progression, and upcoming sessions |
+| `Structure/Strategy.md` | Program structure and recurring schedule |
+| `Structure/Calendar.md` | Upcoming workbook sessions, recurring activities, and optional Coach workouts |
+| `Analytics/Log.md` | Manual results and Garmin activities, grouped by date |
+| `Analytics/Sheet.md` | Planned intensity, performance, and felt-effort trends |
+| `Analytics/Smartwatch.md` | Garmin volume, running, and swimming graphs |
+| `Days/_Index.md` and `Days/YYYY-MM-DD.md` | Day index, session details, sets, and reflections |
+| `Weeks/YYYY-MM-DD.md` | Weekly plans, results, and review |
+| `Goals/<goal_id>.md` | Goal targets, mapped results, matching activities, and reviews |
+| `Routines/` | Routine explanations, exercises, and progressions |
+| `Guide/` | Workbook and tracking guides |
+
+Weekly notes cover the current week, imported sessions, and Week plans.
+Day notes cover today and earlier dates with workbook or Garmin entries.
+Goal categories distinguish aspiration and maintenance; either can use workbook
+results and Garmin activities. Configure their source mappings in Strategy.
+
+Goal notes keep category and source mappings in properties. Routines link goals
+through **targets**. Day notes have **date** and a linked **week**; weekly notes
+have **week_start**, **week_end**, **program_week**, and **phase**. Sync updates
+these workbook-derived properties and preserves unrelated custom properties.
+Benchmarks, training details, results, and reflections stay in the body.
+Overview provides general navigation. Shared `sports/planning`, `sports/goals`,
+`sports/training`, and `sports/analytics` tags group related pages; running and
+swimming notes also share sport tags. Custom tags are preserved. Other notes keep
+links within their relevant content.
+
+### Add today to another note
+
+Paste this fenced block into your dashboard note:
+
+````markdown
 ```sports-today
 ```
+````
 
-In Reading view or Live Preview, it shows today’s sheet sessions, Garmin activities,
-and enabled recurring activities, with an **Open weekly note** button. On Sundays,
-**Reflect on the week** jumps to the weekly review. It refreshes after sync and when
-the date changes, using cached data.
+It shows today's sessions, Garmin activities, enabled recurring activities, and
+a link to the weekly note in Reading view or Live Preview.
 
-## Workbook format (prototype schema 1)
+## Sync and cloud links
 
-Both **XLSX and ODS** imports are supported, with automatic format detection.
-Use the same sheet names and column layout in either format. To use ODS, save a
-copy in LibreOffice Calc, recalculate, save, and point **Cloud workbook link** at
-that file. Formula results are read as saved; Sports does not recalculate formulas.
-Password-protected workbooks are unsupported. Templates are available in both formats. The ODS template uses TRUE/FALSE dropdowns
-for the single **Session done** flag, with the same structure and note topics as XLSX.
+Use an HTTPS link to the XLSX or ODS file itself. Nextcloud file-share links such
+as `https://cloud.example/s/SHARE_TOKEN` work; Sports adds `/download` automatically.
+The link must allow downloads without a login or password. Folder shares,
+spreadsheet editor URLs, local paths, and encrypted workbooks are unsupported.
+Downloads are limited to **5 MB** and **30 seconds**, with redirects restricted
+to the same HTTPS server.
 
-Use the example workbook in [XLSX](templates/Training-example.xlsx) or
-[ODS](templates/Training-example.ods), or download either format in Sports settings
-to get a copy starting next Monday. It uses **Strategy**, **Recurring**,
-and **Daily** tabs, plus **Scoring** for calculations, **Library** for exercises
-and equipment, and a compact **Loads** sheet for weighted exercises. The fixed example contains 12 weekly plans and 48 manual sessions;
-actual results are blank. Three sessions pair 6 kg vest pull-ups and dips before the unweighted circuit.
-Loads records planned and actual kg without adding columns to Daily. Exercise-specific
-growth per kg adjusts planned intensity, capped at 10. A recap at the bottom of
-Strategy collects the end-of-plan review. Library and Loads are imported automatically
-by name; keep those tab names. Template download and note sync save `Guide/Workbook.md` inside the configured
-vault notes folder (by default `Sports/Guide/Workbook.md`), preserving an existing guide. No customization flow is required. Give the workbook and
-[Workbook.md](Workbook.md) to your own chatbot to adapt it safely.
+Startup sync is enabled and the default interval is ten minutes. Choose five,
+ten, or fifteen minutes, one hour, or **Manual only** in settings. Startup sync
+has its own toggle. Automatic sync runs while Obsidian is open; closed apps and
+suspension stop or delay it. Garmin automatic refresh runs at most hourly.
+Failed downloads or invalid imports retain the previous dataset.
 
-Green marks editable entry cells; neutral white/gray marks reference information
-and formulas. Both alternate row tones, and headings stay neutral blue-gray.
-See [Workbook.md](Workbook.md) for the exact grouped layout and recording rules.
-Plugin-created copies start next Monday and use the local timezone. The browser controls where downloaded copies are saved. Select Strategy, Daily, and Recurring as the strategy, tracking, and weekly schedule
-sheet mappings. Each sheet can be imported independently or disabled by leaving
-its mapping blank. The older templates and formats remain supported.
+## Notes and recovery
 
-In settings, choose the exact **Strategy sheet** and **Tracking sheet** tab names.
-Leave either blank to disable that import; both may be blank for calendar/notes-only
-use. You can rename tabs and keep other sheets in the workbook. Selected tabs still
-need the column/table structure below; arbitrary column mapping is not supported.
-Disabling a role retains its last imported local data and notes. A selected tab that
-is missing or invalid fails the import rather than silently clearing data. With only
-tracking selected, a strategy is not required and paired part references may remain
-unresolved. A new tracking-only plan uses the device timezone until strategy supplies one.
+Sports refreshes only its `sports:begin` / `sports:end` generated sections.
+Write your own text outside those markers. If a generated section has been edited
+or its markers are damaged, Sports reports a conflict and leaves that note alone.
+Move personal changes outside the section and restore the previous generated
+content before refreshing. Other notes can still update when one conflicts.
 
-Sync creates ordinary Markdown files in the configured **Notes folder**:
+Keep managed filenames stable. Deleted notes are not silently recreated: use
+**Recreate missing notes** in settings or the command palette. Use **Generate
+notes from imported data** to refresh from the cache without downloading again.
 
-- `Plans.md`: starting levels, goals, weekly links, and upcoming manual prescriptions.
-- `Overview.md`: starting page with Stats, today, the current week, routines and planning links.
-- `Structure/Plans.md`, `Structure/Strategy.md`, `Structure/Calendar.md`: planning and program structure.
-- `Analytics/Log.md`: detailed reference entries and exercise comparisons.
-- `Days/_Index.md`: date index, preserving reflections from the previous all-days note.
-- `Days/YYYY-MM-DD.md`: one combined day note with sheet sessions,
-  scores, individual sets, exercise comparisons, Garmin activities, and reflections.
-- `Analytics/Sheet.md`: sheet intensity, performance, and felt-effort trends.
-- `Stats.md`: separate source totals over time, plus intensity and heart rate on independent axes.
-- `Analytics/Smartwatch.md`: weekly volume, running pace/heart rate, and swimming pace/heart rate.
-- `Log.md`: today and earlier manual sessions, newest first, with results and notes.
-- `Strategy.md`: goals, exercise blocks, and regular weekly activities.
-- `Weeks/YYYY-MM-DD.md`: weekly focus and targets, that week's schedule and results,
-  and an editable review section.
+**Clear cached data** removes imported workbook and Garmin data, note baselines,
+and errors while keeping settings and note files. On the next sync, existing
+target notes are backed up under `Backups/<timestamp>/` in your notes folder before
+rebuilding generated sections. Personal text outside the markers is preserved.
+Recovery remembers notes that return later with Garmin data, even after the
+workbook has already refreshed. A reset cannot recover results that were never
+saved in the workbook.
 
-Weekly notes are created automatically for dates in the log and in **Week plans**,
-plus the current week. Previously generated weeks are refreshed too. You can browse
-these files in Obsidian's file explorer without opening the plugin dashboard.
-Reloading the plugin generates notes from cached imported data; the **Generate
-notes from imported data** command does the same without rereading the workbook.
-Legacy plugin notes `Plan.md` and `complete-log.md` (or `Training log.md`) migrate
-to `Plans.md` and `Log.md`. Renames preserve personal sections and trusted generated
-baselines. If both old and new files exist, the plugin reports the conflict instead
-of overwriting either. Existing original Fitness notes managed by the Python
-refresh scripts use different markers and are not adopted or replaced by the plugin.
-Dates split at today in the strategy timezone. The names match the original
-Fitness folder's `Log.md`, `Plans.md`, and `Strategy.md`.
+## Training charts
 
-Edit the workbook to change plans and record results. Commentary outside generated
-sections is preserved. Conflicting notes are reported without preventing other
-weekly notes from updating. The existing Fitness vault is a reference; the plugin
-writes only to the configured folder in the currently open vault.
+Exercise comparisons show explicit targets and recorded results, with each unit
+kept separate. Blank results remain missing; zero remains a recorded value.
 
-Generated-note writes are serialized through their baseline saves. Obsidian's
-automatic rewrites of exact known plugin note-renaming links do not count as
-manual edits; other link changes, aliases, prose edits, and damaged markers stay
-protected. A successful final note refresh clears stale note warnings while
-preserving workbook import failures. The retired Table note is not recreated.
+The example's Scoring sheet supplies planned intensity (0–10), target attainment
+as performance (%), and coverage. Optional **Effort rating** (1–5) records how
+hard the session felt. These are separate measurements. The workbook guide explains
+the chart scales and calculation inputs in [Workbook.md](Workbook.md#scoring-and-the-analytics-folder).
 
-Each table begins
-with its name alone in column A, followed immediately by a header row and data rows.
-Separate tables with a blank row. These are simple labeled ranges, not Excel named
-tables; no formulas or AI interpretation are needed. The example command generates
-this layout with three goals and training parts A/B.
-
-On **Strategy**, include:
-
-| Table label | Headers |
-| --- | --- |
-| `Plan` | `schema_version`, `plan_id`, `plan_name`, `timezone` |
-| `Goals` | `goal_id`, `title`, `benchmark`; optional `baseline`, `test`, `category` |
-| `Parts` | `part_id`, `version`, `title`, `prescription` |
-| `PartGoals` | `part_id`, `version`, `goal_id` |
-
-The optional Goals `category` is `milestone` for a new capability or `maintenance`
-for an ability to maintain or improve. Blank or missing categories default to
-`milestone`, keeping older workbooks compatible. Strategy and Plans notes display
-**Aspiration** and **Maintenance** separately. The example
-classifies the three skills as milestones and running as maintenance. Its Cal-Intervals
-part links to all three skill goals through PartGoals, shown as **Supports** in
-the strategy note. Add goal links to any training part in the same way.
-
-`Plan` contains exactly one row. Set `schema_version` to `1` and use an IANA timezone,
-such as `Europe/Berlin`. Each `PartGoals` row links one part version to one goal.
-
-Optionally add a **Week plans** table to Strategy:
-
-| Week | Start | Phase | Focus | Targets | Advance when | Minutes |
-| --- | --- | --- | --- | --- | --- | --- |
-| 1 | YYYY-MM-DD | Foundation | Establish starting level | Record controlled variations | Review results before progressing | 160 |
-
-`Week` is a unique positive program-week number. `Start` is a unique Monday date.
-`Phase` and `Focus` are required; other fields may be blank. You can plan 12 weeks
-or another length. Enter explicit weekly targets rather than relying on automatic
-increases. Review results each week and edit the remaining plan when repeating or
-adjusting a week. Weekly targets and dated session plans are separately editable;
-changing a target does not silently rewrite daily sessions or shift dates.
-
-The offered **Daily** sheet has two header rows: wide A/B/C exercise headings
-above Done and numbered rep/time fields 1–5, followed by Cal-Intervals Done/Rounds, All done, Notes and
-three optional manual goal-result columns. Plan stacks the exercises on separate
-lines. Green cells are editable; both green and neutral areas alternate row tones.
-Older **Training log** sheets with a single flat header row remain supported.
-
-Use one row per session (several rows can share a date), with block `A`, `B`, `Technique`, or `Empty` in the example.
-`Block` links to a Strategy part's `part_id`; you may define your own block names.
-`Plan` stays readable free text and is shown in Obsidian without AI interpretation.
-Use `Empty` or an empty block for a day without a manual prescription.
-
-- Required columns: `Date`, `Block`, `Plan`.
-- Optional `Title` names activities such as swimming or running without a skill block.
-- Optional `Planned minutes` and `Actual minutes` accept nonnegative numbers or blank.
-- Use a unique `Session ID` for every row when several sessions share a date and block.
-  Keep IDs unchanged when adjusting plans so imported sessions retain their identity.
-- Customize skill columns using the suffix ` result`, such as `Squat result`.
-- Completion flags use ` done`, such as `Cal-Intervals done`, with TRUE, FALSE, or blank.
-- `Notes` is optional. Additional optional fields are `Sport`, `Status`, `Session ID`,
-  and `Part version`.
-- Results and completion flags remain separate. An entered result or a TRUE flag
-  means `in-progress`, never automatic completion of the whole session. Explicit
-  `Status` supports `planned`, `in-progress`, `completed`, `skipped`, and `cancelled`.
-- Without `Session ID`, identity uses Date + Block. Keep these stable for existing
-  entries; add distinct Session IDs if the same block occurs twice on one date.
-- With strategy selected, each nonempty block must resolve to one part/version.
-  Add `Part version` when the same block has several strategy versions. Tracking
-  works on its own with strategy disabled.
-
-The technical `Sessions` table remains supported for existing workbooks, with required
-`session_id`, `date`, `sport`, `title`, and optional `part_id`, `part_version`,
-`planned_minutes`, `actual_minutes`, `result`, `status`, and `notes` columns.
-
-### Sets and plan/result comparisons
-
-Log provides the session overview. Analytics contains dated Daily notes with
-sets and exercise comparisons, while Sheet compares performance and effort.
-Plans contains upcoming prescriptions without result columns or comparison cards.
-Log and weekly notes retain their contextual session comparisons.
-Open a card to see a four-column exercise table with the planned prescription,
-recorded total, and sets in order, plus a compact plan/result pipe chart. Overview tables
-keep results compact instead of listing all numbered workbook columns.
-
-The chart reads only explicit lines such as `A) Pull-up: 3 x 5`,
-`B) Wall hold: 3 x 20 sec`, `C) Pistol: 3 x 5/leg`, `A) Mobility: 2 min`,
-and `Cal-Intervals: 5 rounds`. Custom group names and set counts, `x` or `×`, and explicit metric units are
-supported. For variable targets and multiple metrics, see [Flexible Daily tracking](Tracking.md). Other plan wording remains visible without a numeric comparison.
-Exercises run along the x-axis, with reps/rounds on the left and time on the right.
-Purple outlines show the plan; green bars fill them with recorded results. Other units use separate charts. More training is not automatically a better result.
-
-Mark the exercise's **Done** flag TRUE after recording its set values. Prefilled
-inputs with FALSE or blank Done flags remain unrecorded. Blank sets stay missing,
-zero is a real recorded value, and partial totals are labeled. Excel time cells
-and `mm:ss` results become seconds for timed comparisons. Text results stay
-visible in the sets table and are excluded from numeric totals. Session completion
-still requires its own Status; exercise flags never mark the whole session complete.
-
-Charts render locally in reading view and Live Preview using the plugin's
-`sports-compare` code block. The underlying tab-separated values and Markdown table
-remain readable outside Obsidian or with the plugin disabled. No chart service,
-network request, or additional plugin is required. Refresh uses the existing
-protected generated sections and preserves commentary outside those sections.
-
-Dates may be spreadsheet dates or ISO text (`YYYY-MM-DD`). No achievements,
-session durations, or distances are inferred from plan prose. Distance fields, exercise tables,
-progression rules, import previews, custom intervals, and per-occurrence recurrence
-edits remain planned. Date display and weekly navigation use the device calendar;
-schedule-timezone conversion is not yet implemented. Only one plan is active; changing
-to a different strategy plan ID is rejected. Completed sessions cannot change dates or
-part references, and versions used by completed sessions must remain unchanged.
-Removed completed rows are retained locally; removed uncompleted rows currently
-disappear from the active plan.
-
-## Weekly schedule without manual results
-
-The last section of the Strategy sheet is an optional **Weekly schedule** table.
-Its seven blank Monday–Sunday rows are ready to fill in. Columns are `Day`, `Time`,
-`Minutes`, `Activity`, `Recorded by`, and `Notes`. Enter an Activity to activate a row;
-empty activities are ignored. Add rows for multiple activities on the same weekday.
-Use a text time such as `18:00` and optional positive minutes.
-
-These activities appear each week in the dashboard and Markdown without manual
-result fields in the daily log. `Recorded by` can be Garmin, another tracker, or
-No manual log. This records intent only; Garmin activities are imported separately and
-scheduled activities are never automatically marked completed.
-
-## Markdown ownership and safety
-
-Synchronization always flows **XLSX/ODS → Obsidian**. The plugin never writes changes
-back to an existing workbook. Creating a new template is a separate explicit action.
-Edit structured plans/results in the workbook and reflections in Markdown. The plugin
-updates only its `sports:begin` / `sports:end` blocks and preserves surrounding prose.
-If a generated block changes or loses its markers, refresh reports a conflict and leaves
-that note untouched. Restore the previous generated block after moving your edits outside
-it to resume updates. Renamed/deleted managed notes are not automatically rediscovered;
-keep their generated paths stable in this prototype. A deleted generated note is not
-silently recreated.
-
-Imports validate selected sheets before replacing cached plan data. Invalid workbooks retain
-the prior plan. A valid import can succeed while a conflicting Markdown note remains stale;
-the dashboard shows the error and refreshing again retries generation. Durable multi-file
-recovery and conflict resolution UI remain planned.
-
-## Development
-
-Use Node.js 24 and npm.
-
-```sh
-npm ci
-npm run dev
-```
-
-The development build watches `src/` and writes `main.js` in this folder.
-Reload Obsidian after changes and enable **Sports** under
-**Settings → Community plugins**.
-
-```sh
-npm run build
-npm run lint
-npm test
-```
-
-GitHub Actions runs the build and lint checks on pushes and pull requests.
-
-## Manual installation
-
-Copy `main.js`, `manifest.json`, and `styles.css` into
-`<vault>/.obsidian/plugins/sports/`, then reload Obsidian.
-The manifest ID is `sports`; the installed plugin folder must use this same name.
-
-## Releases
-
-Update the version with `npm version patch`, `npm version minor`, or
-`npm version major`. The version script updates `manifest.json` and `versions.json`.
-Push the commit and its version tag to GitHub. Tags must match the manifest version
-exactly, without a `v` prefix; for example, `1.0.1`.
-The release workflow builds the plugin and creates a draft release containing
-`main.js`, `manifest.json`, and `styles.css`. Review and publish the draft on GitHub.
-
-## Privacy
-
-External requests are disabled unless you configure a cloud workbook link or connect
-Garmin. Workbook sync downloads only the configured HTTPS source and never uploads
-or edits it. The share URL is saved in plugin settings and may grant access to
-anyone with the link. The generated template is offered as a browser download;
-the plugin does not read or write files outside the vault.
-
-Imported training data, sync preferences, and generated-block baselines are stored
-in vault-local plugin settings. These may travel with your vault sync provider.
-Generated notes and the workbook guide are written through Obsidian's vault API.
-Garmin tokens use Obsidian secret storage; credentials are never saved. No
-telemetry is collected. Plugin settings and compiled output are excluded from
-version control.
-
-## License and attribution
-
-Based on the [Obsidian sample plugin](https://github.com/obsidianmd/obsidian-sample-plugin).
-The original copyright notice and 0-BSD license are retained in [LICENSE](LICENSE).
-Bundled dependency licenses and attribution are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
-and included in the distributed `main.js`, including fflate, read-excel-file, its
-saxen-derived parser, worker-f, and garminconnect-js.
-
-Regular weekly activities are managed in the workbook Recurring tab and imported
-into the strategy note.
-**Show regular activities** defaults to off in Sports settings. Enable it to include
-workbook weekly activities in the dashboard and weekly
-notes. Changing it refreshes generated notes from cached data. The log and plans notes
-contain only explicit Training log rows; dated sessions entered there remain
-visible regardless of this setting.
-
-If you delete generated notes to start again, use **Settings → Sports →
-Recreate missing notes** (or the command with that name). It rebuilds missing notes
-from the last successfully imported workbook, keeps existing files protected, and
-clears the missing-note error after success. Sync the new workbook first if you
-want to use its schedule. Removed historical weeks outside the current plan are
-not recreated. Reloading the plugin alone does not reset saved note baselines.
-
-For a full fresh start, use **Clear cached data**, then **Sync now**. This clears
-the imported plan (including cached history), note baselines, and the last error.
-Workbook settings are kept; note files are not deleted.
-On the next sync, existing target notes are backed up in the notes folder's
-`Backups/<timestamp>/` directory before generated sections are rebuilt. Commentary
-outside generated markers is preserved. Invalid markers and notes managed by the
-original Fitness scripts still require attention. Resetting the cache does not
-recover training results that were never saved in the workbook.
-
+Stats keeps workbook and Garmin totals separate. Smartwatch charts show weekly
+recorded minutes, running pace, swimming pace, heart rate, and available zone data.
+Garmin activities never complete a manual session automatically.
 
 ## Garmin activity sync
 
@@ -388,8 +194,8 @@ using the configured sync timer. **Sync now** requests an immediate refresh.
 Garmin refreshes independently when workbook import fails. With all three workbook sheet
 mappings blank, it can also run without a workbook.
 
-Only activity ID, local date/time, name, type, duration, distance and average heart
-rate are cached in the vault's plugin data and shown in **Log**, weekly notes and the
+Activity ID, local date/time, name, type, duration, distance, average heart
+rate and heart-rate zone summaries are cached in the vault's plugin data and shown in **Log**, weekly notes and the
 dashboard. No GPS routes or complete account responses are retained. Activities use
 Garmin's local start time; GMT-only records use the plan's timezone, or your local
 timezone without a plan. Garmin records never mark manual sessions complete.
@@ -401,165 +207,82 @@ cached activities remain available. **Clear cached data** removes the imported
 activity cache while keeping connection settings. Generated notes and reflections
 keep their existing edit protection.
 
-
-The Log note combines manual entries and Garmin records in one daily table:
-**Date**, **Manual plan**, **Manual results**, **Garmin activities**, **Manual notes**.
-Today and earlier dates appear newest first, including dates with only Garmin data.
-Multiple sessions and activities stay together in their date's row. Manual status,
-actual minutes and result fields remain independent from recorded Garmin measurements.
-Upcoming manual sessions stay in Plans.
-
-Log dates link to their notes in `Days/`. Sync creates a note for each
-date up to today that has a sheet session or Garmin activity, including days with
-only one source. Per-day reflections stay outside the protected generated block.
-
-Each manual session also shows planned intensity, actual performance, scored
-metric coverage, and optional felt effort. Expand its session details below the
-overview for scores, individual sets, and exercise comparisons. Missing ratings
-remain unrecorded, and separate sessions keep their own scores and coverage.
-
-
-
-## Goal notes
-
-Sync creates `Goals/<goal_id>.md` under the configured notes folder and links each
-goal from Plans and Strategy. Each note includes the baseline, target, dated workbook
-entries, matching Garmin activities, and a separate review area that sync preserves.
-
-Both data sources are available to every goal. Aspiration/maintenance categories
-only describe the goal; they do not select a data source. The optional Goals fields
-`result_column` and `garmin_types` provide explicit mappings. Existing skill-column
-names and running/swimming goals are detected when no mapping is supplied.
-Garmin matching uses type keys rather than localized activity names such as Laufen.
-The updated template includes swimming as a maintenance goal and source mappings
-for all five example goals. Existing workbooks are never changed by sync; add a
-swimming Goals row to an existing workbook if you want its note as well.
-
-Goal filenames follow stable IDs so renaming a goal title keeps its review file.
-Removed goals' existing notes are retained. Editing generated sections still raises
-a conflict; write personal reviews below the generated block instead.
-
 ### Optional Garmin Coach plans
 
-Enable **Show Garmin Coach plans** in the plugin settings to include published
-adaptive Coach workouts in `Plans.md`. This is off by default. When enabled, sync
-reads Garmin's scheduled-workout summaries for the next 28 days, starting today.
-It displays dates, workout names, sport, estimates, and published descriptions;
-it does not import full workout steps or change anything in Garmin.
+Enable **Show Garmin Coach plans** to include published adaptive Coach workout
+summaries for the next 28 days in Plans and Calendar. This is off by default and
+still needs live-account verification. Full workout steps, self-scheduled workouts,
+and static training plans are excluded. Check Garmin Connect for the current prescription.
+Failed refreshes retain cached summaries with a warning. Turning the setting off
+stops Coach requests; disconnecting stops all Garmin requests.
 
-Coach schedules have a separate local cache and refresh status. Failed refreshes
-retain the previous schedule with a warning while activity imports can continue.
-Garmin may publish only a few sessions ahead and can change them after training;
-check Garmin Connect for the current workout prescription. Self-scheduled workouts
-and static training plans are excluded. Turning this setting off removes the
-section from generated plans and stops Coach schedule requests. Disconnecting
-Garmin stops all Garmin requests and retains cached summaries locally.
+## Current limits
 
-### Combined plan calendar
+- Desktop only, with one active workbook plan. Changing its plan ID requires clearing the cache.
+- No workbook write-back, watch workout uploads, external calendar sync, or automatic coaching.
+- Sheet names are configurable; arbitrary column mapping and import previews are not available.
+- Recurring activities use a weekly schedule; per-occurrence edits and schedule-timezone conversion are not implemented.
+- Completed sessions and linked part versions are protected. Removed completed sessions remain cached; removed unfinished rows leave the active plan.
+- Generated-note conflicts require manual recovery; there is no conflict-resolution interface.
 
-`Calendar.md` provides one chronological table for today and upcoming dates,
-with recurring weekly training, workbook daily plans and optional Garmin Coach plans side by side. Multiple
-workouts share one date row. Open it through the **Calendar** link in `Plans.md`.
-The existing weekly and daily views remain available. Weekly strategy is not
-expanded into invented daily sessions. Coach visibility follows **Show Garmin
-Coach plans**; blank cells mean no imported prescription, not a rest day.
-Recurring training comes from the workbook weekly schedule and appears for the next
-28 days, plus any later imported daily or Coach plan dates. This calendar column
-is independent of the weekly-note regular-activity visibility setting.
-Write personal calendar reviews below the generated section; sync preserves them.
+See [the roadmap](STRATEGY.md) for development direction.
 
-## Read-only cloud workbooks
+## Privacy
 
-In **Cloud workbook link**, paste a Nextcloud share link to the XLSX or ODS file itself,
-for example `https://cloud.example/s/SHARE_TOKEN`. The plugin adds `/download`
-automatically. Direct HTTPS file-download links also work. For this first version,
-the share must allow downloads without a password or account login; folder shares,
-Nextcloud Office editor URLs and password-protected shares are not supported.
+External requests are disabled unless you configure a cloud workbook link or connect
+Garmin. Workbook sync downloads only the configured HTTPS source and never uploads
+or edits it. The share URL is saved in plugin settings and may grant access to
+anyone with the link. The generated template is offered as a browser download;
+the plugin does not read or write files outside the vault.
 
-Configuring a cloud link enables read-only downloads from that server during manual
-and configured automatic sync. No workbook content is uploaded or edited. The link
-is saved in ordinary plugin settings and grants access to anyone who has it.
-Downloads are limited to 5 MB and 30 seconds; redirects stay on the same HTTPS
-server. Invalid links or download failures preserve the last imported plan and
-notes. Local filesystem paths are not supported. Download the template from
-settings and upload it to Nextcloud yourself. Desktop only for now.
+Imported training data, sync preferences, and generated-block baselines are stored
+in vault-local plugin settings. These may travel with your vault sync provider.
+Generated notes and the workbook guide are written through Obsidian's vault API.
+Garmin tokens use Obsidian secret storage; credentials are never saved. No
+telemetry is collected. Plugin settings and compiled output are excluded from
+version control.
 
-## Support development
+## License and attribution
 
-[❤️ Sponsor Trainvent](https://github.com/sponsors/trainvent) to support continued development.
-For help, use [support](https://next.trainvent.com/de/software-support/) or [report an issue](https://github.com/trainvent/obsidian-sports-plugin/issues).
+Based on the [Obsidian sample plugin](https://github.com/obsidianmd/obsidian-sample-plugin).
+The original copyright notice and 0-BSD license are retained in [LICENSE](LICENSE).
+Bundled dependency licenses and attribution are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+and included in the distributed `main.js`, including fflate, read-excel-file, its
+saxen-derived parser, worker-f, and garminconnect-js.
 
-### Migrating from alpha 0.1.0 or 0.2.0
+## Development and releases
 
-The early alpha ID `sports-plugin` was invalid for the community directory.
-Version 0.2.1 uses `sports`. Disable the old plugin, install the new release in
-`<vault>/.obsidian/plugins/sports/`, and copy your old plugin folder's `data.json`
-into that folder while Obsidian is closed if you want to retain settings and
-sync baselines. Keep the old folder as a backup until the new plugin works, and
-enable only the new copy. Generated notes and source workbooks stay in place.
+Use Node.js 24 and npm:
 
-Settings use the searchable declarative API on Obsidian 1.13 or later, with the
-same controls rendered through the legacy API on Obsidian 1.11.4–1.12.
+```sh
+npm ci
+npm run dev
+```
 
-The current template defines `max_sets = 3` (exercise groups A, B, C) and
-`max_reps = 5` (the numbered rep fields), plus Cal-Intervals separately. These metadata
-values do not automatically resize the layout. Rep cells contain plain numbers
-or durations displayed as `mm:ss`. Adjust the targets, then select TRUE under
-**Session done** to record them. Cal-Intervals uses an editable Rounds count:
-positive rounds are recorded with Session done; zero or blank means not done
-and remains unscored. FALSE or blank Session done leaves all results unrecorded.
-Session done TRUE marks the session completed. **Notes topic** defaults to General;
-Muscle-up, HSPU or Pistol also routes the Notes text to the matching Obsidian goal
-page. Routine topics route to **Routines/Skills A**, **Skills B**, **Technique**,
-**Swimming** or **Running**; **Cal-Intervals** routes to **Routines/Cal-Intervals**.
-The Routines index links all six pages. Routine pages include Strategy explanations,
-linked goal targets, exercise lists and A/B weekly progressions. Cal-Intervals
-uses the shared Library work/rest definition. See [Workbook.md](Workbook.md) for details.
+The watcher writes `main.js` at the plugin root. Reload Sports in Obsidian after
+changes. Run the checks before a release:
 
+```sh
+npm run build
+npm run lint
+npm test
+```
 
-### Intensity, performance, and optional felt effort
+For manual installation, copy `main.js`, `manifest.json`, and `styles.css` from a
+[GitHub release](https://github.com/trainvent/obsidian-sports-plugin/releases)
+to `<vault>/.obsidian/plugins/sports/`, then reload Obsidian and enable Sports.
+Do not commit generated bundles or local plugin data.
 
-**Analytics → Smartwatch** provides separate Garmin graphs: weekly recorded
-minutes stacked by sport, running pace with average HR zone, and swimming
-pace with average HR zone. Pace uses minutes/km for running and minutes/100 m
-for swimming, with faster pace higher on the left axis and bpm on the right.
-Missing measurements leave gaps; Garmin minutes are not added to workbook
-minutes. The note refreshes from cached Garmin data during sync, including when
-no workbook is selected, and preserves reflections outside its generated block.
+Use `npm version patch`, `npm version minor`, or `npm version major` to update
+package.json, manifest.json, and versions.json. Push the commit and version tag.
+Tags must exactly match the manifest version without a `v` prefix. The release
+workflow builds a draft release with the plugin files and both example workbooks;
+review and publish it on GitHub.
 
-**Intensity** is how hard a session is planned to be, on a **0–10**
-scale. The example calculates **Planned intensity** from the exercise arsenal's
-base values and Scoring's planned sets and amounts (reps, reps/leg, or seconds).
-Update these numeric inputs when changing the written plan. See
-[the formula in Workbook.md](Workbook.md#exercise-based-planned-intensity-formula).
+## Help and support
 
-**Performance** compares recorded results with targets: `100 × result / target`.
-The unified XLSX Scoring table combines exercise performance and intensity,
-with a session summary on its first row. Session performance is the median
-of available metric scores; coverage shows how many results are recorded.
-
-**Felt effort** is optional. After training, enter **Effort rating** from 1 (easy)
-to 5 (very hard), or leave it blank. Felt effort starts blank and does not alter
-performance. No minutes × RPE calculation is used.
-
-Daily keeps Planned intensity and Effort rating. Performance and coverage stay
-in Scoring and are imported automatically alongside Daily. Recalculate and save
-before syncing. Sheet shows three charts with dates on the horizontal axis:
-performance versus intensity, effort versus intensity, and actual daily performance on a fixed 0–200% scale (100% centered). The first plots intensity × performance / 100 alongside intensity on one
-shared scale: 100% follows intensity, 80% is 20% lower, and values can exceed
-10. The second uses intensity’s 0–10 scale on the right and effort’s 0–5 scale
-on the left. Recorded
-effort remains 1–5. Each series uses daily medians of available session values.
-Intensity appears even without results; missing values leave gaps. Coverage
-and individual felt-effort ratings remain in Log and dated day notes. Separate axes compare trends in
-different units; matching heights do not imply equal values.
-
-Existing workbooks remain supported. Template downloads never change a live
-cloud workbook. Add equivalent score formulas to a copy preserving history,
-or start a new plan from the updated template. Keep selecting Daily as tracking;
-Keep the Scoring tab name. Update its result-cell references, explicit targets
-and session summary ranges together when customizing workouts.
-Existing Analytics.md notes with a trusted baseline migrate to _Index.md,
-retaining reflections and generated-section edit protection.
-
-Garmin HR zones use a time-weighted average: `sum(zone × seconds) / sum(seconds)` for zones 1–5. Stats compares this with the sheet’s felt effort on the same 1–5 scale; these remain distinct measurements. Missing zone data stays blank. Zone summaries are fetched during Garmin sync and cached locally.
+[Report an issue](https://github.com/trainvent/obsidian-sports-plugin/issues) with
+your Obsidian and Sports versions, the error, and steps to reproduce it. Remove
+private share links, credentials, and personal training data from attachments.
+You can also use [Trainvent support](https://next.trainvent.com/de/software-support/)
+or [sponsor development](https://github.com/sponsors/trainvent).

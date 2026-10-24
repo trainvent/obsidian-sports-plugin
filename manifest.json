@@ -3,7 +3,7 @@
 	"name": "Sports",
 	"version": "0.4.0",
 	"minAppVersion": "1.11.4",
-	"description": "Follow athletic, street workout, and calisthenics plans from spreadsheets, with workout logs, progress charts, and optional Garmin Connect support.",
+	"description": "Plan training from spreadsheets, track workout results and progress, and review your week with optional Garmin Connect imports.",
 	"author": "Trainvent",
 	"authorUrl": "https://github.com/trainvent",
 	"isDesktopOnly": true,
